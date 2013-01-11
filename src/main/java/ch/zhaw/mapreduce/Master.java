@@ -26,9 +26,9 @@ public final class Master {
 		this.mapReduceTaskUUID = mapReduceTaskUUID;
 	}
 
-	public Map<String, Collection<String>> runComputation(final MapInstruction mapInstruction,
+	public Map<String, String> runComputation(final MapInstruction mapInstruction,
 			final CombinerInstruction combinerInstruction,
-			final ReduceInstruction reduceInstruction, Iterator<String> input) {
+			final ReduceInstruction reduceInstruction, Iterator<String> input) throws InterruptedException {
 
 		// Alle derzeitigen aufgaben die ausgeführt werden
 		Set<WorkerTask> activeWorkerTasks = new HashSet<WorkerTask>();
@@ -57,13 +57,7 @@ public final class Master {
 			mapTask.runMapTask();
 		}
 
-		try {
-			waitForWorkers(mapResults, undoneTasks, activeWorkerTasks);
-		} catch (InterruptedException e) {
-			// ... das war nicht gut irgendwas war
-			System.err.println("Exiting ... interupted");
-			return Collections.emptyMap();
-		}
+		waitForWorkers(mapResults, undoneTasks, activeWorkerTasks);
 
 		Map<String, List<KeyValuePair>> reduceTasks = new HashMap<String, List<KeyValuePair>>();
 
@@ -91,8 +85,6 @@ public final class Master {
 		// reiht für jeden Input - Teil einen MapWorkerTask in den Pool ein
 		for (Map.Entry<String, List<KeyValuePair>> curKeyValuePairs : reduceTasks.entrySet()) {
 
-			String todo = input.next();
-
 			ReduceWorkerTask reduceTask = runnerFactory.createReduceWorkerTask(mapReduceTaskUUID,
 					curKeyValuePairs.getKey(), reduceInstruction, curKeyValuePairs.getValue());
 
@@ -101,32 +93,19 @@ public final class Master {
 			reduceTask.runReduceTask();
 		}
 
-		try {
-			waitForWorkers(reduceResults, undoneTasks, activeWorkerTasks);
-		} catch (InterruptedException e) {
-			// ... das war nicht gut irgendwas war
-			System.err.println("Exiting ... interupted");
-			return Collections.emptyMap();
-		}
-		Map<String, Collection<String>> resultStructure = new HashMap<String, Collection<String>>();
+		waitForWorkers(reduceResults, undoneTasks, activeWorkerTasks);
+		
+		Map<String, String> resultStructure = new HashMap<String, String>();
 		
 		for(Worker curWorker : reduceResults) {
-//			resultStructure.put(key, value);
+			for(KeyValuePair storedValue : curWorker.getReduceResults(mapReduceTaskUUID)) {
+				resultStructure.put(storedValue.getKey(), storedValue.getValue());
+			}
 		}
 
 		return resultStructure;
 	}
 
-	//
-	// /**
-	// * Retourniert die globale Resultat-Struktur, wo alle Resultate gespeichert werden.
-	// *
-	// * @return Map mit allen Resultaten
-	// */
-	// public Map<String, Collection<String>> getGlobalResultStructure() {
-	// return Collections.unmodifiableMap(this.globalResultStructure);
-	// }
-	//
 	public String getMapReduceTaskUUID() {
 		return this.mapReduceTaskUUID;
 	}
@@ -155,7 +134,7 @@ public final class Master {
 			}
 			// Wartet eine Sekunde abzüglich der Prozentzahl an bereits erledigten Aufgaben
 			// "+1" um die DIV/0 zu verhindern
-			wait(1000 - 1000 * (doneTasks.size() / (doneTasks.size() + undoneTasks.size() + 1)));
+			Thread.sleep(1000 - 1000 * (doneTasks.size() / (doneTasks.size() + undoneTasks.size() + 1)));
 
 		} while (undoneTasks.size() > 0);
 	}

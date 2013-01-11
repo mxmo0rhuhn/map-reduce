@@ -51,7 +51,7 @@ public final class MapReduceTask {
 	 *            der gesamte input als Iterator
 	 * @return das Resultat von dem ganzen MapReduceTask
 	 */
-	public Map<String, Collection<String>> compute(Iterator<String> input) {
+	public Map<String, String> compute(Iterator<String> input) throws InterruptedException {
 		return this.master.runComputation(this.mapInstruction, this.combinerInstruction, this.reduceInstruction, input);
 	}
 }
