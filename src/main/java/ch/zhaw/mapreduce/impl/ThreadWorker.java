@@ -22,7 +22,9 @@ import ch.zhaw.mapreduce.registry.WorkerExecutor;
  */
 public class ThreadWorker implements Worker {
 
-	private final Map<String, List<KeyValuePair>> storedKeyValues = new HashMap<String, List<KeyValuePair>>();
+	private final Map<String, List<KeyValuePair>> mapResults = new HashMap<String, List<KeyValuePair>>();
+	
+	private final Map<String, List<KeyValuePair>> reduceResults = new HashMap<String, List<KeyValuePair>>();
 
 	/**
 	 * Aus dem Pool kommt der Worker her und dahin muss er auch wieder zurueck.
@@ -69,14 +71,14 @@ public class ThreadWorker implements Worker {
 		// TODO: Sollte auch save sein, wenn gerade ein anderer MapReduce Task an seine Daten will
 		List<KeyValuePair> newKeyValues;
 
-		if (storedKeyValues.containsKey(mapReduceTaskUID)) {
-			newKeyValues = storedKeyValues.get(mapReduceTaskUID);
+		if (mapResults.containsKey(mapReduceTaskUID)) {
+			newKeyValues = mapResults.get(mapReduceTaskUID);
 		} else {
 			newKeyValues = new LinkedList<KeyValuePair>();
 		}
 
 		newKeyValues.add(pair);
-		storedKeyValues.put(mapReduceTaskUID, newKeyValues);
+		mapResults.put(mapReduceTaskUID, newKeyValues);
 	}
 
 	/**
@@ -87,14 +89,14 @@ public class ThreadWorker implements Worker {
 		// TODO: Sollte auch save sein, wenn gerade ein anderer MapReduce Task an seine Daten will
 		List<KeyValuePair> newKeyValues;
 
-		if (storedKeyValues.containsKey(mapReduceTaskUID)) {
-			newKeyValues = storedKeyValues.get(mapReduceTaskUID);
+		if (reduceResults.containsKey(mapReduceTaskUID)) {
+			newKeyValues = reduceResults.get(mapReduceTaskUID);
 		} else {
 			newKeyValues = new LinkedList<KeyValuePair>();
 		}
 
 		newKeyValues.add(pair);
-		storedKeyValues.put(mapReduceTaskUID, newKeyValues);
+		reduceResults.put(mapReduceTaskUID, newKeyValues);
 	}
 
 	/**
@@ -102,7 +104,7 @@ public class ThreadWorker implements Worker {
 	 */
 	@Override
 	public List<KeyValuePair> getMapResults(String mapReduceTaskUID) {
-		return this.storedKeyValues.get(mapReduceTaskUID);
+		return this.mapResults.get(mapReduceTaskUID);
 	}
 	
 	/**
@@ -110,6 +112,6 @@ public class ThreadWorker implements Worker {
 	 */
 	@Override
 	public List<KeyValuePair> getReduceResults(String mapReduceTaskUID) {
-		return this.storedKeyValues.get(mapReduceTaskUID);
+		return this.reduceResults.get(mapReduceTaskUID);
 	}
 }

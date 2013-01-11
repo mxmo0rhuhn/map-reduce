@@ -1,6 +1,7 @@
 package ch.zhaw.mapreduce.impl;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNull;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -121,5 +122,22 @@ public class ThreadWorkerTest {
 		assertTrue(vals1.size() == 1);
 		assertTrue(vals2.size() == 1);
 	}
+
+	@Test
+	public void shouldNotMixReduceResults() {
+		DeterministicExecutor exec = new DeterministicExecutor();
+		ThreadWorker worker = new ThreadWorker(pool, exec);
+		worker.storeReduceResult("mrtuid", new KeyValuePair("key", "value"));
+		assertNull(worker.getMapResults("mrtuid"));
+	}
+
+	@Test
+	public void shouldNotMixMapResults() {
+		DeterministicExecutor exec = new DeterministicExecutor();
+		ThreadWorker worker = new ThreadWorker(pool, exec);
+		worker.storeMapResult("mrtuid", new KeyValuePair("key", "value"));
+		assertNull(worker.getReduceResults("mrtuid"));
+	}
+
 
 }
