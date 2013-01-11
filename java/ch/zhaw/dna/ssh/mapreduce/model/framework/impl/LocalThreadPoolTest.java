@@ -19,10 +19,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import ch.zhaw.mapreduce.Worker;
-import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.impl.LocalThreadPool;
-import ch.zhaw.mapreduce.impl.ThreadWorker;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.Worker;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.WorkerTask;
 
 @RunWith(JMock.class)
 public class LocalThreadPoolTest {

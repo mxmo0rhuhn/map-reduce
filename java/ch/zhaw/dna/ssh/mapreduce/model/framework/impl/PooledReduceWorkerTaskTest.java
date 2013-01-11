@@ -25,12 +25,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import ch.zhaw.mapreduce.KeyValuePair;
-import ch.zhaw.mapreduce.ReduceEmitter;
-import ch.zhaw.mapreduce.ReduceInstruction;
-import ch.zhaw.mapreduce.impl.LocalThreadPool;
-import ch.zhaw.mapreduce.impl.PooledReduceWorkerTask;
-import ch.zhaw.mapreduce.impl.ThreadWorker;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.KeyValuePair;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.Pool;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.ReduceEmitter;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.ReduceInstruction;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.WorkerTask.State;
 
 @RunWith(JMock.class)
 public class PooledReduceWorkerTaskTest {

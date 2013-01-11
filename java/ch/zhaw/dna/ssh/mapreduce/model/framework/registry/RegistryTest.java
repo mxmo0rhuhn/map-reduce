@@ -17,16 +17,16 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import ch.zhaw.mapreduce.CombinerInstruction;
-import ch.zhaw.mapreduce.MapInstruction;
-import ch.zhaw.mapreduce.MapWorkerTask;
-import ch.zhaw.mapreduce.Master;
-import ch.zhaw.mapreduce.ReduceInstruction;
-import ch.zhaw.mapreduce.ReduceWorkerTask;
-import ch.zhaw.mapreduce.Worker;
-import ch.zhaw.mapreduce.WorkerTaskFactory;
-import ch.zhaw.mapreduce.impl.LocalThreadPool;
-import ch.zhaw.mapreduce.registry.PoolExecutor;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.CombinerInstruction;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.MapInstruction;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.MapWorkerTask;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.Master;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.Pool;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.ReduceInstruction;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.ReduceWorkerTask;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.Worker;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.WorkerTaskFactory;
+import ch.zhaw.dna.ssh.mapreduce.model.framework.impl.LocalThreadPool;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
