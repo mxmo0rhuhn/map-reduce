@@ -10,12 +10,14 @@ import ch.zhaw.mapreduce.MapInstruction;
  * 
  */
 public class WordFrequencyMapInstruction implements MapInstruction {
+	
+	private static final String ONE = "1";
 
 	/** {@inheritDoc} */
 	@Override
 	public void map(MapEmitter emitter, String input) {
 		for (String s : input.trim().split(" ")) {
-			emitter.emitIntermediateMapResult(s, "1");
+			emitter.emitIntermediateMapResult(s, ONE);
 		}
 	}
 
