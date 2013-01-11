@@ -1,4 +1,4 @@
-package ch.zhaw.dna.ssh.mapreduce.model.framework.impl;
+package ch.zhaw.mapreduce.impl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -100,7 +100,7 @@ public class PooledMapWorkerTaskTest {
 		ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
 		ThreadWorker worker = new ThreadWorker(pool, threadExec);
 		pool.donateWorker(worker);
-		task.runMapInstruction();
+		task.runMapTask();
 		assertTrue(threadExec.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		List<KeyValuePair> vals = worker.getStoredKeyValuePairs("mrtUuid");
 		assertTrue(vals.contains(new KeyValuePair("hello", "1")));
@@ -115,8 +115,8 @@ public class PooledMapWorkerTaskTest {
 				oneOf(p).enqueueWork(task);
 			}
 		});
-		task.runMapInstruction();
-		assertEquals("inputUUID", task.getCurrentInputUID());
+		task.runMapTask();
+		assertEquals("inputUUID", task.getUUID());
 	}
 
 	@Test
@@ -134,7 +134,7 @@ public class PooledMapWorkerTaskTest {
 				throw new NullPointerException();
 			}
 		}, combInstr, inputUUID, input);
-		task.runMapInstruction();
+		task.runMapTask();
 		assertTrue(taskExec.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.FAILED, task.getCurrentState());
 		assertNull(task.getWorker());
@@ -162,7 +162,7 @@ public class PooledMapWorkerTaskTest {
 				oneOf(combInstr).combine(with(aNonNull(Iterator.class)));
 			}
 		});
-		task.runMapInstruction();
+		task.runMapTask();
 		assertTrue(taskExec.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.COMPLETED, task.getCurrentState());
 		assertSame(worker, task.getWorker());
@@ -194,7 +194,7 @@ public class PooledMapWorkerTaskTest {
 				}
 			}
 		}, combInstr, inputUUID, input);
-		task.runMapInstruction();
+		task.runMapTask();
 		Thread.yield();
 		Thread.sleep(200);
 		assertEquals(State.INPROGRESS, task.getCurrentState());
@@ -231,11 +231,11 @@ public class PooledMapWorkerTaskTest {
 				}
 			}
 		}, combInstr, inputUUID, input);
-		task.runMapInstruction();
+		task.runMapTask();
 		assertTrue(threadExec1.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.FAILED, task.getCurrentState());
 		assertNull(task.getWorker());
-		task.runMapInstruction();
+		task.runMapTask();
 		assertTrue(threadExec2.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.COMPLETED, task.getCurrentState());
 		assertSame(worker2, task.getWorker());
@@ -249,7 +249,7 @@ public class PooledMapWorkerTaskTest {
 				oneOf(p).enqueueWork(task);
 			}
 		});
-		task.runMapInstruction();
+		task.runMapTask();
 		assertEquals(State.ENQUEUED, task.getCurrentState());
 	}
 }

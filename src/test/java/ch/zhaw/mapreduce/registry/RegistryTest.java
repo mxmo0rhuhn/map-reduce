@@ -1,4 +1,4 @@
-package ch.zhaw.dna.ssh.mapreduce.model.framework.registry;
+package ch.zhaw.mapreduce.registry;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -21,6 +21,7 @@ import ch.zhaw.mapreduce.CombinerInstruction;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.MapWorkerTask;
 import ch.zhaw.mapreduce.Master;
+import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.ReduceWorkerTask;
 import ch.zhaw.mapreduce.Worker;

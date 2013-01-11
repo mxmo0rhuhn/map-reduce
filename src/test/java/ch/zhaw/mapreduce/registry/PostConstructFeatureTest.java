@@ -1,4 +1,4 @@
-package ch.zhaw.dna.ssh.mapreduce.model.framework.registry;
+package ch.zhaw.mapreduce.registry;
 
 import static org.junit.Assert.assertTrue;
 

@@ -1,4 +1,4 @@
-package ch.zhaw.dna.ssh.mapreduce.model.framework.impl;
+package ch.zhaw.mapreduce.impl;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -19,6 +19,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import ch.zhaw.mapreduce.KeyValuePair;
+import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.WorkerTask;
 import ch.zhaw.mapreduce.impl.ThreadWorker;
 
