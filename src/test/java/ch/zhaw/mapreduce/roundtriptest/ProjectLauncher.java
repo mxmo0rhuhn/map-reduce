@@ -57,7 +57,7 @@ public class ProjectLauncher {
 				System.out.println("Sollte: " + i + " Vorkommen: " + entry.getValue());
 			}
 
-			Assert.assertEquals(i * 1000, Integer.parseInt(result.get("Test")));
+			//Assert.assertEquals(i * 1000, Integer.parseInt(result.get("Test")));
 
 			teststring += thousandTimesTest;
 		}
