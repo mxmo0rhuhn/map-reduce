@@ -65,7 +65,7 @@ public class ThreadWorker implements Worker {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void storeKeyValuePair(String mapReduceTaskUID, String key, String value) {
+	public void storeMapResult(String mapReduceTaskUID, KeyValuePair pair) {
 		// TODO: Sollte auch save sein, wenn gerade ein anderer MapReduce Task an seine Daten will
 		List<KeyValuePair> newKeyValues;
 
@@ -75,7 +75,7 @@ public class ThreadWorker implements Worker {
 			newKeyValues = new LinkedList<KeyValuePair>();
 		}
 
-		newKeyValues.add(new KeyValuePair(key, value));
+		newKeyValues.add(pair);
 		storedKeyValues.put(mapReduceTaskUID, newKeyValues);
 	}
 
@@ -83,15 +83,33 @@ public class ThreadWorker implements Worker {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<KeyValuePair> getStoredKeyValuePairs(String mapReduceTaskUID) {
-		return this.storedKeyValues.get(mapReduceTaskUID);
+	public void storeReduceResult(String mapReduceTaskUID, KeyValuePair pair) {
+		// TODO: Sollte auch save sein, wenn gerade ein anderer MapReduce Task an seine Daten will
+		List<KeyValuePair> newKeyValues;
+
+		if (storedKeyValues.containsKey(mapReduceTaskUID)) {
+			newKeyValues = storedKeyValues.get(mapReduceTaskUID);
+		} else {
+			newKeyValues = new LinkedList<KeyValuePair>();
+		}
+
+		newKeyValues.add(pair);
+		storedKeyValues.put(mapReduceTaskUID, newKeyValues);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void replaceStoredKeyValuePairs(String mapReduceTaskUID, List<KeyValuePair> newList) {
-		storedKeyValues.put(mapReduceTaskUID, newList);
+	public List<KeyValuePair> getMapResults(String mapReduceTaskUID) {
+		return this.storedKeyValues.get(mapReduceTaskUID);
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public List<KeyValuePair> getReduceResults(String mapReduceTaskUID) {
+		return this.storedKeyValues.get(mapReduceTaskUID);
 	}
 }

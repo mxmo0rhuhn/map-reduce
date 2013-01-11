@@ -70,7 +70,7 @@ public final class Master {
 		// SHUFFLE
 		for (Worker curMapResult : mapResults) {
 			for (KeyValuePair curKeyValuePair : curMapResult
-					.getStoredKeyValuePairs(mapReduceTaskUUID)) {
+					.getMapResults(mapReduceTaskUUID)) {
 				if (reduceTasks.containsKey(curKeyValuePair.getKey())) {
 					reduceTasks.get(curKeyValuePair.getKey()).add(curKeyValuePair);
 				} else {

@@ -1,9 +1,8 @@
 package ch.zhaw.mapreduce.registry;
 
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
+import static java.lang.annotation.RetentionPolicy.*;
 import java.lang.annotation.Target;
 
 import com.google.inject.BindingAnnotation;

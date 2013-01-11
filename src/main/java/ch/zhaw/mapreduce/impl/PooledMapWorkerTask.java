@@ -47,10 +47,12 @@ public class PooledMapWorkerTask implements MapWorkerTask, MapEmitter {
 	private volatile State currentState = State.INITIATED;
 
 	@Inject
-	public PooledMapWorkerTask(Pool pool, @Assisted("uuid") String mapReduceTaskUID,
-			@Assisted MapInstruction mapInstruction,
-			@Assisted @Nullable CombinerInstruction combinerInstruction,
-			@Assisted("inputUID") String inputUID, @Assisted("input") String input) {
+	public PooledMapWorkerTask(Pool pool,
+						       @Assisted("uuid") String mapReduceTaskUID,
+							   @Assisted MapInstruction mapInstruction,
+							   @Assisted @Nullable CombinerInstruction combinerInstruction,
+							   @Assisted("inputUUID") String inputUID,
+							   @Assisted("input") String input) {
 		this.pool = pool;
 		this.mapReduceTaskUID = mapReduceTaskUID;
 		this.mapInstruction = mapInstruction;
@@ -62,7 +64,7 @@ public class PooledMapWorkerTask implements MapWorkerTask, MapEmitter {
 	/** {@inheritDoc} */
 	@Override
 	public void emitIntermediateMapResult(String key, String value) {
-		processingWorker.storeKeyValuePair(mapReduceTaskUID, key, value);
+		processingWorker.storeMapResult(mapReduceTaskUID, new KeyValuePair(key, value));
 	}
 
 	/** {@inheritDoc} */
@@ -92,7 +94,7 @@ public class PooledMapWorkerTask implements MapWorkerTask, MapEmitter {
 			// Alle Ergebnisse verdichten. Die Ergebnisse aus der derzeitigen Worker sollen
 			// einbezogen werden.
 			if (this.combinerInstruction != null) {
-				List<KeyValuePair> vals = processingWorker.getStoredKeyValuePairs(mapReduceTaskUID);
+				List<KeyValuePair> vals = processingWorker.getMapResults(mapReduceTaskUID);
 				if (vals != null) {
 					this.combinerInstruction.combine(vals.iterator());
 				}

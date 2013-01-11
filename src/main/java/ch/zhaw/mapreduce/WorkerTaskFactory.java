@@ -26,8 +26,11 @@ public interface WorkerTaskFactory {
 	 *            die zu verwendende CombinerInstruction
 	 * @return eine neue Instanz eines MapWorkerTask
 	 */
-	MapWorkerTask createMapWorkerTask(@Assisted("uuid") String mapReduceTaskUUID, MapInstruction mapInstr,
-			CombinerInstruction combinerInstr, @Assisted("inputUID") String inputUID, @Assisted("input") String input);
+	MapWorkerTask createMapWorkerTask(@Assisted("uuid") String mapReduceTaskUUID,
+									  MapInstruction mapInstr,
+									  CombinerInstruction combinerInstr,
+									  @Assisted("inputUUID") String inputUID,
+									  @Assisted("input") String input);
 
 	/**
 	 * Erstellt eine neue Instanz vom ReduceWorkerTask mit den übergebenen Parametern. Wenn der Konstruktor der
@@ -44,6 +47,8 @@ public interface WorkerTaskFactory {
 	 *            die zu verwendenden ReduceInstruction
 	 * @return eine neue Instanz eines ReduceWorkerTask
 	 */
-	ReduceWorkerTask createReduceWorkerTask(@Assisted("uuid") String mapReduceTaskUUID, @Assisted("key") String key,
-			ReduceInstruction reduceInstr, @Assisted List<KeyValuePair> toDo);
+	ReduceWorkerTask createReduceWorkerTask(@Assisted("uuid") String mapReduceTaskUUID,
+											@Assisted("key") String key,
+											@Assisted ReduceInstruction reduceInstr,
+											@Assisted List<KeyValuePair> toDo);
 }

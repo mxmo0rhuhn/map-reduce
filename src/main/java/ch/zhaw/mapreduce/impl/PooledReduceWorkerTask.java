@@ -62,8 +62,11 @@ public class PooledReduceWorkerTask implements ReduceWorkerTask, ReduceEmitter {
 	private volatile State curState = State.INITIATED;
 
 	@Inject
-	public PooledReduceWorkerTask(Pool pool, @Assisted("uuid") String mapReduceTaskUUID, @Assisted("key") String key,
-			@Assisted ReduceInstruction reduceInstruction, @Assisted List<KeyValuePair> toDo) {
+	public PooledReduceWorkerTask(Pool pool,
+							      @Assisted("uuid") String mapReduceTaskUUID,
+							      @Assisted("key") String key,
+							      @Assisted ReduceInstruction reduceInstruction,
+							      @Assisted List<KeyValuePair> toDo) {
 		this.pool = pool;
 		this.mapReduceTaskUUID = mapReduceTaskUUID;
 		this.key = key;
@@ -81,7 +84,7 @@ public class PooledReduceWorkerTask implements ReduceWorkerTask, ReduceEmitter {
 	/** {@inheritDoc} */
 	@Override
 	public void emit(String result) {
-		this.processingWorker.storeKeyValuePair(this.mapReduceTaskUUID, this.key, result);
+		this.processingWorker.storeReduceResult(this.mapReduceTaskUUID, new KeyValuePair(this.key, result));
 	}
 
 	/** {@inheritDoc} */

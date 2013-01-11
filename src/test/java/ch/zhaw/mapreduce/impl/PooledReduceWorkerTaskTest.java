@@ -30,9 +30,6 @@ import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.ReduceEmitter;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.WorkerTask.State;
-import ch.zhaw.mapreduce.impl.LocalThreadPool;
-import ch.zhaw.mapreduce.impl.PooledReduceWorkerTask;
-import ch.zhaw.mapreduce.impl.ThreadWorker;
 
 @RunWith(JMock.class)
 public class PooledReduceWorkerTaskTest {
@@ -52,12 +49,6 @@ public class PooledReduceWorkerTaskTest {
 		this.redInstr = this.context.mock(ReduceInstruction.class);
 		this.keyVals = Arrays.asList(new KeyValuePair[] { new KeyValuePair("hello", "1"), new KeyValuePair("foo", "1"),
 				new KeyValuePair("hello", "2") });
-	}
-
-	@Test
-	public void shouldSetKey() {
-		PooledReduceWorkerTask task = new PooledReduceWorkerTask(p, "mruid", "key", redInstr, keyVals);
-		assertEquals("key", task.getUUID());
 	}
 
 	@Test
@@ -205,7 +196,7 @@ public class PooledReduceWorkerTaskTest {
 		}, keyVals);
 		assertTrue(task.runReduceTask());
 		assertTrue(exec.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
-		List<KeyValuePair> results = worker.getStoredKeyValuePairs("mruid");
+		List<KeyValuePair> results = worker.getReduceResults("mruid");
 		assertEquals(1, results.size());
 		assertEquals(new KeyValuePair("key", "value"), results.get(0));
 	}

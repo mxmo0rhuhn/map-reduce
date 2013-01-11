@@ -31,9 +31,6 @@ import ch.zhaw.mapreduce.MapEmitter;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.WorkerTask.State;
-import ch.zhaw.mapreduce.impl.LocalThreadPool;
-import ch.zhaw.mapreduce.impl.PooledMapWorkerTask;
-import ch.zhaw.mapreduce.impl.ThreadWorker;
 
 @RunWith(JMock.class)
 public class PooledMapWorkerTaskTest {
@@ -102,7 +99,7 @@ public class PooledMapWorkerTaskTest {
 		pool.donateWorker(worker);
 		task.runMapTask();
 		assertTrue(threadExec.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
-		List<KeyValuePair> vals = worker.getStoredKeyValuePairs("mrtUuid");
+		List<KeyValuePair> vals = worker.getMapResults("mrtUuid");
 		assertTrue(vals.contains(new KeyValuePair("hello", "1")));
 		assertEquals(1, vals.size());
 	}

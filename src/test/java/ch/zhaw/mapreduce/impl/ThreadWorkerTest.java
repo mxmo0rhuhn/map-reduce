@@ -1,9 +1,7 @@
 package ch.zhaw.mapreduce.impl;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -21,7 +19,6 @@ import org.junit.runner.RunWith;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.impl.ThreadWorker;
 
 @RunWith(JMock.class)
 public class ThreadWorkerTest {
@@ -54,35 +51,57 @@ public class ThreadWorkerTest {
 	}
 
 	@Test
-	public void shouldReturnPreviouslyStoredValues() {
+	public void shouldReturnPreviouslyStoredMapValues() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.storeKeyValuePair("mrtuid", "key", "value");
-		List<KeyValuePair> vals = worker.getStoredKeyValuePairs("mrtuid");
+		worker.storeMapResult("mrtuid", new KeyValuePair("key", "value"));
+		List<KeyValuePair> vals = worker.getMapResults("mrtuid");
 		assertTrue(vals.contains(new KeyValuePair("key", "value")));
 		assertTrue(vals.size() == 1);
 	}
 
 	@Test
-	public void shouldAssociateResultsForSameMapReduceTask() {
+	public void shouldReturnPreviouslyStoredReduceValues() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.storeKeyValuePair("mrtuid", "key", "value");
-		worker.storeKeyValuePair("mrtuid", "key2", "value");
-		List<KeyValuePair> vals = worker.getStoredKeyValuePairs("mrtuid");
+		worker.storeReduceResult("mrtuid", new KeyValuePair("key", "value"));
+		List<KeyValuePair> vals = worker.getReduceResults("mrtuid");
+		assertTrue(vals.contains(new KeyValuePair("key", "value")));
+		assertTrue(vals.size() == 1);
+	}
+
+	@Test
+	public void shouldAssociateResultsForSameMapTask() {
+		DeterministicExecutor exec = new DeterministicExecutor();
+		ThreadWorker worker = new ThreadWorker(pool, exec);
+		worker.storeMapResult("mrtuid", new KeyValuePair("key", "value"));
+		worker.storeMapResult("mrtuid", new KeyValuePair("key2", "value"));
+		List<KeyValuePair> vals = worker.getMapResults("mrtuid");
 		assertTrue(vals.contains(new KeyValuePair("key", "value")));
 		assertTrue(vals.contains(new KeyValuePair("key2", "value")));
 		assertTrue(vals.size() == 2);
 	}
 
 	@Test
-	public void shouldHandleMultipleMapReduceUIds() {
+	public void shouldAssociateResultsForSameReduceTask() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.storeKeyValuePair("mrtuid1", "key", "value");
-		worker.storeKeyValuePair("mrtuid2", "key2", "value2");
-		List<KeyValuePair> vals1 = worker.getStoredKeyValuePairs("mrtuid1");
-		List<KeyValuePair> vals2 = worker.getStoredKeyValuePairs("mrtuid2");
+		worker.storeReduceResult("mrtuid", new KeyValuePair("key", "value"));
+		worker.storeReduceResult("mrtuid", new KeyValuePair("key2", "value"));
+		List<KeyValuePair> vals = worker.getReduceResults("mrtuid");
+		assertTrue(vals.contains(new KeyValuePair("key", "value")));
+		assertTrue(vals.contains(new KeyValuePair("key2", "value")));
+		assertTrue(vals.size() == 2);
+	}
+
+	@Test
+	public void shouldHandleMultipleMapUIds() {
+		DeterministicExecutor exec = new DeterministicExecutor();
+		ThreadWorker worker = new ThreadWorker(pool, exec);
+		worker.storeMapResult("mrtuid1", new KeyValuePair("key", "value"));
+		worker.storeMapResult("mrtuid2", new KeyValuePair("key2", "value2"));
+		List<KeyValuePair> vals1 = worker.getMapResults("mrtuid1");
+		List<KeyValuePair> vals2 = worker.getMapResults("mrtuid2");
 		assertTrue(vals1.contains(new KeyValuePair("key", "value")));
 		assertTrue(vals2.contains(new KeyValuePair("key2", "value2")));
 		assertTrue(vals1.size() == 1);
@@ -90,33 +109,17 @@ public class ThreadWorkerTest {
 	}
 
 	@Test
-	public void shouldReplaceKeyValuePairs() {
+	public void shouldHandleMultipleReduceUIds() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.storeKeyValuePair("mrtuid1", "key", "value");
-		List<KeyValuePair> vals1 = worker.getStoredKeyValuePairs("mrtuid1");
+		worker.storeReduceResult("mrtuid1", new KeyValuePair("key", "value"));
+		worker.storeReduceResult("mrtuid2", new KeyValuePair("key2", "value2"));
+		List<KeyValuePair> vals1 = worker.getReduceResults("mrtuid1");
+		List<KeyValuePair> vals2 = worker.getReduceResults("mrtuid2");
 		assertTrue(vals1.contains(new KeyValuePair("key", "value")));
+		assertTrue(vals2.contains(new KeyValuePair("key2", "value2")));
 		assertTrue(vals1.size() == 1);
-
-		worker.replaceStoredKeyValuePairs("mrtuid1",
-				Arrays.asList(new KeyValuePair[] { new KeyValuePair("key2", "value2") }));
-		vals1 = worker.getStoredKeyValuePairs("mrtuid1");
-		assertTrue(vals1.contains(new KeyValuePair("key2", "value2")));
-		assertTrue(vals1.size() == 1);
-
-		vals1 = worker.getStoredKeyValuePairs("mrtuid1");
-		assertFalse(vals1.contains(new KeyValuePair("key", "value")));
-	}
-	
-	@Test
-	public void shouldSetValueIfReplaceIsInvokedForAnInexistentKey() {
-		DeterministicExecutor exec = new DeterministicExecutor();
-		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.replaceStoredKeyValuePairs("mrtuid1",
-				Arrays.asList(new KeyValuePair[] { new KeyValuePair("key2", "value2") }));
-		List<KeyValuePair> vals1 = worker.getStoredKeyValuePairs("mrtuid1");
-		assertTrue(vals1.contains(new KeyValuePair("key2", "value2")));
-		assertTrue(vals1.size() == 1);
+		assertTrue(vals2.size() == 1);
 	}
 
 }
