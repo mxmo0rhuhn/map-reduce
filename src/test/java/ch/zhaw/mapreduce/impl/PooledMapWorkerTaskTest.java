@@ -190,7 +190,7 @@ public class PooledMapWorkerTaskTest {
 					throw new IllegalStateException(e);
 				}
 			}
-		}, combInstr, inputUUID, input);
+		}, null, inputUUID, input);
 		task.runMapTask();
 		Thread.yield();
 		Thread.sleep(200);
@@ -227,7 +227,7 @@ public class PooledMapWorkerTaskTest {
 					throw new NullPointerException();
 				}
 			}
-		}, combInstr, inputUUID, input);
+		}, null, inputUUID, input);
 		task.runMapTask();
 		assertTrue(threadExec1.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.FAILED, task.getCurrentState());
