@@ -174,6 +174,17 @@ public class ThreadWorkerTest {
 		worker.storeMapResult(mrtuuid, new KeyValuePair("key", "value"));
 		assertEquals(0, worker.getReduceResults(mrtuuid).size());
 	}
+	
+	@Test
+	public void shouldNotOverrideExistingResultsForSameMapreducetaskuuid() {
+		DeterministicExecutor exec = new DeterministicExecutor();
+		ThreadWorker worker = new ThreadWorker(pool, exec);
+		worker.execute(workerTask);
+		worker.storeMapResult(mrtuuid, new KeyValuePair("key1", "value1"));
+		worker.execute(workerTask);
+		worker.storeMapResult(mrtuuid, new KeyValuePair("key2", "value2"));
+		assertTrue(worker.getMapResults(mrtuuid).contains(new KeyValuePair("key1", "value1")));
+	}
 
 
 }

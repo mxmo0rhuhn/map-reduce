@@ -53,8 +53,8 @@ public class ThreadWorker implements Worker {
 	 */
 	@Override
 	public void execute(final WorkerTask task) {
-		mapResults.put(task.getMapReduceTaskUUID(), new LinkedList<KeyValuePair>());
-		reduceResults.put(task.getMapReduceTaskUUID(), new LinkedList<KeyValuePair>());
+		mapResults.putIfAbsent(task.getMapReduceTaskUUID(), new LinkedList<KeyValuePair>());
+		reduceResults.putIfAbsent(task.getMapReduceTaskUUID(), new LinkedList<KeyValuePair>());
 		
 		this.executor.execute(new Runnable() {
 			@Override
