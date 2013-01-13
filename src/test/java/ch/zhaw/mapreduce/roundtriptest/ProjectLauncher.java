@@ -56,12 +56,12 @@ public class ProjectLauncher {
 				result = task.compute(new HundredWordsInputSplitter(teststring));
 				
 				for (Entry<String, String> entry : result.entrySet()) {
-					System.out.println("Sollte: " + i + " Vorkommen: " + entry.getValue());
+					System.out.println("Sollte: " + i + "wort: " + entry.getKey() + " Vorkommen: " + entry.getValue());
 				}			
 				
 			Assert.assertEquals(i, Integer.parseInt(result.get("test")));
 			
-			teststring += "test";
+			teststring += " test";
 		}
 		MapReduceTask first = new MapReduceTask(new WordFrequencyMapInstruction(), new WordFrequencyReduceInstruction());
 		System.out.println("10");
