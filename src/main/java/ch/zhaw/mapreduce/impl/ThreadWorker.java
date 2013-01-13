@@ -1,9 +1,9 @@
 package ch.zhaw.mapreduce.impl;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 
 import javax.inject.Inject;
@@ -22,9 +22,9 @@ import ch.zhaw.mapreduce.registry.WorkerExecutor;
  */
 public class ThreadWorker implements Worker {
 
-	private final Map<String, List<KeyValuePair>> mapResults = new HashMap<String, List<KeyValuePair>>();
+	private final ConcurrentMap<String, List<KeyValuePair>> mapResults = new ConcurrentHashMap<String, List<KeyValuePair>>();
 	
-	private final Map<String, List<KeyValuePair>> reduceResults = new HashMap<String, List<KeyValuePair>>();
+	private final ConcurrentMap<String, List<KeyValuePair>> reduceResults = new ConcurrentHashMap<String, List<KeyValuePair>>();
 
 	/**
 	 * Aus dem Pool kommt der Worker her und dahin muss er auch wieder zurueck.
@@ -53,6 +53,9 @@ public class ThreadWorker implements Worker {
 	 */
 	@Override
 	public void execute(final WorkerTask task) {
+		mapResults.putIfAbsent(task.getMapReduceTaskUUID(), new LinkedList<KeyValuePair>());
+		reduceResults.putIfAbsent(task.getMapReduceTaskUUID(), new LinkedList<KeyValuePair>());
+		
 		this.executor.execute(new Runnable() {
 			@Override
 			public void run() {
@@ -68,17 +71,12 @@ public class ThreadWorker implements Worker {
 	 */
 	@Override
 	public void storeMapResult(String mapReduceTaskUID, KeyValuePair pair) {
-		// TODO: Sollte auch save sein, wenn gerade ein anderer MapReduce Task an seine Daten will
-		List<KeyValuePair> newKeyValues;
-
-		if (mapResults.containsKey(mapReduceTaskUID)) {
-			newKeyValues = mapResults.get(mapReduceTaskUID);
+		List<KeyValuePair> pairs = mapResults.get(mapReduceTaskUID);
+		if (pairs != null) {
+			pairs.add(pair);
 		} else {
-			newKeyValues = new LinkedList<KeyValuePair>();
+			throw new IllegalStateException("MapResults not initialized for: " + mapReduceTaskUID);
 		}
-
-		newKeyValues.add(pair);
-		mapResults.put(mapReduceTaskUID, newKeyValues);
 	}
 
 	/**
@@ -86,17 +84,12 @@ public class ThreadWorker implements Worker {
 	 */
 	@Override
 	public void storeReduceResult(String mapReduceTaskUID, KeyValuePair pair) {
-		// TODO: Sollte auch save sein, wenn gerade ein anderer MapReduce Task an seine Daten will
-		List<KeyValuePair> newKeyValues;
-
-		if (reduceResults.containsKey(mapReduceTaskUID)) {
-			newKeyValues = reduceResults.get(mapReduceTaskUID);
+		List<KeyValuePair> pairs = reduceResults.get(mapReduceTaskUID);
+		if (pairs != null) {
+			pairs.add(pair);
 		} else {
-			newKeyValues = new LinkedList<KeyValuePair>();
+			throw new IllegalStateException("ReduceResults not initialized for: " + mapReduceTaskUID);
 		}
-
-		newKeyValues.add(pair);
-		reduceResults.put(mapReduceTaskUID, newKeyValues);
 	}
 
 	/**
@@ -113,5 +106,12 @@ public class ThreadWorker implements Worker {
 	@Override
 	public List<KeyValuePair> getReduceResults(String mapReduceTaskUID) {
 		return this.reduceResults.get(mapReduceTaskUID);
+	}
+
+	/** {@inheritDoc} */
+	@Override
+	public void cleanAllResults(String mapReduceTaskUUID) {
+		this.mapResults.remove(mapReduceTaskUUID);
+		this.reduceResults.remove(mapReduceTaskUUID);
 	}
 }

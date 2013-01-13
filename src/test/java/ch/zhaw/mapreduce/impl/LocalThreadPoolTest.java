@@ -88,6 +88,7 @@ public class LocalThreadPoolTest {
 
 		this.context.checking(new Expectations() {
 			{
+				exactly(2).of(task).getMapReduceTaskUUID();
 				one(task).doWork(worker);
 			}
 		});
@@ -106,6 +107,7 @@ public class LocalThreadPoolTest {
 		pool.donateWorker(worker);
 		this.context.checking(new Expectations() {
 			{
+				exactly(2).of(workerTask).getMapReduceTaskUUID();
 				oneOf(workerTask).doWork(worker);
 			}
 		});

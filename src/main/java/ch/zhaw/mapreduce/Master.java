@@ -16,12 +16,16 @@ import javax.inject.Inject;
 import ch.zhaw.mapreduce.registry.MapReduceTaskUUID;
 
 public final class Master {
+	
+	private final Pool pool;
 
 	private final String mapReduceTaskUUID;
+	
 	private final WorkerTaskFactory runnerFactory;
 
 	@Inject
-	public Master(WorkerTaskFactory runnerFactory, @MapReduceTaskUUID String mapReduceTaskUUID) {
+	public Master(Pool pool, WorkerTaskFactory runnerFactory, @MapReduceTaskUUID String mapReduceTaskUUID) {
+		this.pool = pool;
 		this.runnerFactory = runnerFactory;
 		this.mapReduceTaskUUID = mapReduceTaskUUID;
 	}
@@ -103,6 +107,7 @@ public final class Master {
 			}
 		}
 
+		this.pool.cleanResults(mapReduceTaskUUID);
 		return resultStructure;
 	}
 
@@ -134,7 +139,7 @@ public final class Master {
 			}
 			// Wartet eine Sekunde abzüglich der Prozentzahl an bereits erledigten Aufgaben
 			// "+1" um die DIV/0 zu verhindern
-			Thread.sleep(1000 - 1000 * (doneTasks.size() / (doneTasks.size() + undoneTasks.size() + 1)));
+//			Thread.sleep(1000 - 1000 * (doneTasks.size() / (doneTasks.size() + undoneTasks.size() + 1)));
 
 		} while (undoneTasks.size() > 0);
 	}

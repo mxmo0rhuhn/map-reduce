@@ -1,8 +1,10 @@
 package ch.zhaw.mapreduce.impl;
 
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -24,6 +26,8 @@ import ch.zhaw.mapreduce.registry.PoolExecutor;
  */
 @Singleton
 public final class LocalThreadPool implements Pool {
+	
+	private final List<Worker> existingWorkers = new CopyOnWriteArrayList<Worker>();
 
 	// Liste mit allen Workern
 	private final Queue<Worker> workingWorker = new ConcurrentLinkedQueue<Worker>();
@@ -70,7 +74,7 @@ public final class LocalThreadPool implements Pool {
 	 */
 	@Override
 	public int getCurrentPoolSize() {
-		return availableWorkerBlockingQueue.size() + workingWorker.size();
+		return existingWorkers.size();
 	}
 
 	/**
@@ -103,6 +107,7 @@ public final class LocalThreadPool implements Pool {
 	 */
 	@Override
 	public boolean donateWorker(Worker newWorker) {
+		this.existingWorkers.add(newWorker);
 		return availableWorkerBlockingQueue.offer(newWorker);
 	}
 
@@ -126,5 +131,14 @@ public final class LocalThreadPool implements Pool {
 			}
 		}
 
+	}
+
+	/** {@inheritDoc} */
+	@Override
+	public void cleanResults(String mapReduceTaskUUID) {
+		Worker[] allWorkers = this.existingWorkers.toArray(new Worker[0]);
+		for (Worker worker : allWorkers) {
+			worker.cleanAllResults(mapReduceTaskUUID);
+		}
 	}
 }

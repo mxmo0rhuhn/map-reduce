@@ -48,7 +48,7 @@ public interface Worker {
 	 *            Die eindeutige ID des MapReduceTask desssen zugehörige Daten zurückgegeben werden sollen.
 	 */
 	List<KeyValuePair> getReduceResults(String mapReduceTaskUID);
-	
+
 	/**
 	 * Gibt die derzeit auf dem Worker gespeicherten KeyValue Pairs zurück
 	 * 
@@ -56,4 +56,12 @@ public interface Worker {
 	 *            Die eindeutige ID des MapReduceTask desssen zugehörige Daten zurückgegeben werden sollen.
 	 */
 	List<KeyValuePair> getMapResults(String mapReduceTaskUID);
+
+	/**
+	 * Räumt in einem Worker alle Resultate auf (Speicher freigeben). Zu diesem Zeitpunkt ist die Map- und Reduce-Phase
+	 * abgeschlossen.
+	 * 
+	 * @param mapReduceTaskUUID diese Berechnung ist fertig
+	 */
+	void cleanAllResults(String mapReduceTaskUUID);
 }
