@@ -51,7 +51,7 @@ public class PerformanceTest {
 		});
 		
 		// wie viele Strings sollen erstellt werden
-		int inputs = (int) Math.pow(10, 5);
+		int inputs = (int) Math.pow(10, 4);
 		// wie lang soll jeder einzelne sein?
 		int chunkSize = (int) Math.pow(10, 3);
 		
