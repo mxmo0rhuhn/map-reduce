@@ -1,10 +1,12 @@
 package ch.zhaw.mapreduce.impl;
 
 
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -199,6 +201,11 @@ public class PooledReduceWorkerTaskTest {
 		List<KeyValuePair> results = worker.getReduceResults("mruid");
 		assertEquals(1, results.size());
 		assertEquals(new KeyValuePair("key", "value"), results.get(0));
+	}
+	
+	@Test
+	public void shouldSetKey() {
+		fail("die methode getUUID sollte nicht den key liefern. das ist verwirrlich!");
 	}
 
 }
