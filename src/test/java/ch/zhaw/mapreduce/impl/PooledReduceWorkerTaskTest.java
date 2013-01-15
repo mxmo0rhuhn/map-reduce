@@ -203,9 +203,5 @@ public class PooledReduceWorkerTaskTest {
 		assertEquals(new KeyValuePair("key", "value"), results.get(0));
 	}
 	
-	@Test
-	public void shouldSetKey() {
-		fail("die methode getUUID sollte nicht den key liefern. das ist verwirrlich!");
-	}
 
 }
