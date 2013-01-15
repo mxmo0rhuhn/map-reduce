@@ -185,6 +185,20 @@ public class ThreadWorkerTest {
 		worker.storeMapResult(mrtuuid, new KeyValuePair("key2", "value2"));
 		assertTrue(worker.getMapResults(mrtuuid).contains(new KeyValuePair("key1", "value1")));
 	}
+	
+	@Test(expected=IllegalStateException.class)
+	public void shouldNotAcceptMapResultIfNotInitialized() {
+		DeterministicExecutor exec = new DeterministicExecutor();
+		ThreadWorker worker = new ThreadWorker(pool, exec);
+		worker.storeMapResult(mrtuuid, new KeyValuePair("key1", "value1"));
+	}
+
+	@Test(expected=IllegalStateException.class)
+	public void shouldNotAcceptReduceResultIfNotInitialized() {
+		DeterministicExecutor exec = new DeterministicExecutor();
+		ThreadWorker worker = new ThreadWorker(pool, exec);
+		worker.storeReduceResult(mrtuuid, new KeyValuePair("key1", "value1"));
+	}
 
 
 }
