@@ -41,4 +41,9 @@ public final class KeyValuePair {
 		KeyValuePair other = (KeyValuePair) obj;
 		return key.equals(other.key) && value.equals(other.value);
 	}
+
+	@Override
+	public String toString() {
+		return key + '=' + value;
+	}
 }
