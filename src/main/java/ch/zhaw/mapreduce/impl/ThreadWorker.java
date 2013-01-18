@@ -114,4 +114,11 @@ public class ThreadWorker implements Worker {
 		this.mapResults.remove(mapReduceTaskUUID);
 		this.reduceResults.remove(mapReduceTaskUUID);
 	}
+	
+	/** {@inheritDoc} */
+	@Override
+	public void replaceMapResult(String mapReduceTaskUID, List<KeyValuePair> newResult) {
+		this.mapResults.put(mapReduceTaskUID, newResult);
+	}
+	
 }

@@ -94,10 +94,9 @@ public class PooledMapWorkerTask implements MapWorkerTask, MapEmitter {
 			// Alle Ergebnisse verdichten. Die Ergebnisse aus der derzeitigen Worker sollen
 			// einbezogen werden.
 			if (this.combinerInstruction != null) {
-				List<KeyValuePair> vals = processingWorker.getMapResults(mapReduceTaskUID);
-				if (vals != null) {
-					this.combinerInstruction.combine(vals.iterator());
-				}
+				List<KeyValuePair> beforeCombining = processingWorker.getMapResults(mapReduceTaskUID);
+				List<KeyValuePair> afterCombining = this.combinerInstruction.combine(beforeCombining.iterator());
+				processingWorker.replaceMapResult(mapReduceTaskUID, afterCombining);
 			}
 
 			this.currentState = State.COMPLETED;

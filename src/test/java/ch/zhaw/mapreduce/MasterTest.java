@@ -5,7 +5,6 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -37,8 +36,6 @@ public class MasterTest {
 
 	private CombinerInstruction combinerInstruction;
 
-	private Iterator<String> input;
-
 	@Before
 	public void initMock() {
 		this.context = new JUnit4Mockery();
@@ -47,7 +44,6 @@ public class MasterTest {
 		this.mapInstruction = this.context.mock(MapInstruction.class);
 		this.reduceInstruction = this.context.mock(ReduceInstruction.class);
 		this.combinerInstruction = this.context.mock(CombinerInstruction.class);
-		this.input = this.context.mock(Iterator.class);
 	}
 
 	@Test
@@ -166,6 +162,11 @@ class MockWorker implements Worker {
 	@Override
 	public void cleanAllResults(String mapReduceTaskUUID) {
 		this.pairs.clear();
+	}
+	
+	@Override
+	public void replaceMapResult(String mapReduceTaskUID, List<KeyValuePair> newResult) {
+		this.pairs.put(mapReduceTaskUID, newResult);
 	}
 
 }

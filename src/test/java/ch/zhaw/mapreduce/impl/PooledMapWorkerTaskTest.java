@@ -6,8 +6,11 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
@@ -42,9 +45,9 @@ public class PooledMapWorkerTaskTest {
 	private MapInstruction mapInstr;
 
 	private CombinerInstruction combInstr;
-	
+
 	private String inputUUID;
-	
+
 	private String input;
 
 	@Before
@@ -164,6 +167,28 @@ public class PooledMapWorkerTaskTest {
 		assertEquals(State.COMPLETED, task.getCurrentState());
 		assertSame(worker, task.getWorker());
 	}
+	
+	@Test
+	public void shouldBeCompletedWithoutEmittingDuringMap() {
+		Executor poolExec = Executors.newSingleThreadExecutor();
+		ExactCommandExecutor taskExec = new ExactCommandExecutor(1);
+		final LocalThreadPool pool = new LocalThreadPool(poolExec);
+		pool.init();
+		ThreadWorker worker = new ThreadWorker(pool, taskExec);
+		pool.donateWorker(worker);
+		final PooledMapWorkerTask task = new PooledMapWorkerTask(pool, "mrtUuid", new MapInstruction() {
+			@Override public void map(MapEmitter emitter, String toDo) { }
+		}, combInstr, inputUUID, input);
+		this.context.checking(new Expectations() {
+			{
+				oneOf(combInstr).combine(with(aNonNull(Iterator.class)));
+			}
+		});
+		task.runMapTask();
+		assertTrue(taskExec.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
+		assertEquals(State.COMPLETED, task.getCurrentState());
+		assertSame(worker, task.getWorker());
+	}
 
 	@Test
 	public void shouldSetStateToInitiatedInitially() {
@@ -248,5 +273,51 @@ public class PooledMapWorkerTaskTest {
 		});
 		task.runMapTask();
 		assertEquals(State.ENQUEUED, task.getCurrentState());
+	}
+	
+	@Test
+	public void shouldCombineAfterTask() {
+		final Executor poolExec = Executors.newSingleThreadExecutor();
+		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
+		final LocalThreadPool pool = new LocalThreadPool(poolExec);
+		final ThreadWorker worker = new ThreadWorker(pool, threadExec);
+		final PooledMapWorkerTask task = new PooledMapWorkerTask(pool, "mrtuid", new WordCounterMapper(), new WordCounterCombiner(),
+				"inputUUID", "foo bar foo");
+		pool.init();
+		pool.donateWorker(worker);
+		task.runMapTask();
+		Thread.yield();
+		assertTrue(threadExec.waitForExpectedTasks(300, TimeUnit.MILLISECONDS));
+		List<KeyValuePair> res = worker.getMapResults("mrtuid");
+		assertTrue(res.contains(new KeyValuePair("foo", "1 1")));
+		assertTrue(res.contains(new KeyValuePair("bar", "1")));
+	}
+
+}
+
+class WordCounterMapper implements MapInstruction {
+	@Override
+	public void map(MapEmitter emitter, String toDo) {
+		for (String word : toDo.trim().split(" ")) {
+			emitter.emitIntermediateMapResult(word.trim(), "1");
+		}
+	}
+}
+
+class WordCounterCombiner implements CombinerInstruction {
+	@Override
+	public List<KeyValuePair> combine(Iterator<KeyValuePair> toCombine) {
+		Map<String, KeyValuePair> combined = new HashMap<String, KeyValuePair>();
+		while (toCombine.hasNext()) {
+			KeyValuePair val = toCombine.next();
+			if (!combined.containsKey(val.getKey())) {
+				combined.put(val.getKey(), val);
+			} else {
+				KeyValuePair newVal = new KeyValuePair(val.getKey(), combined.get(val.getKey()).getValue() + ' '
+						+ val.getValue());
+				combined.put(val.getKey(), newVal);
+			}
+		}
+		return new ArrayList<KeyValuePair>(combined.values());
 	}
 }

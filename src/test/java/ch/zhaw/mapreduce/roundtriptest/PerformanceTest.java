@@ -51,15 +51,15 @@ public class PerformanceTest {
 		});
 		
 		// wie viele Strings sollen erstellt werden
-		int inputs = (int) Math.pow(10, 4);
+		int inputs = (int) Math.pow(10, 2);
 		// wie lang soll jeder einzelne sein?
-		int chunkSize = (int) Math.pow(10, 3);
+		int chunkSize = (int) Math.pow(10, 2);
 		
 		
 		long start = System.currentTimeMillis();
 		Map<String, String> results = mapReduce.compute(generateIterator(inputs, chunkSize));
 		long time = System.currentTimeMillis() - start;
-		System.out.println("Time: " + time /*+ ", Results: " + results*/);
+		//System.out.println("Time: " + time /*+ ", Results: " + results*/);
 		int sum = 0;
 		for (Map.Entry<String, String> entry : results.entrySet()) {
 			sum += Integer.parseInt(entry.getValue());

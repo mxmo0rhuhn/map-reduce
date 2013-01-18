@@ -78,4 +78,10 @@ public class KeyValuePairTest {
 		Object o = new Object();
 		assertFalse(kvp.equals(o));
 	}
+	
+	@Test
+	public void shouldShowKeyAndValue() {
+		KeyValuePair kvp = new KeyValuePair("key", "value");
+		assertEquals("key=value", kvp.toString());
+	}
 }

@@ -125,6 +125,12 @@ public class PooledReduceWorkerTaskTest {
 		Thread.sleep(200);
 		assertEquals(State.INPROGRESS, task.getCurrentState());
 	}
+	
+	@Test
+	public void shouldUseKeyAsUUID() {
+		PooledReduceWorkerTask task = new PooledReduceWorkerTask(p, "mrtuid", "key", redInstr, keyVals);
+		assertEquals("key", task.getUUID());
+	}
 
 	@Test
 	public void shouldBeFailedAfterException() throws InterruptedException {

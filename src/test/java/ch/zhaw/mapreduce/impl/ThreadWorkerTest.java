@@ -1,9 +1,10 @@
 package ch.zhaw.mapreduce.impl;
 
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -199,6 +200,33 @@ public class ThreadWorkerTest {
 		ThreadWorker worker = new ThreadWorker(pool, exec);
 		worker.storeReduceResult(mrtuuid, new KeyValuePair("key1", "value1"));
 	}
+	
+	@Test
+	public void shoudReplaceResult() {
+		DeterministicExecutor exec = new DeterministicExecutor();
+		ThreadWorker worker = new ThreadWorker(pool, exec);
+		worker.execute(workerTask);
+		worker.storeMapResult(mrtuuid, new KeyValuePair("key1", "value1"));
+		assertEquals(1, worker.getMapResults(mrtuuid).size());
+		assertEquals(new KeyValuePair("key1", "value1"), worker.getMapResults(mrtuuid).get(0));
+		
+		worker.replaceMapResult(mrtuuid, Arrays.asList(new KeyValuePair[]{new KeyValuePair("key1", "value2")}));
+		assertEquals(1, worker.getMapResults(mrtuuid).size());
+		assertEquals(new KeyValuePair("key1", "value2"), worker.getMapResults(mrtuuid).get(0));
+	}
 
+	@Test
+	public void shoudNotTouchOtherWhenReplacing() {
+		DeterministicExecutor exec = new DeterministicExecutor();
+		ThreadWorker worker = new ThreadWorker(pool, exec);
+		worker.execute(workerTask);
+		worker.execute(workerTask2);
+		worker.storeMapResult(mrtuuid, new KeyValuePair("key1", "value1"));
+		worker.storeMapResult(mrtuuid2, new KeyValuePair("key1", "value1"));
+		
+		worker.replaceMapResult(mrtuuid, Arrays.asList(new KeyValuePair[]{new KeyValuePair("key1", "value2")}));
+		assertEquals(1, worker.getMapResults(mrtuuid2).size());
+		assertEquals(new KeyValuePair("key1", "value1"), worker.getMapResults(mrtuuid2).get(0));
+	}
 
 }

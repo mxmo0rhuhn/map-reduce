@@ -61,7 +61,19 @@ public interface Worker {
 	 * Räumt in einem Worker alle Resultate auf (Speicher freigeben). Zu diesem Zeitpunkt ist die Map- und Reduce-Phase
 	 * abgeschlossen.
 	 * 
-	 * @param mapReduceTaskUUID diese Berechnung ist fertig
+	 * @param mapReduceTaskUUID
+	 *            diese Berechnung ist fertig
 	 */
 	void cleanAllResults(String mapReduceTaskUUID);
+
+	/**
+	 * Ersetzt das Resultat einer Map-Berechnung mit dem neuen Resultat. Diese Methode wird typischerweise nach der
+	 * Combine-Phase aufgerufen um das urspruengliche Resultat mit dem kombinierten auszuwechseln.
+	 * 
+	 * @param mapReduceTaskUID
+	 *            zugehoerige globale ID
+	 * @param newResult
+	 *            neues Resultat
+	 */
+	void replaceMapResult(String mapReduceTaskUID, List<KeyValuePair> newResult);
 }
