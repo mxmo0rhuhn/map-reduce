@@ -1,48 +1,35 @@
-/**
- * 
- */
 package ch.zhaw.mapreduce.workers;
+
 
 import java.util.List;
 
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.WorkerTask;
 
-/**
- * @author Max
- *
- */
-public class SocketWorker implements Worker {
+public class AndroidWorker implements Worker {
+	
+	private static final String PROJECT_ID = "367594230701";
+	
+	private static final String API_KEY = "AIzaSyD-5CCw5L7oMij3i2OGa2Ww5Tk_YksTDyA";
 
-	/** 
-	 * Verbindet sich über IP & Port mit Agent, sendet Instruktionen und Input. 
-	 * @see ch.zhaw.mapreduce.workers.Worker#executeTask(ch.zhaw.mapreduce.WorkerTask)
-	 */
 	@Override
 	public void executeTask(WorkerTask task) {
+		// TODO Auto-generated method stub
+
 	}
 
-	/* (non-Javadoc)
-	 * @see ch.zhaw.mapreduce.workers.Worker#getReduceResult(java.lang.String, java.lang.String)
-	 */
 	@Override
 	public List<KeyValuePair> getReduceResult(String mapReduceTaskUID, String inputUID) {
 		// TODO Auto-generated method stub
 		return null;
 	}
-  
-	/* (non-Javadoc)
-	 * @see ch.zhaw.mapreduce.workers.Worker#getMapResult(java.lang.String, java.lang.String)
-	 */
+
 	@Override
 	public List<KeyValuePair> getMapResult(String mapReduceTaskUID, String inputUID) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
-	/* (non-Javadoc)
-	 * @see ch.zhaw.mapreduce.workers.Worker#cleanAllResults(java.lang.String)
-	 */
 	@Override
 	public void cleanAllResults(String mapReduceTaskUUID) {
 		// TODO Auto-generated method stub
