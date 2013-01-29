@@ -18,6 +18,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.matcher.Matchers;
+import com.google.inject.name.Names;
 
 /**
  * In dieser Klasse befinden sich die Bindings für Guice - also welche Implementationen für welche Interfaces verwendet
@@ -41,6 +42,11 @@ public class MapReduceConfig extends AbstractModule {
 
 		bind(Worker.class).to(ThreadWorker.class);
 		bind(Pool.class).to(Pool.class);
+		
+		bind(String.class).annotatedWith(Names.named("GCM_API_KEY")).toInstance("AIzaSyD-5CCw5L7oMij3i2OGa2Ww5Tk_YksTDyA");
+		bind(String.class).annotatedWith(Names.named("GCM_PROJECT_ID")).toInstance("367594230701");
+		bind(Integer.class).annotatedWith(Names.named("GCM_TimeToLive")).toInstance(10);
+		bind(Integer.class).annotatedWith(Names.named("GCM_Retries")).toInstance(2);
 
 		// Master soll einfach von Guice verwaltet werden. Ohne Interface
 		bind(Master.class);
