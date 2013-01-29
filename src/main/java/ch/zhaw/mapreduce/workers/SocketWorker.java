@@ -49,13 +49,4 @@ public class SocketWorker implements Worker {
 
 	}
 
-	/* (non-Javadoc)
-	 * @see ch.zhaw.mapreduce.workers.Worker#replaceMapResult(java.lang.String, java.util.List)
-	 */
-	@Override
-	public void replaceMapResult(String mapReduceTaskUID, List<KeyValuePair> newResult) {
-		// TODO Auto-generated method stub
-
-	}
-
 }
