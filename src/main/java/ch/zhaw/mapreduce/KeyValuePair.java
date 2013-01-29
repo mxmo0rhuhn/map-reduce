@@ -1,12 +1,16 @@
 package ch.zhaw.mapreduce;
 
+import java.io.Serializable;
+
 /**
  * Ein Paar aus einem Schöüssel und einem Wert.
  * 
  * @author Max
  * 
  */
-public final class KeyValuePair {
+public final class KeyValuePair implements Serializable {
+
+	private static final long serialVersionUID = 1312114797122004977L;
 
 	private final String key;
 
