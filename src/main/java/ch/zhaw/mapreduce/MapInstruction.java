@@ -6,7 +6,7 @@ package ch.zhaw.mapreduce;
  * @author Max
  * 
  */
-public interface MapInstruction extends Instruction {
+public interface MapInstruction {
 
 	/**
 	 * Diese Methode muss überschrieben werden um die Aufgabe eines MAP Tasks zu beschreiben. Es muss eine gewisse Logik vorhanden sein mit

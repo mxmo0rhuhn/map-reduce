@@ -13,7 +13,10 @@ import java.util.UUID;
 
 import javax.inject.Inject;
 
+import ch.zhaw.mapreduce.impl.MapWorkerTask;
+import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 import ch.zhaw.mapreduce.registry.MapReduceTaskUUID;
+import ch.zhaw.mapreduce.registry.Registry;
 
 public final class Master {
 
@@ -24,32 +27,34 @@ public final class Master {
 	private final WorkerTaskFactory runnerFactory;
 
 	@Inject
-	public Master(Pool pool, WorkerTaskFactory runnerFactory, @MapReduceTaskUUID String mapReduceTaskUUID) {
+	public Master(Pool pool, WorkerTaskFactory runnerFactory,
+			@MapReduceTaskUUID String mapReduceTaskUUID) {
 		this.pool = pool;
 		this.runnerFactory = runnerFactory;
 		this.mapReduceTaskUUID = mapReduceTaskUUID;
 	}
 
 	public Map<String, String> runComputation(final MapInstruction mapInstruction,
-			final CombinerInstruction combinerInstruction, final ReduceInstruction reduceInstruction,
-			Iterator<String> input) throws InterruptedException {
+			final CombinerInstruction combinerInstruction,
+			final ReduceInstruction reduceInstruction, Iterator<String> input)
+			throws InterruptedException {
 
 		// MAP
 		// Alle derzeitigen aufgaben die ausgeführt werden
 		System.out.println("Starte MAP Phase");
 		Set<WorkerTask> mapTasks = runMap(mapInstruction, combinerInstruction, input);
-		Set<Worker> mapResults = waitForWorkers(mapTasks);
+		Set<WorkerTask> mapResults = waitForWorkers(mapTasks);
 		System.out.println("MAP Phase fertig");
 
 		// SHUFFLE
 		System.out.println("Starte SHUFFLE Phase");
-		Map<String, List<KeyValuePair>> shuffleResults = runShuffle(mapResults);
+		Shuffler s = createShuffler(mapResults);
 		System.out.println("SHUFFLE Phase fertig");
 
 		// REDUCE
 		System.out.println("Starte REDUCE Phase");
-		Set<WorkerTask> reduceTasks = runReduce(reduceInstruction, shuffleResults);
-		Set<Worker> reduceResults = waitForWorkers(reduceTasks);
+		Set<WorkerTask> reduceTasks = runReduce(reduceInstruction, s.getResults());
+		Set<WorkerTask> reduceResults = waitForWorkers(reduceTasks);
 		System.out.println("REDUCE Phase fertig");
 
 		Map<String, String> results = collectResults(reduceResults);
@@ -67,49 +72,45 @@ public final class Master {
 			String inputUUID = UUID.randomUUID().toString();
 			String todo = input.next();
 
-			MapWorkerTask mapTask = runnerFactory.createMapWorkerTask(mapReduceTaskUUID, mapInstruction,
-					combinerInstruction, inputUUID, todo);
+			MapWorkerTask mapTask = runnerFactory.createMapWorkerTask(mapReduceTaskUUID,
+					mapInstruction, combinerInstruction, inputUUID, todo);
 
 			activeWorkerTasks.add(mapTask);
-			mapTask.runMapTask();
+			pool.enqueueWork(mapTask);
 		}
 		return activeWorkerTasks;
 	}
 
-	Map<String, List<KeyValuePair>> runShuffle(Collection<Worker> mapResults) {
-		Map<String, List<KeyValuePair>> reduceTasks = new HashMap<String, List<KeyValuePair>>();
-		for (Worker curMapResult : mapResults) {
-			for (KeyValuePair curKeyValuePair : curMapResult.getMapResults(mapReduceTaskUUID)) {
-				if (reduceTasks.containsKey(curKeyValuePair.getKey())) {
-					reduceTasks.get(curKeyValuePair.getKey()).add(curKeyValuePair);
-				} else {
-					List<KeyValuePair> newKeyValueList = new LinkedList<KeyValuePair>();
-					newKeyValueList.add(curKeyValuePair);
-					reduceTasks.put(curKeyValuePair.getKey(), newKeyValueList);
-				}
+	Shuffler createShuffler(Collection<WorkerTask> mapResults) {
+		Shuffler s = Registry.getComponent(Shuffler.class);
+		for (WorkerTask curMapResult : mapResults) {
+			for (KeyValuePair curKeyValuePair : curMapResult.getResults(mapReduceTaskUUID)) {
+				s.put(curKeyValuePair.getKey(), curKeyValuePair.getValue());
 			}
 		}
-		return reduceTasks;
+		return s;
 	}
 
-	Set<WorkerTask> runReduce(ReduceInstruction reduceInstruction, Map<String, List<KeyValuePair>> shuffleResults) {
+	Set<WorkerTask> runReduce(ReduceInstruction reduceInstruction,
+			Iterator<Map.Entry<String, List<KeyValuePair>>> shuffleResults) {
 		Set<WorkerTask> reduceTasks = new LinkedHashSet<WorkerTask>();
 		// reiht für jeden Input - Teil einen MapWorkerTask in den Pool ein
-		for (Map.Entry<String, List<KeyValuePair>> curKeyValuePairs : shuffleResults.entrySet()) {
+		while (shuffleResults.hasNext()) {
+			Map.Entry<String, List<KeyValuePair>> curKeyValuePairs = shuffleResults.next();
 
 			ReduceWorkerTask reduceTask = runnerFactory.createReduceWorkerTask(mapReduceTaskUUID,
 					curKeyValuePairs.getKey(), reduceInstruction, curKeyValuePairs.getValue());
 
 			reduceTasks.add(reduceTask);
-			reduceTask.runReduceTask();
+			pool.enqueueWork(reduceTask);
 		}
 		return reduceTasks;
 	}
 
-	Map<String, String> collectResults(Set<Worker> reduceResults) {
+	Map<String, String> collectResults(Set<WorkerTask> reduceResults) {
 		Map<String, String> resultStructure = new HashMap<String, String>();
-		for (Worker curWorker : reduceResults) {
-			for (KeyValuePair storedValue : curWorker.getReduceResults(mapReduceTaskUUID)) {
+		for (WorkerTask curWorker : reduceResults) {
+			for (KeyValuePair storedValue : curWorker.getResults(mapReduceTaskUUID)) {
 				resultStructure.put(storedValue.getKey(), storedValue.getValue());
 			}
 		}
@@ -120,8 +121,9 @@ public final class Master {
 		return this.mapReduceTaskUUID;
 	}
 
-	private Set<Worker> waitForWorkers(Set<WorkerTask> activeWorkerTasks) throws InterruptedException {
-		Set<Worker> workerWithResults = new HashSet<Worker>();
+	private Set<WorkerTask> waitForWorkers(Set<WorkerTask> activeWorkerTasks)
+			throws InterruptedException {
+		Set<WorkerTask> results = new HashSet<WorkerTask>();
 
 		// Fragt alle MapWorker Tasks an ob sie bereits erledigt sind - bis sie erledigt sind ...
 		do {
@@ -131,12 +133,12 @@ public final class Master {
 				switch (curWorkerTask.getCurrentState()) {
 				case COMPLETED:
 					toRemove.add(curWorkerTask);
-					workerWithResults.add(curWorkerTask.getWorker());
+					results.add(curWorkerTask);
 					break;
 				case FAILED:
-					 //System.out.println("State:  " + curWorkerTask.getCurrentState());
-					 //System.out.println("Worker: " + curWorkerTask.getWorker());
-					 break;
+					// System.out.println("State:  " + curWorkerTask.getCurrentState());
+					// System.out.println("Worker: " + curWorkerTask.getWorker());
+					break;
 				default:
 
 					// Falls es diesen Status überhaupt gibt
@@ -145,6 +147,6 @@ public final class Master {
 			}
 			activeWorkerTasks.removeAll(toRemove);
 		} while (!activeWorkerTasks.isEmpty());
-		return workerWithResults;
+		return results;
 	}
 }

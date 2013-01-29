@@ -34,6 +34,7 @@ import ch.zhaw.mapreduce.MapEmitter;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.WorkerTask.State;
+import ch.zhaw.mapreduce.workers.ThreadWorker;
 
 @RunWith(JMock.class)
 public class PooledMapWorkerTaskTest {
@@ -62,25 +63,25 @@ public class PooledMapWorkerTaskTest {
 
 	@Test
 	public void shouldSetMapReduceTaskUUID() {
-		PooledMapWorkerTask task = new PooledMapWorkerTask(p, "uuid", mapInstr, combInstr, inputUUID, input);
+		MapWorkerTask task = new MapWorkerTask(p, "uuid", mapInstr, combInstr, inputUUID, input);
 		assertEquals("uuid", task.getMapReduceTaskUUID());
 	}
 
 	@Test
 	public void shouldSetMapInstruction() {
-		PooledMapWorkerTask task = new PooledMapWorkerTask(p, "uuid", mapInstr, combInstr, inputUUID, input);
+		MapWorkerTask task = new MapWorkerTask(p, "uuid", mapInstr, combInstr, inputUUID, input);
 		assertSame(mapInstr, task.getMapInstruction());
 	}
 
 	@Test
 	public void shouldSetCombinerInstruction() {
-		PooledMapWorkerTask task = new PooledMapWorkerTask(p, "uuid", mapInstr, combInstr, inputUUID, input);
+		MapWorkerTask task = new MapWorkerTask(p, "uuid", mapInstr, combInstr, inputUUID, input);
 		assertSame(combInstr, task.getCombinerInstruction());
 	}
 
 	@Test
 	public void shouldCopeWithNullCombiner() {
-		PooledMapWorkerTask task = new PooledMapWorkerTask(p, "uuid", mapInstr, null, inputUUID, input);
+		MapWorkerTask task = new MapWorkerTask(p, "uuid", mapInstr, null, inputUUID, input);
 		assertNull(task.getCombinerInstruction());
 	}
 
@@ -89,7 +90,7 @@ public class PooledMapWorkerTaskTest {
 		Executor poolExec = Executors.newSingleThreadExecutor();
 		LocalThreadPool pool = new LocalThreadPool(poolExec);
 		pool.init();
-		final PooledMapWorkerTask task = new PooledMapWorkerTask(pool, "mrtUuid", new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask(pool, "mrtUuid", new MapInstruction() {
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
 				for (String part : toDo.split(" ")) {
@@ -109,7 +110,7 @@ public class PooledMapWorkerTaskTest {
 
 	@Test
 	public void shouldSetInputUUID() {
-		final PooledMapWorkerTask task = new PooledMapWorkerTask(p, "mrtUuid", mapInstr, combInstr, inputUUID, input);
+		final MapWorkerTask task = new MapWorkerTask(p, "mrtUuid", mapInstr, combInstr, inputUUID, input);
 		this.context.checking(new Expectations() {
 			{
 				oneOf(p).enqueueWork(task);
@@ -127,7 +128,7 @@ public class PooledMapWorkerTaskTest {
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, taskExec);
 		pool.donateWorker(worker);
-		final PooledMapWorkerTask task = new PooledMapWorkerTask(pool, "mrtUuid", new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask(pool, "mrtUuid", new MapInstruction() {
 
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
@@ -148,7 +149,7 @@ public class PooledMapWorkerTaskTest {
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, taskExec);
 		pool.donateWorker(worker);
-		final PooledMapWorkerTask task = new PooledMapWorkerTask(pool, "mrtUuid", new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask(pool, "mrtUuid", new MapInstruction() {
 
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
@@ -176,7 +177,7 @@ public class PooledMapWorkerTaskTest {
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, taskExec);
 		pool.donateWorker(worker);
-		final PooledMapWorkerTask task = new PooledMapWorkerTask(pool, "mrtUuid", new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask(pool, "mrtUuid", new MapInstruction() {
 			@Override public void map(MapEmitter emitter, String toDo) { }
 		}, combInstr, inputUUID, input);
 		this.context.checking(new Expectations() {
@@ -192,7 +193,7 @@ public class PooledMapWorkerTaskTest {
 
 	@Test
 	public void shouldSetStateToInitiatedInitially() {
-		PooledMapWorkerTask task = new PooledMapWorkerTask(p, "mrtUuid", mapInstr, combInstr, inputUUID, input);
+		MapWorkerTask task = new MapWorkerTask(p, "mrtUuid", mapInstr, combInstr, inputUUID, input);
 		assertEquals(State.INITIATED, task.getCurrentState());
 	}
 
@@ -205,7 +206,7 @@ public class PooledMapWorkerTaskTest {
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, taskExec);
 		pool.donateWorker(worker);
-		final PooledMapWorkerTask task = new PooledMapWorkerTask(pool, "mrtUuid", new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask(pool, "mrtUuid", new MapInstruction() {
 
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
@@ -239,7 +240,7 @@ public class PooledMapWorkerTaskTest {
 		pool.donateWorker(worker1);
 		ThreadWorker worker2 = new ThreadWorker(pool, threadExec2);
 		pool.donateWorker(worker2);
-		final PooledMapWorkerTask task = new PooledMapWorkerTask(pool, "mrtUuid", new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask(pool, "mrtUuid", new MapInstruction() {
 
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
@@ -265,7 +266,7 @@ public class PooledMapWorkerTaskTest {
 
 	@Test
 	public void shouldBeEnqueuedAfterSubmissionToPool() {
-		final PooledMapWorkerTask task = new PooledMapWorkerTask(p, "mrtuid", mapInstr, combInstr, inputUUID, input);
+		final MapWorkerTask task = new MapWorkerTask(p, "mrtuid", mapInstr, combInstr, inputUUID, input);
 		this.context.checking(new Expectations() {
 			{
 				oneOf(p).enqueueWork(task);
@@ -281,7 +282,7 @@ public class PooledMapWorkerTaskTest {
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
 		final LocalThreadPool pool = new LocalThreadPool(poolExec);
 		final ThreadWorker worker = new ThreadWorker(pool, threadExec);
-		final PooledMapWorkerTask task = new PooledMapWorkerTask(pool, "mrtuid", new WordCounterMapper(), new WordCounterCombiner(),
+		final MapWorkerTask task = new MapWorkerTask(pool, "mrtuid", new WordCounterMapper(), new WordCounterCombiner(),
 				"inputUUID", "foo bar foo");
 		pool.init();
 		pool.donateWorker(worker);

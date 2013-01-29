@@ -27,9 +27,9 @@ import ch.zhaw.mapreduce.Master;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.ReduceWorkerTask;
-import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTaskFactory;
 import ch.zhaw.mapreduce.impl.LocalThreadPool;
+import ch.zhaw.mapreduce.workers.Worker;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;

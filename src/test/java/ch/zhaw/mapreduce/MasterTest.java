@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import ch.zhaw.mapreduce.roundtriptest.WordsInputSplitter;
+import ch.zhaw.mapreduce.workers.Worker;
 
 @RunWith(JMock.class)
 public class MasterTest {
@@ -134,7 +135,7 @@ class MockWorker implements Worker {
 	}
 
 	@Override
-	public void execute(WorkerTask task) {
+	public void executeTask(WorkerTask task) {
 	}
 
 	@Override

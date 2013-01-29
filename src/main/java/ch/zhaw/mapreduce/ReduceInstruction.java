@@ -9,7 +9,7 @@ import java.util.Iterator;
  * @author Reto
  * 
  */
-public interface ReduceInstruction extends Instruction {
+public interface ReduceInstruction {
 
 	/**
 	 * Diese Methode muss überschrieben werden um die Aufgabe eines REDUCE Tasks zu beschreiben. Es

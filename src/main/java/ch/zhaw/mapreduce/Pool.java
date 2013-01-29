@@ -1,63 +1,137 @@
 package ch.zhaw.mapreduce;
 
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import ch.zhaw.mapreduce.WorkerTask;
+import ch.zhaw.mapreduce.registry.PoolExecutor;
+import ch.zhaw.mapreduce.workers.Worker;
+
 /**
- * Ein Pool verwaltet Worker für Aufgaben die ausgeführt werden müssen. Dazu ist es möglich dem Pool Aufgaben und Worker
- * zu übergeben.
+ * Implementation des Pools mit lokalen Threads auf dem jeweiligen PC
  * 
- * @author Reto
+ * @author Max, Desiree Sacher
  * 
  */
-public interface Pool {
+@Singleton
+public final class Pool {
+	
+	private final List<Worker> existingWorkers = new CopyOnWriteArrayList<Worker>();
+
+	// Liste mit allen Workern
+	private final Queue<Worker> workingWorker = new ConcurrentLinkedQueue<Worker>();
+
+	// Liste mit allen Workern, die Arbeit übernehmen können.
+	private final BlockingQueue<Worker> availableWorkerBlockingQueue = new LinkedBlockingQueue<Worker>();
+
+	// Liste mit aller Arbeit, die von Workern übernommen werden kann.
+	private final BlockingQueue<WorkerTask> taskQueue = new LinkedBlockingQueue<WorkerTask>();
+
+	private final AtomicBoolean isRunning = new AtomicBoolean();
+
+	private final Executor workTaskAdministrator;
 
 	/**
-	 * Gibt die Anzahle der Worker zurück die für diesen Pool arbeiten (können)
-	 * 
-	 * @return amountWorker
+	 * Erstellt einen neuen Pool der Aufgaben und Worker entgegen nimmt.
 	 */
-	int getCurrentPoolSize();
+	@Inject
+	public Pool(@PoolExecutor Executor exec) {
+		this.workTaskAdministrator = exec;
+	}
 
 	/**
-	 * Gibt die anzahl Verfuegbarer Worker zurueck
-	 * 
-	 * @return die Anzahl an freien Worker
+	 * Startet den Thread zur asynchronen Arbeit
 	 */
-	int getFreeWorkers();
+	// wird nach dem konstruktor aufgerufen
+	@PostConstruct
+	public void init() {
+		// nur starten, wenn er noch nicht gestartet wurde
+		if (this.isRunning.compareAndSet(false, true)) {
+			this.workTaskAdministrator.execute(new WorkerTaskAdministrator());
+		} else {
+			throw new IllegalStateException("Cannot start Pool twice");
+		}
+	}
+
+	public boolean isRunning() {
+		return this.isRunning.get();
+	}
 
 	/**
-	 * Methode mit der sich ein Worker nach seiner Arbeit zurückmelden kann.
-	 * 
-	 * @param finishedWorker
-	 *            der Worker der sich zurückmeldet
+	 * {@inheritDoc} Der Wert ist optimistisch - kann veraltet sein.
 	 */
-	void workerIsFinished(Worker finishedWorker);
+	public int getCurrentPoolSize() {
+		return existingWorkers.size();
+	}
 
 	/**
-	 * Reiht eien neuen WorkerTask in die Aufgabenliste des Pools ein
-	 * 
-	 * @param mapRunner
-	 *            eine Aufgabe für den Worker
-	 * @return true, wenn der task angenommen wurde, sonst false
+	 * {@inheritDoc}
 	 */
-	boolean enqueueWork(WorkerTask task);
+	public int getFreeWorkers() {
+		return availableWorkerBlockingQueue.size();
+	}
 
 	/**
-	 * Stellt dem Pool einen Worker zur Verfügung
-	 * 
-	 * @param newWorker
-	 *            der Worker der zur Verfügung gestellt werden soll.
+	 * {@inheritDoc}
 	 */
-	boolean donateWorker(Worker newWorker);
+	public void workerIsFinished(Worker finishedWorker) {
+		workingWorker.remove(finishedWorker);
+		availableWorkerBlockingQueue.add(finishedWorker);
+	}
 
 	/**
-	 * Check, ob der Pool gestartet ist.
+	 * {@inheritDoc}
 	 */
-	boolean isRunning();
+	public boolean enqueueWork(WorkerTask task) {
+		return taskQueue.offer(task);
+	}
 
 	/**
-	 * Löscht alle gespeicherten Resultate auf allen Workern für diese MapReduceUUID
-	 * 
-	 * @param mapReduceTaskUUID
+	 * {@inheritDoc}
 	 */
-	void cleanResults(String mapReduceTaskUUID);
+	public boolean donateWorker(Worker newWorker) {
+		this.existingWorkers.add(newWorker);
+		return availableWorkerBlockingQueue.offer(newWorker);
+	}
 
+	private class WorkerTaskAdministrator implements Runnable {
+
+		/**
+		 * Wartet auf Auftraege und fuert diese mit den Workers aus.
+		 */
+		@Override
+		public void run() {
+			try {
+				while (true) {
+					WorkerTask task = taskQueue.take(); // blockiert bis ein Task da ist
+					Worker worker = availableWorkerBlockingQueue.take(); // blockiert, bis ein Worker frei ist
+					workingWorker.add(worker);
+					task.setWorker(worker);
+					worker.executeTask(task);
+				}
+			} catch (InterruptedException e) {
+				isRunning.set(false);
+				Thread.currentThread().interrupt();
+			}
+		}
+
+	}
+
+	/** {@inheritDoc} */
+	public void cleanResults(String mapReduceTaskUUID) {
+		Worker[] allWorkers = this.existingWorkers.toArray(new Worker[0]);
+		for (Worker worker : allWorkers) {
+			worker.cleanAllResults(mapReduceTaskUUID);
+		}
+	}
 }

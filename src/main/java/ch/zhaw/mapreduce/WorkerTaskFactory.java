@@ -2,6 +2,9 @@ package ch.zhaw.mapreduce;
 
 import java.util.List;
 
+import ch.zhaw.mapreduce.impl.MapWorkerTask;
+import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
+
 import com.google.inject.assistedinject.Assisted;
 
 /**

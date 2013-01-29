@@ -13,7 +13,7 @@ import java.util.List;
  * @author Max
  *
  */
-public interface CombinerInstruction extends Instruction {
+public interface CombinerInstruction {
 
 	/**
 	 * Führt eine Liste mit Values des selben Keys zusammen

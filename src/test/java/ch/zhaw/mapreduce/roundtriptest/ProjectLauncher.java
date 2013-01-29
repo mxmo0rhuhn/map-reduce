@@ -7,8 +7,8 @@ import org.junit.Assert;
 
 import ch.zhaw.mapreduce.MapReduceTask;
 import ch.zhaw.mapreduce.Pool;
-import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.registry.Registry;
+import ch.zhaw.mapreduce.workers.Worker;
 
 /**
  * Diese Klasse startet die Applikation * @author Max

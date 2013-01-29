@@ -21,8 +21,9 @@ import org.junit.runner.RunWith;
 
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Pool;
-import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
+import ch.zhaw.mapreduce.workers.ThreadWorker;
+import ch.zhaw.mapreduce.workers.Worker;
 
 @RunWith(JMock.class)
 public class ThreadWorkerTest {
@@ -74,7 +75,7 @@ public class ThreadWorkerTest {
 				oneOf(pool).workerIsFinished(worker);
 			}
 		});
-		worker.execute(task);
+		worker.executeTask(task);
 		exec.waitForExpectedTasks(200, TimeUnit.MILLISECONDS);
 	}
 
@@ -82,7 +83,7 @@ public class ThreadWorkerTest {
 	public void shouldReturnPreviouslyStoredMapValues() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.execute(this.workerTask);
+		worker.executeTask(this.workerTask);
 		worker.storeMapResult(mrtuuid, new KeyValuePair("key", "value"));
 		List<KeyValuePair> vals = worker.getMapResults(mrtuuid);
 		assertTrue(vals.contains(new KeyValuePair("key", "value")));
@@ -93,7 +94,7 @@ public class ThreadWorkerTest {
 	public void shouldReturnPreviouslyStoredReduceValues() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.execute(this.workerTask);
+		worker.executeTask(this.workerTask);
 		worker.storeReduceResult(mrtuuid, new KeyValuePair("key", "value"));
 		List<KeyValuePair> vals = worker.getReduceResults(mrtuuid);
 		assertTrue(vals.contains(new KeyValuePair("key", "value")));
@@ -104,7 +105,7 @@ public class ThreadWorkerTest {
 	public void shouldAssociateResultsForSameMapTask() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.execute(this.workerTask);
+		worker.executeTask(this.workerTask);
 		worker.storeMapResult(mrtuuid, new KeyValuePair("key", "value"));
 		worker.storeMapResult(mrtuuid, new KeyValuePair("key2", "value"));
 		List<KeyValuePair> vals = worker.getMapResults(mrtuuid);
@@ -117,7 +118,7 @@ public class ThreadWorkerTest {
 	public void shouldAssociateResultsForSameReduceTask() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.execute(this.workerTask);
+		worker.executeTask(this.workerTask);
 		worker.storeReduceResult(mrtuuid, new KeyValuePair("key", "value"));
 		worker.storeReduceResult(mrtuuid, new KeyValuePair("key2", "value"));
 		List<KeyValuePair> vals = worker.getReduceResults(mrtuuid);
@@ -130,8 +131,8 @@ public class ThreadWorkerTest {
 	public void shouldHandleMultipleMapUIds() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.execute(workerTask);
-		worker.execute(workerTask2);
+		worker.executeTask(workerTask);
+		worker.executeTask(workerTask2);
 		worker.storeMapResult(mrtuuid, new KeyValuePair("key", "value"));
 		worker.storeMapResult(mrtuuid2, new KeyValuePair("key2", "value2"));
 		List<KeyValuePair> vals1 = worker.getMapResults(mrtuuid);
@@ -146,8 +147,8 @@ public class ThreadWorkerTest {
 	public void shouldHandleMultipleReduceUIds() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.execute(workerTask);
-		worker.execute(workerTask2);
+		worker.executeTask(workerTask);
+		worker.executeTask(workerTask2);
 		worker.storeReduceResult(mrtuuid, new KeyValuePair("key", "value"));
 		worker.storeReduceResult(mrtuuid2, new KeyValuePair("key2", "value2"));
 		List<KeyValuePair> vals1 = worker.getReduceResults(mrtuuid);
@@ -162,7 +163,7 @@ public class ThreadWorkerTest {
 	public void shouldNotMixReduceResults() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.execute(workerTask);
+		worker.executeTask(workerTask);
 		worker.storeReduceResult(mrtuuid, new KeyValuePair("key", "value"));
 		assertEquals(0, worker.getMapResults(mrtuuid).size());
 	}
@@ -171,7 +172,7 @@ public class ThreadWorkerTest {
 	public void shouldNotMixMapResults() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.execute(workerTask);
+		worker.executeTask(workerTask);
 		worker.storeMapResult(mrtuuid, new KeyValuePair("key", "value"));
 		assertEquals(0, worker.getReduceResults(mrtuuid).size());
 	}
@@ -180,9 +181,9 @@ public class ThreadWorkerTest {
 	public void shouldNotOverrideExistingResultsForSameMapreducetaskuuid() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.execute(workerTask);
+		worker.executeTask(workerTask);
 		worker.storeMapResult(mrtuuid, new KeyValuePair("key1", "value1"));
-		worker.execute(workerTask);
+		worker.executeTask(workerTask);
 		worker.storeMapResult(mrtuuid, new KeyValuePair("key2", "value2"));
 		assertTrue(worker.getMapResults(mrtuuid).contains(new KeyValuePair("key1", "value1")));
 	}
@@ -205,7 +206,7 @@ public class ThreadWorkerTest {
 	public void shoudReplaceResult() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.execute(workerTask);
+		worker.executeTask(workerTask);
 		worker.storeMapResult(mrtuuid, new KeyValuePair("key1", "value1"));
 		assertEquals(1, worker.getMapResults(mrtuuid).size());
 		assertEquals(new KeyValuePair("key1", "value1"), worker.getMapResults(mrtuuid).get(0));
@@ -219,8 +220,8 @@ public class ThreadWorkerTest {
 	public void shoudNotTouchOtherWhenReplacing() {
 		DeterministicExecutor exec = new DeterministicExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
-		worker.execute(workerTask);
-		worker.execute(workerTask2);
+		worker.executeTask(workerTask);
+		worker.executeTask(workerTask2);
 		worker.storeMapResult(mrtuuid, new KeyValuePair("key1", "value1"));
 		worker.storeMapResult(mrtuuid2, new KeyValuePair("key1", "value1"));
 		

@@ -4,16 +4,15 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import ch.zhaw.mapreduce.MapWorkerTask;
 import ch.zhaw.mapreduce.Master;
 import ch.zhaw.mapreduce.Pool;
-import ch.zhaw.mapreduce.ReduceWorkerTask;
-import ch.zhaw.mapreduce.Worker;
+import ch.zhaw.mapreduce.Shuffler;
 import ch.zhaw.mapreduce.WorkerTaskFactory;
-import ch.zhaw.mapreduce.impl.LocalThreadPool;
-import ch.zhaw.mapreduce.impl.PooledMapWorkerTask;
-import ch.zhaw.mapreduce.impl.PooledReduceWorkerTask;
-import ch.zhaw.mapreduce.impl.ThreadWorker;
+import ch.zhaw.mapreduce.impl.InMemoryShuffler;
+import ch.zhaw.mapreduce.impl.MapWorkerTask;
+import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
+import ch.zhaw.mapreduce.workers.ThreadWorker;
+import ch.zhaw.mapreduce.workers.Worker;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -37,14 +36,15 @@ public class MapReduceConfig extends AbstractModule {
 
 		// AssistedInject Magic: Mit diesem FactoryModuleBuilder wird ein Binding für die RunnerFactory erstellt ohne,
 		// dass wir eine tatsächliche Implementation bereitstellen.
-		install(new FactoryModuleBuilder().implement(MapWorkerTask.class, PooledMapWorkerTask.class)
-				.implement(ReduceWorkerTask.class, PooledReduceWorkerTask.class).build(WorkerTaskFactory.class));
+		install(new FactoryModuleBuilder().implement(MapWorkerTask.class, MapWorkerTask.class)
+				.implement(ReduceWorkerTask.class, ReduceWorkerTask.class).build(WorkerTaskFactory.class));
 
 		bind(Worker.class).to(ThreadWorker.class);
-		bind(Pool.class).to(LocalThreadPool.class);
+		bind(Pool.class).to(Pool.class);
 
 		// Master soll einfach von Guice verwaltet werden. Ohne Interface
 		bind(Master.class);
+		bind(Shuffler.class).to(InMemoryShuffler.class);
 
 		// see PostConstructFeature
 		bindListener(Matchers.any(), new PostConstructFeature());
