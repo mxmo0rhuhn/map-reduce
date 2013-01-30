@@ -8,11 +8,11 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import ch.zhaw.mapreduce.CombinerInstruction;
+import ch.zhaw.mapreduce.ComputationStoppedException;
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.workers.ComputationStoppedException;
 import ch.zhaw.mapreduce.workers.Worker;
 
 import com.google.inject.assistedinject.Assisted;
@@ -42,19 +42,19 @@ public class MapWorkerTask implements WorkerTask {
 	private final String toDo;
 
 	/** Die eindeutihe ID die jeder input besitzt */
-	private final String inputUID;
+	private final String mapTaskUuid;
 
 	/** Der Zustand in dem sich der Worker befindet */
 	private volatile State currentState = State.INITIATED;
 
 	@Inject
-	public MapWorkerTask(@Assisted("uuid") String mapReduceTaskUID, @Assisted MapInstruction mapInstruction,
-			@Assisted @Nullable CombinerInstruction combinerInstruction, @Assisted("inputUUID") String inputUID,
+	public MapWorkerTask(@Assisted("uuid") String mapReduceTaskUID, @Assisted("mapTaskUuid") String mapTaskUuid,
+			@Assisted MapInstruction mapInstruction, @Assisted @Nullable CombinerInstruction combinerInstruction,
 			@Assisted("input") String input) {
 		this.mapReduceTaskUID = mapReduceTaskUID;
 		this.mapInstruction = mapInstruction;
 		this.combinerInstruction = combinerInstruction;
-		this.inputUID = inputUID;
+		this.mapTaskUuid = mapTaskUuid;
 		this.toDo = input;
 	}
 
@@ -98,7 +98,7 @@ public class MapWorkerTask implements WorkerTask {
 	 */
 	@Override
 	public String getUUID() {
-		return inputUID;
+		return mapTaskUuid;
 	}
 
 	/**
@@ -139,7 +139,7 @@ public class MapWorkerTask implements WorkerTask {
 
 	@Override
 	public List<KeyValuePair> getResults(String mapReduceTaskUUID) {
-		return myWorker.getMapResult(mapReduceTaskUID, inputUID);
+		return myWorker.getMapResult(mapReduceTaskUID, mapTaskUuid);
 	}
 
 	@Override

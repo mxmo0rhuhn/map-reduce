@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce.workers;
+package ch.zhaw.mapreduce;
 
 public class ComputationStoppedException extends RuntimeException {
 

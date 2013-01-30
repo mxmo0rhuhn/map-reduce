@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
+import ch.zhaw.mapreduce.ComputationStoppedException;
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Persistence;
@@ -58,13 +59,13 @@ public class ThreadWorker implements Worker {
 	@Override
 	public void executeTask(final WorkerTask task) {
 		String mrUuid = task.getMapReduceTaskUUID();
-		String inputUuid = task.getUUID();
+		String taskUuid = task.getUUID();
 		// TODO guice (assisted inject)
 		Persistence persistence = Registry.getComponent(Persistence.class);
-		final Context ctx = new LocalContext(persistence, mrUuid, inputUuid);
+		final Context ctx = new LocalContext(persistence, mrUuid, taskUuid);
 		contexts.putIfAbsent(mrUuid, new ConcurrentHashMap<String, Context>());
 		ConcurrentMap<String, Context> inputs = contexts.get(mrUuid);
-		inputs.put(inputUuid, ctx);
+		inputs.put(taskUuid, ctx);
 		this.executor.execute(new Runnable() {
 			@Override
 			public void run() {
@@ -79,8 +80,8 @@ public class ThreadWorker implements Worker {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<KeyValuePair> getMapResult(String mapReduceTaskUID, String inputUUID) {
-		return this.contexts.get(mapReduceTaskUID).get(inputUUID).getMapResult();
+	public List<KeyValuePair> getMapResult(String mapReduceTaskUID, String mapTaskUuid) {
+		return this.contexts.get(mapReduceTaskUID).get(mapTaskUuid).getMapResult();
 	}
 
 	/**

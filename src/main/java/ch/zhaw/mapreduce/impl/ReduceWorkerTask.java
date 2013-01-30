@@ -6,11 +6,11 @@ import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
+import ch.zhaw.mapreduce.ComputationStoppedException;
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.workers.ComputationStoppedException;
 import ch.zhaw.mapreduce.workers.Worker;
 
 import com.google.inject.assistedinject.Assisted;
@@ -46,6 +46,8 @@ public class ReduceWorkerTask implements WorkerTask {
 	 * Der zu reduzierende Input
 	 */
 	private final List<KeyValuePair> input;
+	
+	private final String reduceTaskUuid;
 
 	/**
 	 * Der momentane Status
@@ -53,12 +55,13 @@ public class ReduceWorkerTask implements WorkerTask {
 	private volatile State curState = State.INITIATED;
 
 	@Inject
-	public ReduceWorkerTask(@Assisted("uuid") String mapReduceTaskUUID, @Assisted("key") String key,
-			@Assisted ReduceInstruction reduceInstruction, @Assisted List<KeyValuePair> toDo) {
+	public ReduceWorkerTask(@Assisted("uuid") String mapReduceTaskUUID, @Assisted("reduceTaskUuid") String reduceTaskUuid, @Assisted ReduceInstruction reduceInstruction,
+			@Assisted("key") String key, @Assisted List<KeyValuePair> inputs) {
 		this.mapReduceTaskUUID = mapReduceTaskUUID;
 		this.key = key;
 		this.reduceInstruction = reduceInstruction;
-		this.input = toDo;
+		this.input = inputs;
+		this.reduceTaskUuid = reduceTaskUuid;
 	}
 
 	/** {@inheritDoc} */
@@ -89,7 +92,7 @@ public class ReduceWorkerTask implements WorkerTask {
 	/** {@inheritDoc} */
 	@Override
 	public String getUUID() {
-		return this.key;
+		return this.reduceTaskUuid;
 	}
 
 	/**
@@ -110,7 +113,7 @@ public class ReduceWorkerTask implements WorkerTask {
 	}
 
 	public List<KeyValuePair> getResults(String mapReduceTaskUUID) {
-		return myWorker.getMapResult(mapReduceTaskUUID, key);
+		return myWorker.getMapResult(mapReduceTaskUUID, reduceTaskUuid);
 	}
 
 	@Override

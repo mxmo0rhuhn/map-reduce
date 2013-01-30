@@ -2,7 +2,6 @@ package ch.zhaw.mapreduce;
 
 import java.util.List;
 
-import ch.zhaw.mapreduce.workers.ComputationStoppedException;
 
 public class SocketAgent {
 	

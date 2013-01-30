@@ -18,10 +18,6 @@ import javax.inject.Named;
 
 public class FilePersistence implements Persistence {
 
-	private static final char MAP_PHASE = 'm';
-
-	private static final char REDUCE_PHASE = 'r';
-
 	@Inject
 	private Logger logger;
 
@@ -53,13 +49,13 @@ public class FilePersistence implements Persistence {
 		}
 	}
 
-	private File createFile(char phase, String mrUuid, String inputUuid) {
-		return new File(new File(directory), phase + mrUuid + inputUuid + ending);
+	private File createFile(String mrUuid, String inputUuid) {
+		return new File(new File(directory), mrUuid + inputUuid + ending);
 	}
 
 	@Override
 	public void storeMap(String mrUuid, String inputUuid, String key, String value) {
-		File f = createFile(MAP_PHASE, mrUuid, inputUuid);
+		File f = createFile(mrUuid, inputUuid);
 
 		List<KeyValuePair> existingValues = new ArrayList<KeyValuePair>(getMap(mrUuid, inputUuid));
 		existingValues.add(new KeyValuePair(key, value));
@@ -83,7 +79,7 @@ public class FilePersistence implements Persistence {
 
 	@Override
 	public void storeReduce(String mrUuid, String inputUuid, String result) {
-		File f = createFile(REDUCE_PHASE, mrUuid, inputUuid);
+		File f = createFile(mrUuid, inputUuid);
 
 		List<String> existingValues = new ArrayList<String>(getReduce(mrUuid, inputUuid));
 		existingValues.add(result);
@@ -107,7 +103,7 @@ public class FilePersistence implements Persistence {
 
 	@Override
 	public List<KeyValuePair> getMap(String mrUuid, String inputUuid) {
-		File f = createFile(MAP_PHASE, mrUuid, inputUuid);
+		File f = createFile(mrUuid, inputUuid);
 		if (!f.exists()) {
 			logger.finest("Storage file doesn't exist " + f.getAbsolutePath());
 			return Collections.emptyList();
@@ -132,7 +128,7 @@ public class FilePersistence implements Persistence {
 
 	@Override
 	public List<String> getReduce(String mrUuid, String inputUuid) {
-		File f = createFile(REDUCE_PHASE, mrUuid, inputUuid);
+		File f = createFile(mrUuid, inputUuid);
 		if (!f.exists()) {
 			logger.finest("Storage file doesn't exist " + f.getAbsolutePath());
 			return Collections.emptyList();
@@ -161,9 +157,9 @@ public class FilePersistence implements Persistence {
 	}
 
 	@Override
-	public void destroy(String mrUuid, String inputUuid) {
-		File mapFile = createFile(MAP_PHASE, mrUuid, inputUuid);
-		File reduceFile = createFile(REDUCE_PHASE, mrUuid, inputUuid);
+	public void destroy(String mrUuid, String taskUuid) {
+		File mapFile = createFile(mrUuid, taskUuid);
+		File reduceFile = createFile(mrUuid, taskUuid);
 		if (mapFile.delete()) {
 			logger.finest("Successfully deleted " + mapFile.getAbsolutePath());
 		} else {

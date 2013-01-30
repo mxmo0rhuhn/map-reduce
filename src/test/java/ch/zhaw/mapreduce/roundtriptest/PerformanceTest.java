@@ -47,9 +47,9 @@ public class PerformanceTest {
 		});
 		
 		// wie viele Strings sollen erstellt werden
-		int inputs = 20;//(int) Math.pow(10, 2);
+		int inputs = 1;//(int) Math.pow(10, 2);
 		// wie lang soll jeder einzelne sein?
-		int chunkSize = (int) Math.pow(10, 2);
+		int chunkSize = 1;//(int) Math.pow(10, 2);
 		
 		
 		long start = System.currentTimeMillis();

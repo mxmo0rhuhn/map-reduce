@@ -17,12 +17,15 @@ import javax.inject.Inject;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
 import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 import ch.zhaw.mapreduce.registry.MapReduceTaskUUID;
-import ch.zhaw.mapreduce.registry.Registry;
+
+import com.google.inject.Provider;
 
 public final class Master {
-	
+
 	@Inject
 	private Logger logger;
+
+	private final Provider<Shuffler> shufflerProvider;
 
 	private final Pool pool;
 
@@ -31,17 +34,17 @@ public final class Master {
 	private final WorkerTaskFactory runnerFactory;
 
 	@Inject
-	public Master(Pool pool, WorkerTaskFactory runnerFactory,
-			@MapReduceTaskUUID String mapReduceTaskUUID) {
+	public Master(Pool pool, WorkerTaskFactory runnerFactory, @MapReduceTaskUUID String mapReduceTaskUUID,
+			Provider<Shuffler> shufflerProvider) {
 		this.pool = pool;
 		this.runnerFactory = runnerFactory;
 		this.mapReduceTaskUUID = mapReduceTaskUUID;
+		this.shufflerProvider = shufflerProvider;
 	}
 
 	public Map<String, String> runComputation(final MapInstruction mapInstruction,
-			final CombinerInstruction combinerInstruction,
-			final ReduceInstruction reduceInstruction, Iterator<String> input)
-			throws InterruptedException {
+			final CombinerInstruction combinerInstruction, final ReduceInstruction reduceInstruction,
+			Iterator<String> input) throws InterruptedException {
 		// MAP
 		// Alle derzeitigen aufgaben die ausgeführt werden
 		logger.info("MAP started");
@@ -80,11 +83,11 @@ public final class Master {
 		// reiht für jeden Input - Teil einen MapWorkerTask in den Pool ein
 		while (input.hasNext()) {
 
-			String inputUUID = UUID.randomUUID().toString();
+			String mapTaskUuid = UUID.randomUUID().toString();
 			String todo = input.next();
 
-			MapWorkerTask mapTask = runnerFactory.createMapWorkerTask(mapReduceTaskUUID,
-					mapInstruction, combinerInstruction, inputUUID, todo);
+			MapWorkerTask mapTask = runnerFactory.createMapWorkerTask(mapReduceTaskUUID, mapTaskUuid, mapInstruction,
+					combinerInstruction, todo);
 
 			activeWorkerTasks.add(mapTask);
 			pool.enqueueWork(mapTask);
@@ -93,7 +96,7 @@ public final class Master {
 	}
 
 	Shuffler createShuffler(Collection<WorkerTask> mapResults) {
-		Shuffler s = Registry.getComponent(Shuffler.class);
+		Shuffler s = shufflerProvider.get();
 		for (WorkerTask curMapResult : mapResults) {
 			for (KeyValuePair curKeyValuePair : curMapResult.getResults(mapReduceTaskUUID)) {
 				s.put(curKeyValuePair.getKey(), curKeyValuePair.getValue());
@@ -109,7 +112,8 @@ public final class Master {
 		while (shuffleResults.hasNext()) {
 			Map.Entry<String, List<KeyValuePair>> curKeyValuePairs = shuffleResults.next();
 
-			ReduceWorkerTask reduceTask = runnerFactory.createReduceWorkerTask(mapReduceTaskUUID,
+			String reduceTaskUuid = UUID.randomUUID().toString();
+			ReduceWorkerTask reduceTask = runnerFactory.createReduceWorkerTask(mapReduceTaskUUID, reduceTaskUuid,
 					curKeyValuePairs.getKey(), reduceInstruction, curKeyValuePairs.getValue());
 
 			reduceTasks.add(reduceTask);
@@ -120,8 +124,8 @@ public final class Master {
 
 	Map<String, String> collectResults(Set<WorkerTask> reduceResults) {
 		Map<String, String> resultStructure = new HashMap<String, String>();
-		for (WorkerTask curWorker : reduceResults) {
-			for (KeyValuePair storedValue : curWorker.getResults(mapReduceTaskUUID)) {
+		for (WorkerTask task : reduceResults) {
+			for (KeyValuePair storedValue : task.getResults(mapReduceTaskUUID)) {
 				resultStructure.put(storedValue.getKey(), storedValue.getValue());
 			}
 		}
@@ -132,8 +136,7 @@ public final class Master {
 		return this.mapReduceTaskUUID;
 	}
 
-	private Set<WorkerTask> waitForWorkers(Set<WorkerTask> activeWorkerTasks)
-			throws InterruptedException {
+	private Set<WorkerTask> waitForWorkers(Set<WorkerTask> activeWorkerTasks) throws InterruptedException {
 		Set<WorkerTask> results = new HashSet<WorkerTask>();
 
 		// Fragt alle MapWorker Tasks an ob sie bereits erledigt sind - bis sie erledigt sind ...
@@ -149,6 +152,9 @@ public final class Master {
 					break;
 				case FAILED:
 					logger.finer("Task failed");
+					break;
+				case INPROGRESS:
+					logger.finest("Task in progress");
 					break;
 				default:
 					logger.fine("Task " + task.getCurrentState());
