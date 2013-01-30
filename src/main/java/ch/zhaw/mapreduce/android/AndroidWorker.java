@@ -69,7 +69,7 @@ public class AndroidWorker implements Worker {
 	}
 
 	@Override
-	public List<KeyValuePair> getReduceResult(String mapReduceTaskUID, String inputUID) {
+	public List<String> getReduceResult(String mapReduceTaskUID, String inputUID) {
 		// TODO Auto-generated method stub
 		return null;
 	}

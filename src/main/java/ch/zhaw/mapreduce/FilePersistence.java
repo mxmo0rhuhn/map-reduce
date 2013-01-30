@@ -158,17 +158,11 @@ public class FilePersistence implements Persistence {
 
 	@Override
 	public void destroy(String mrUuid, String taskUuid) {
-		File mapFile = createFile(mrUuid, taskUuid);
-		File reduceFile = createFile(mrUuid, taskUuid);
-		if (mapFile.delete()) {
-			logger.finest("Successfully deleted " + mapFile.getAbsolutePath());
+		File file = createFile(mrUuid, taskUuid);
+		if (file.delete()) {
+			logger.finest("Successfully deleted " + file.getAbsolutePath());
 		} else {
-			logger.severe("Failed to delete " + mapFile.getAbsolutePath());
-		}
-		if (reduceFile.delete()) {
-			logger.finest("Successfully deleted " + reduceFile.getAbsolutePath());
-		} else {
-			logger.severe("Failed to delete " + reduceFile.getAbsolutePath());
+			logger.severe("Failed to delete " + file.getAbsolutePath());
 		}
 	}
 }

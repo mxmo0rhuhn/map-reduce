@@ -51,6 +51,12 @@ class SocketContext implements Context {
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public List<String> getReduceResult() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
 	
 }

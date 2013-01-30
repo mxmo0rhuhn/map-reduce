@@ -23,12 +23,12 @@ public interface Worker {
 	void executeTask(WorkerTask task);
 
 	/**
-	 * Gibt die derzeit auf dem Worker gespeicherten KeyValue Pairs zurück
+	 * Gibt die derzeit auf dem Worker gespeicherten Strings zurueck
 	 * 
 	 * @param mapReduceTaskUID
 	 *            Die eindeutige ID des MapReduceTask desssen zugehörige Daten zurückgegeben werden sollen.
 	 */
-	List<KeyValuePair> getReduceResult(String mapReduceTaskUID, String inputUID);
+	List<String> getReduceResult(String mapReduceTaskUID, String inputUID);
 
 	/**
 	 * Gibt die derzeit auf dem Worker gespeicherten KeyValue Pairs zurück

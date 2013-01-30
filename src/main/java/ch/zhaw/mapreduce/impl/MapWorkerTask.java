@@ -137,7 +137,6 @@ public class MapWorkerTask implements WorkerTask {
 		return myWorker;
 	}
 
-	@Override
 	public List<KeyValuePair> getResults(String mapReduceTaskUUID) {
 		return myWorker.getMapResult(mapReduceTaskUID, mapTaskUuid);
 	}

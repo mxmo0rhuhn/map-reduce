@@ -97,8 +97,9 @@ public final class Master {
 
 	Shuffler createShuffler(Collection<WorkerTask> mapResults) {
 		Shuffler s = shufflerProvider.get();
-		for (WorkerTask curMapResult : mapResults) {
-			for (KeyValuePair curKeyValuePair : curMapResult.getResults(mapReduceTaskUUID)) {
+		for (WorkerTask task : mapResults) {
+			MapWorkerTask mapTask = (MapWorkerTask) task;
+			for (KeyValuePair curKeyValuePair : mapTask.getResults(mapReduceTaskUUID)) {
 				s.put(curKeyValuePair.getKey(), curKeyValuePair.getValue());
 			}
 		}
@@ -125,8 +126,9 @@ public final class Master {
 	Map<String, String> collectResults(Set<WorkerTask> reduceResults) {
 		Map<String, String> resultStructure = new HashMap<String, String>();
 		for (WorkerTask task : reduceResults) {
-			for (KeyValuePair storedValue : task.getResults(mapReduceTaskUUID)) {
-				resultStructure.put(storedValue.getKey(), storedValue.getValue());
+			ReduceWorkerTask reduceTask = (ReduceWorkerTask) task;
+			for (String value : reduceTask.getResults(mapReduceTaskUUID)) {
+				resultStructure.put(reduceTask.getInput(), value);
 			}
 		}
 		return resultStructure;

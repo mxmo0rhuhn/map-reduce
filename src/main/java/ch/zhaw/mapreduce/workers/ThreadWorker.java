@@ -88,8 +88,8 @@ public class ThreadWorker implements Worker {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<KeyValuePair> getReduceResult(String mapReduceTaskUID, String inputUUID) {
-		return this.contexts.get(mapReduceTaskUID).get(inputUUID).getMapResult();
+	public List<String> getReduceResult(String mapReduceTaskUID, String inputUUID) {
+		return this.contexts.get(mapReduceTaskUID).get(inputUUID).getReduceResult();
 	}
 
 	/** {@inheritDoc} */
@@ -113,13 +113,13 @@ class LocalContext implements Context {
 
 	private final String mrUuid;
 
-	private final String inputUuid;
+	private final String taskUuid;
 
 	private volatile boolean stopped = false;
 
-	LocalContext(Persistence persistence, String mrUuid, String inputUuid) {
+	LocalContext(Persistence persistence, String mrUuid, String taskUuid) {
 		this.mrUuid = mrUuid;
-		this.inputUuid = inputUuid;
+		this.taskUuid = taskUuid;
 		this.persistence = persistence;
 	}
 
@@ -128,7 +128,7 @@ class LocalContext implements Context {
 		if (stopped) {
 			throw new ComputationStoppedException();
 		}
-		persistence.storeMap(mrUuid, inputUuid, key, value);
+		persistence.storeMap(mrUuid, taskUuid, key, value);
 	}
 
 	@Override
@@ -136,7 +136,7 @@ class LocalContext implements Context {
 		if (stopped) {
 			throw new ComputationStoppedException();
 		}
-		persistence.storeReduce(mrUuid, inputUuid, result);
+		persistence.storeReduce(mrUuid, taskUuid, result);
 	}
 
 	@Override
@@ -144,7 +144,7 @@ class LocalContext implements Context {
 		if (stopped) {
 			throw new ComputationStoppedException();
 		}
-		return persistence.getMap(mrUuid, inputUuid);
+		return persistence.getMap(mrUuid, taskUuid);
 	}
 
 	@Override
@@ -152,13 +152,18 @@ class LocalContext implements Context {
 		if (stopped) {
 			throw new ComputationStoppedException();
 		}
-		persistence.replaceMap(mrUuid, inputUuid, afterCombining);
+		persistence.replaceMap(mrUuid, taskUuid, afterCombining);
 	}
 
 	@Override
 	public void destroy() {
 		stopped = true;
-		persistence.destroy(mrUuid, inputUuid);
+		persistence.destroy(mrUuid, taskUuid);
+	}
+
+	@Override
+	public List<String> getReduceResult() {
+		return persistence.getReduce(mrUuid, taskUuid);
 	}
 
 }

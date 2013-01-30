@@ -55,7 +55,5 @@ public interface WorkerTask {
 	
 	Worker getWorker();
 
-	List<KeyValuePair> getResults(String mapReduceTaskUUID);
-	
 	String getInput();
 }

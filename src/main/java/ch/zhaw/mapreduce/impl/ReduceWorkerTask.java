@@ -112,8 +112,8 @@ public class ReduceWorkerTask implements WorkerTask {
 		return this.mapReduceTaskUUID;
 	}
 
-	public List<KeyValuePair> getResults(String mapReduceTaskUUID) {
-		return myWorker.getMapResult(mapReduceTaskUUID, reduceTaskUuid);
+	public List<String> getResults(String mapReduceTaskUUID) {
+		return myWorker.getReduceResult(mapReduceTaskUUID, reduceTaskUuid);
 	}
 
 	@Override

@@ -26,7 +26,7 @@ public class SocketWorker implements Worker {
 	 * @see ch.zhaw.mapreduce.workers.Worker#getReduceResult(java.lang.String, java.lang.String)
 	 */
 	@Override
-	public List<KeyValuePair> getReduceResult(String mapReduceTaskUID, String inputUID) {
+	public List<String> getReduceResult(String mapReduceTaskUID, String inputUID) {
 		// TODO Auto-generated method stub
 		return null;
 	}
