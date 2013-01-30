@@ -37,7 +37,7 @@ import ch.zhaw.mapreduce.WorkerTask.State;
 import ch.zhaw.mapreduce.workers.ThreadWorker;
 
 @RunWith(JMock.class)
-public class PooledMapWorkerTaskTest {
+public class MapWorkerTaskTest {
 
 	private Mockery context;
 
@@ -63,34 +63,34 @@ public class PooledMapWorkerTaskTest {
 
 	@Test
 	public void shouldSetMapReduceTaskUUID() {
-		MapWorkerTask task = new MapWorkerTask(p, "uuid", mapInstr, combInstr, inputUUID, input);
+		MapWorkerTask task = new MapWorkerTask("uuid", mapInstr, combInstr, inputUUID, input);
 		assertEquals("uuid", task.getMapReduceTaskUUID());
 	}
 
 	@Test
 	public void shouldSetMapInstruction() {
-		MapWorkerTask task = new MapWorkerTask(p, "uuid", mapInstr, combInstr, inputUUID, input);
+		MapWorkerTask task = new MapWorkerTask("uuid", mapInstr, combInstr, inputUUID, input);
 		assertSame(mapInstr, task.getMapInstruction());
 	}
 
 	@Test
 	public void shouldSetCombinerInstruction() {
-		MapWorkerTask task = new MapWorkerTask(p, "uuid", mapInstr, combInstr, inputUUID, input);
+		MapWorkerTask task = new MapWorkerTask("uuid", mapInstr, combInstr, inputUUID, input);
 		assertSame(combInstr, task.getCombinerInstruction());
 	}
 
 	@Test
 	public void shouldCopeWithNullCombiner() {
-		MapWorkerTask task = new MapWorkerTask(p, "uuid", mapInstr, null, inputUUID, input);
+		MapWorkerTask task = new MapWorkerTask("uuid", mapInstr, null, inputUUID, input);
 		assertNull(task.getCombinerInstruction());
 	}
 
 	@Test
 	public void shouldEmitUnderMapReduceTaskUUID() {
 		Executor poolExec = Executors.newSingleThreadExecutor();
-		LocalThreadPool pool = new LocalThreadPool(poolExec);
+		Pool pool = new Pool(poolExec);
 		pool.init();
-		final MapWorkerTask task = new MapWorkerTask(pool, "mrtUuid", new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask("mrtUuid", new MapInstruction() {
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
 				for (String part : toDo.split(" ")) {
@@ -110,7 +110,7 @@ public class PooledMapWorkerTaskTest {
 
 	@Test
 	public void shouldSetInputUUID() {
-		final MapWorkerTask task = new MapWorkerTask(p, "mrtUuid", mapInstr, combInstr, inputUUID, input);
+		final MapWorkerTask task = new MapWorkerTask("mrtUuid", mapInstr, combInstr, inputUUID, input);
 		this.context.checking(new Expectations() {
 			{
 				oneOf(p).enqueueWork(task);
@@ -124,11 +124,11 @@ public class PooledMapWorkerTaskTest {
 	public void shouldSetStateToFailedOnException() {
 		Executor poolExec = Executors.newSingleThreadExecutor();
 		ExactCommandExecutor taskExec = new ExactCommandExecutor(1);
-		final LocalThreadPool pool = new LocalThreadPool(poolExec);
+		final Pool pool = new Pool(poolExec);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, taskExec);
 		pool.donateWorker(worker);
-		final MapWorkerTask task = new MapWorkerTask(pool, "mrtUuid", new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask("mrtUuid", new MapInstruction() {
 
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
@@ -145,11 +145,11 @@ public class PooledMapWorkerTaskTest {
 	public void shouldSetStateToCompletedOnSuccess() {
 		Executor poolExec = Executors.newSingleThreadExecutor();
 		ExactCommandExecutor taskExec = new ExactCommandExecutor(1);
-		final LocalThreadPool pool = new LocalThreadPool(poolExec);
+		final Pool pool = new Pool(poolExec);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, taskExec);
 		pool.donateWorker(worker);
-		final MapWorkerTask task = new MapWorkerTask(pool, "mrtUuid", new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask("mrtUuid", new MapInstruction() {
 
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
@@ -173,11 +173,11 @@ public class PooledMapWorkerTaskTest {
 	public void shouldBeCompletedWithoutEmittingDuringMap() {
 		Executor poolExec = Executors.newSingleThreadExecutor();
 		ExactCommandExecutor taskExec = new ExactCommandExecutor(1);
-		final LocalThreadPool pool = new LocalThreadPool(poolExec);
+		final Pool pool = new Pool(poolExec);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, taskExec);
 		pool.donateWorker(worker);
-		final MapWorkerTask task = new MapWorkerTask(pool, "mrtUuid", new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask("mrtUuid", new MapInstruction() {
 			@Override public void map(MapEmitter emitter, String toDo) { }
 		}, combInstr, inputUUID, input);
 		this.context.checking(new Expectations() {
@@ -193,7 +193,7 @@ public class PooledMapWorkerTaskTest {
 
 	@Test
 	public void shouldSetStateToInitiatedInitially() {
-		MapWorkerTask task = new MapWorkerTask(p, "mrtUuid", mapInstr, combInstr, inputUUID, input);
+		MapWorkerTask task = new MapWorkerTask("mrtUuid", mapInstr, combInstr, inputUUID, input);
 		assertEquals(State.INITIATED, task.getCurrentState());
 	}
 
@@ -202,11 +202,11 @@ public class PooledMapWorkerTaskTest {
 		Executor poolExec = Executors.newSingleThreadExecutor();
 		final CyclicBarrier barrier = new CyclicBarrier(2);
 		Executor taskExec = Executors.newSingleThreadExecutor();
-		final LocalThreadPool pool = new LocalThreadPool(poolExec);
+		final Pool pool = new Pool(poolExec);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, taskExec);
 		pool.donateWorker(worker);
-		final MapWorkerTask task = new MapWorkerTask(pool, "mrtUuid", new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask("mrtUuid", new MapInstruction() {
 
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
@@ -233,14 +233,14 @@ public class PooledMapWorkerTaskTest {
 		Executor poolExec = Executors.newSingleThreadExecutor();
 		ExactCommandExecutor threadExec1 = new ExactCommandExecutor(1);
 		ExactCommandExecutor threadExec2 = new ExactCommandExecutor(1);
-		final LocalThreadPool pool = new LocalThreadPool(poolExec);
+		final Pool pool = new Pool(poolExec);
 		final AtomicInteger cnt = new AtomicInteger();
 		pool.init();
 		ThreadWorker worker1 = new ThreadWorker(pool, threadExec1);
 		pool.donateWorker(worker1);
 		ThreadWorker worker2 = new ThreadWorker(pool, threadExec2);
 		pool.donateWorker(worker2);
-		final MapWorkerTask task = new MapWorkerTask(pool, "mrtUuid", new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask("mrtUuid", new MapInstruction() {
 
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
@@ -266,7 +266,7 @@ public class PooledMapWorkerTaskTest {
 
 	@Test
 	public void shouldBeEnqueuedAfterSubmissionToPool() {
-		final MapWorkerTask task = new MapWorkerTask(p, "mrtuid", mapInstr, combInstr, inputUUID, input);
+		final MapWorkerTask task = new MapWorkerTask("mrtuid", mapInstr, combInstr, inputUUID, input);
 		this.context.checking(new Expectations() {
 			{
 				oneOf(p).enqueueWork(task);
@@ -280,9 +280,9 @@ public class PooledMapWorkerTaskTest {
 	public void shouldCombineAfterTask() {
 		final Executor poolExec = Executors.newSingleThreadExecutor();
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
-		final LocalThreadPool pool = new LocalThreadPool(poolExec);
+		final Pool pool = new Pool(poolExec);
 		final ThreadWorker worker = new ThreadWorker(pool, threadExec);
-		final MapWorkerTask task = new MapWorkerTask(pool, "mrtuid", new WordCounterMapper(), new WordCounterCombiner(),
+		final MapWorkerTask task = new MapWorkerTask("mrtuid", new WordCounterMapper(), new WordCounterCombiner(),
 				"inputUUID", "foo bar foo");
 		pool.init();
 		pool.donateWorker(worker);

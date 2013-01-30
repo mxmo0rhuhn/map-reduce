@@ -24,10 +24,6 @@ public class PerformanceTest {
 	public void countRandomCharacters() throws InterruptedException {
 		Pool pool = Registry.getComponent(Pool.class);
 		pool.donateWorker(Registry.getComponent(Worker.class));
-		pool.donateWorker(Registry.getComponent(Worker.class));
-		pool.donateWorker(Registry.getComponent(Worker.class));
-//		pool.donateWorker(Registry.getComponent(Worker.class));
-//		pool.donateWorker(Registry.getComponent(Worker.class));
 		
 		MapReduceTask mapReduce = new MapReduceTask(new MapInstruction() {
 			
@@ -51,7 +47,7 @@ public class PerformanceTest {
 		});
 		
 		// wie viele Strings sollen erstellt werden
-		int inputs = (int) Math.pow(10, 2);
+		int inputs = 20;//(int) Math.pow(10, 2);
 		// wie lang soll jeder einzelne sein?
 		int chunkSize = (int) Math.pow(10, 2);
 		

@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce.impl;
+package ch.zhaw.mapreduce;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -19,12 +19,13 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.WorkerTask;
 import ch.zhaw.mapreduce.workers.ThreadWorker;
 import ch.zhaw.mapreduce.workers.Worker;
 
 @RunWith(JMock.class)
-public class LocalThreadPoolTest {
+public class PoolTest {
 
 	private Mockery context;
 
@@ -38,7 +39,7 @@ public class LocalThreadPoolTest {
 
 	@Test
 	public void shouldHaveZeroInitialWorker() {
-		LocalThreadPool p = new LocalThreadPool(executor);
+		Pool p = new Pool(executor);
 		p.init();
 		assertEquals(0, p.getCurrentPoolSize());
 		assertEquals(0, p.getFreeWorkers());
@@ -47,7 +48,7 @@ public class LocalThreadPoolTest {
 	@Test
 	public void shouldHaveOneWorker() {
 		Worker w = this.context.mock(Worker.class);
-		LocalThreadPool p = new LocalThreadPool(executor);
+		Pool p = new Pool(executor);
 		p.init();
 		p.donateWorker(w);
 		assertEquals(1, p.getCurrentPoolSize());
@@ -58,7 +59,7 @@ public class LocalThreadPoolTest {
 	public void shouldHaveTwoWorker() {
 		Worker w1 = this.context.mock(Worker.class, "w1");
 		Worker w2 = this.context.mock(Worker.class, "w2");
-		LocalThreadPool p = new LocalThreadPool(executor);
+		Pool p = new Pool(executor);
 		p.init();
 		p.donateWorker(w1);
 		p.donateWorker(w2);
@@ -68,7 +69,7 @@ public class LocalThreadPoolTest {
 
 	@Test(expected = IllegalStateException.class)
 	public void shouldNotBeAbleToInitTwice() {
-		LocalThreadPool p = new LocalThreadPool(this.executor);
+		Pool p = new Pool(this.executor);
 		try {
 			p.init(); // first time must work
 		} catch (IllegalStateException ise) {
@@ -82,7 +83,7 @@ public class LocalThreadPoolTest {
 		final WorkerTask task = this.context.mock(WorkerTask.class);
 		final Executor poolExec = Executors.newSingleThreadExecutor();
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
-		LocalThreadPool p = new LocalThreadPool(poolExec);
+		Pool p = new Pool(poolExec);
 		p.init();
 		final ThreadWorker worker = new ThreadWorker(p, threadExec);
 		p.donateWorker(worker);
@@ -90,7 +91,7 @@ public class LocalThreadPoolTest {
 		this.context.checking(new Expectations() {
 			{
 				exactly(2).of(task).getMapReduceTaskUUID();
-				one(task).doWork(worker);
+				one(task).runTask(worker);
 			}
 		});
 
@@ -101,7 +102,7 @@ public class LocalThreadPoolTest {
 	@Test
 	public void shouldBeAvailableAgain() {
 		final WorkerTask workerTask = this.context.mock(WorkerTask.class);
-		final LocalThreadPool pool = new LocalThreadPool(this.executor);
+		final Pool pool = new Pool(this.executor);
 		pool.init();
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
 		final ThreadWorker worker = new ThreadWorker(pool, threadExec);
@@ -109,7 +110,7 @@ public class LocalThreadPoolTest {
 		this.context.checking(new Expectations() {
 			{
 				exactly(2).of(workerTask).getMapReduceTaskUUID();
-				oneOf(workerTask).doWork(worker);
+				oneOf(workerTask).runTask(worker);
 			}
 		});
 		pool.enqueueWork(workerTask);
@@ -127,7 +128,7 @@ public class LocalThreadPoolTest {
 				return ts[0];
 			}
 		});
-		LocalThreadPool pool = new LocalThreadPool(exec);
+		Pool pool = new Pool(exec);
 		pool.init();
 		assertTrue(pool.isRunning());
 		Thread.sleep(200);

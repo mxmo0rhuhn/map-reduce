@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.WorkerTask;
@@ -45,18 +46,24 @@ public class ThreadWorkerTest {
 		this.context = new JUnit4Mockery();
 		this.pool = this.context.mock(Pool.class);
 		this.workerTask = new WorkerTask() {
-			@Override public void doWork(Worker processingWorker) { }
+			@Override public void runTask(Context ctx) { }
             @Override public State getCurrentState() { return null; }
 			@Override public Worker getWorker() { return null; }
 			@Override public String getUUID() { return null; }
-			@Override public String getMapReduceTaskUUID() { return mrtuuid; } 
+			@Override public String getMapReduceTaskUUID() { return mrtuuid; }
+			@Override public void setWorker(Worker worker) { }
+			@Override public List<KeyValuePair> getResults(String mapReduceTaskUUID) { return null; }
+			@Override public String getInput() { return null; } 
 		};
 		this.workerTask2 = new WorkerTask() {
-			@Override public void doWork(Worker processingWorker) { }
+			@Override public void runTask(Context ctx) { }
             @Override public State getCurrentState() { return null; }
 			@Override public Worker getWorker() { return null; }
 			@Override public String getUUID() { return null; }
 			@Override public String getMapReduceTaskUUID() { return mrtuuid2; } 
+			@Override public void setWorker(Worker worker) { }
+			@Override public List<KeyValuePair> getResults(String mapReduceTaskUUID) { return null; }
+			@Override public String getInput() { return null; } 
 		};
 	}
 

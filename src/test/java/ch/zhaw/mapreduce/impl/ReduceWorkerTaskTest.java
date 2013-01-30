@@ -35,7 +35,7 @@ import ch.zhaw.mapreduce.WorkerTask.State;
 import ch.zhaw.mapreduce.workers.ThreadWorker;
 
 @RunWith(JMock.class)
-public class PooledReduceWorkerTaskTest {
+public class ReduceWorkerTaskTest {
 
 	private Mockery context;
 
@@ -56,25 +56,25 @@ public class PooledReduceWorkerTaskTest {
 
 	@Test
 	public void shouldSetMrUuid() {
-		ReduceWorkerTask task = new ReduceWorkerTask(p, "mruid", "key", redInstr, keyVals);
+		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", redInstr, keyVals);
 		assertEquals("mruid", task.getMapReduceTaskUUID());
 	}
 
 	@Test
 	public void shouldSetReduceInstruction() {
-		ReduceWorkerTask task = new ReduceWorkerTask(p, "mruid", "key", redInstr, keyVals);
+		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", redInstr, keyVals);
 		assertSame(redInstr, task.getReduceTask());
 	}
 
 	@Test
 	public void shouldBeInitiatedInitially() {
-		ReduceWorkerTask task = new ReduceWorkerTask(p, "mruid", "key", redInstr, keyVals);
+		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", redInstr, keyVals);
 		assertEquals(State.INITIATED, task.getCurrentState());
 	}
 
 	@Test
 	public void shouldBeEnqueuedAfterSubmissionToPool() {
-		final ReduceWorkerTask task = new ReduceWorkerTask(p, "mruid", "key", redInstr, keyVals);
+		final ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", redInstr, keyVals);
 		this.context.checking(new Expectations() {
 			{
 				oneOf(p).enqueueWork(task);
@@ -86,12 +86,12 @@ public class PooledReduceWorkerTaskTest {
 
 	@Test
 	public void shouldBeCompletedAfterSuccessfulExecution() {
-		LocalThreadPool pool = new LocalThreadPool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor());
 		pool.init();
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
 		ThreadWorker worker = new ThreadWorker(pool, exec);
 		pool.donateWorker(worker);
-		final ReduceWorkerTask task = new ReduceWorkerTask(pool, "mruid", "key", redInstr, keyVals);
+		final ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", redInstr, keyVals);
 		this.context.checking(new Expectations() {
 			{
 				oneOf(redInstr).reduce(with(task), with("key"), with(aNonNull(Iterator.class)));
@@ -104,13 +104,13 @@ public class PooledReduceWorkerTaskTest {
 
 	@Test
 	public void shouldBeInProgressWhileExecuting() throws InterruptedException, BrokenBarrierException {
-		LocalThreadPool pool = new LocalThreadPool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor());
 		pool.init();
 		Executor exec = Executors.newSingleThreadExecutor();
 		final CyclicBarrier barrier = new CyclicBarrier(2);
 		ThreadWorker worker = new ThreadWorker(pool, exec);
 		assertTrue(pool.donateWorker(worker));
-		ReduceWorkerTask task = new ReduceWorkerTask(pool, "mruid", "key", new ReduceInstruction() {
+		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", new ReduceInstruction() {
 
 			@Override
 			public void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair> values) {
@@ -135,12 +135,12 @@ public class PooledReduceWorkerTaskTest {
 
 	@Test
 	public void shouldBeFailedAfterException() throws InterruptedException {
-		LocalThreadPool pool = new LocalThreadPool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor());
 		pool.init();
 		Executor exec = Executors.newSingleThreadExecutor();
 		ThreadWorker worker = new ThreadWorker(pool, exec);
 		assertTrue(pool.donateWorker(worker));
-		ReduceWorkerTask task = new ReduceWorkerTask(pool, "mruid", "key", new ReduceInstruction() {
+		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", new ReduceInstruction() {
 
 			@Override
 			public void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair> values) {
@@ -155,7 +155,7 @@ public class PooledReduceWorkerTaskTest {
 
 	@Test
 	public void shouldBeAbleToRerunFailed() {
-		LocalThreadPool pool = new LocalThreadPool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor());
 		pool.init();
 		ExactCommandExecutor exec1 = new ExactCommandExecutor(1);
 		ExactCommandExecutor exec2 = new ExactCommandExecutor(1);
@@ -164,7 +164,7 @@ public class PooledReduceWorkerTaskTest {
 		assertTrue(pool.donateWorker(worker1));
 		assertTrue(pool.donateWorker(worker2));
 		final AtomicInteger cnt = new AtomicInteger();
-		ReduceWorkerTask task = new ReduceWorkerTask(pool, "mruid", "key", new ReduceInstruction() {
+		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", new ReduceInstruction() {
 
 			@Override
 			public void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair> values) {
@@ -191,12 +191,12 @@ public class PooledReduceWorkerTaskTest {
 	
 	@Test
 	public void shouldEmitToProcessingWorker() {
-		LocalThreadPool pool = new LocalThreadPool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor());
 		pool.init();
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
 		ThreadWorker worker = new ThreadWorker(pool, exec);
 		assertTrue(pool.donateWorker(worker));
-		ReduceWorkerTask task = new ReduceWorkerTask(pool, "mruid", "key", new ReduceInstruction() {
+		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", new ReduceInstruction() {
 
 			@Override
 			public void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair> values) {

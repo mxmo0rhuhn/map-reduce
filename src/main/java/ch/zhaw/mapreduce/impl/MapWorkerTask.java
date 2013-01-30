@@ -1,6 +1,8 @@
 package ch.zhaw.mapreduce.impl;
 
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -22,8 +24,11 @@ import com.google.inject.assistedinject.Assisted;
  */
 public class MapWorkerTask implements WorkerTask {
 
+	@Inject
+	private Logger logger;
+
 	private volatile Worker myWorker;
-	
+
 	/** Aufgabe, die der Task derzeit ausführt */
 	private final MapInstruction mapInstruction;
 
@@ -43,11 +48,9 @@ public class MapWorkerTask implements WorkerTask {
 	private volatile State currentState = State.INITIATED;
 
 	@Inject
-	public MapWorkerTask(@Assisted("uuid") String mapReduceTaskUID,
-						 @Assisted MapInstruction mapInstruction,
-						 @Assisted @Nullable CombinerInstruction combinerInstruction,
-						 @Assisted("inputUUID") String inputUID,
-						 @Assisted("input") String input) {
+	public MapWorkerTask(@Assisted("uuid") String mapReduceTaskUID, @Assisted MapInstruction mapInstruction,
+			@Assisted @Nullable CombinerInstruction combinerInstruction, @Assisted("inputUUID") String inputUID,
+			@Assisted("input") String input) {
 		this.mapReduceTaskUID = mapReduceTaskUID;
 		this.mapInstruction = mapInstruction;
 		this.combinerInstruction = combinerInstruction;
@@ -67,6 +70,7 @@ public class MapWorkerTask implements WorkerTask {
 	@Override
 	public void runTask(Context ctx) {
 		this.currentState = State.INPROGRESS;
+		logger.finest("State: INPROGRESS");
 		try {
 			// Mappen
 			this.mapInstruction.map(ctx, toDo);
@@ -79,9 +83,12 @@ public class MapWorkerTask implements WorkerTask {
 				ctx.replaceMapResult(afterCombining);
 			}
 			this.currentState = State.COMPLETED;
+			logger.finest("State: COMPLETED");
 		} catch (ComputationStoppedException stopped) {
+			logger.finest("State: ABORTED");
 			this.currentState = State.ABORTED;
 		} catch (Exception e) {
+			logger.log(Level.WARNING, "State: FAILED", e);
 			this.currentState = State.FAILED;
 		}
 	}

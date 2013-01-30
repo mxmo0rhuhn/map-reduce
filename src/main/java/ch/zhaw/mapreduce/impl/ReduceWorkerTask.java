@@ -1,6 +1,8 @@
 package ch.zhaw.mapreduce.impl;
 
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
@@ -8,6 +10,7 @@ import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.WorkerTask;
+import ch.zhaw.mapreduce.workers.ComputationStoppedException;
 import ch.zhaw.mapreduce.workers.Worker;
 
 import com.google.inject.assistedinject.Assisted;
@@ -19,6 +22,9 @@ import com.google.inject.assistedinject.Assisted;
  * 
  */
 public class ReduceWorkerTask implements WorkerTask {
+
+	@Inject
+	private Logger logger;
 
 	private volatile Worker myWorker;
 	/**
@@ -47,10 +53,8 @@ public class ReduceWorkerTask implements WorkerTask {
 	private volatile State curState = State.INITIATED;
 
 	@Inject
-	public ReduceWorkerTask(@Assisted("uuid") String mapReduceTaskUUID,
-							@Assisted("key") String key,
-							@Assisted ReduceInstruction reduceInstruction,
-							@Assisted List<KeyValuePair> toDo) {
+	public ReduceWorkerTask(@Assisted("uuid") String mapReduceTaskUUID, @Assisted("key") String key,
+			@Assisted ReduceInstruction reduceInstruction, @Assisted List<KeyValuePair> toDo) {
 		this.mapReduceTaskUUID = mapReduceTaskUUID;
 		this.key = key;
 		this.reduceInstruction = reduceInstruction;
@@ -61,11 +65,17 @@ public class ReduceWorkerTask implements WorkerTask {
 	@Override
 	public void runTask(Context ctx) {
 		this.curState = State.INPROGRESS;
+		logger.finest("State: INPROGRESS");
 
 		try {
 			this.reduceInstruction.reduce(ctx, key, input.iterator());
 			this.curState = State.COMPLETED;
+			logger.finest("State: COMPLETED");
+		} catch (ComputationStoppedException cse) {
+			logger.finest("State: ABORTED");
+			this.curState = State.ABORTED;
 		} catch (Exception e) {
+			logger.log(Level.WARNING, "State: FAILED", e);
 			this.curState = State.FAILED;
 		}
 	}
@@ -98,7 +108,7 @@ public class ReduceWorkerTask implements WorkerTask {
 	public String getMapReduceTaskUUID() {
 		return this.mapReduceTaskUUID;
 	}
-	
+
 	public List<KeyValuePair> getResults(String mapReduceTaskUUID) {
 		return myWorker.getMapResult(mapReduceTaskUUID, key);
 	}

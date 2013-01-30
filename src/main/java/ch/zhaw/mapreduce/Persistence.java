@@ -4,13 +4,15 @@ import java.util.List;
 
 public interface Persistence {
 
-	void store(String mrUuid, String inputUuid, String key, String value);
+	void storeMap(String mrUuid, String inputUuid, String key, String value);
 
-	void store(String mrUuid, String inputUuid, String result);
+	void storeReduce(String mrUuid, String inputUuid, String result);
 
-	List<KeyValuePair> get(String mrUuid, String inputUuid);
+	List<String> getReduce(String mrUuid, String inputUuid);
+	
+	List<KeyValuePair> getMap(String mrUuid, String inputUuid);
 
-	void replace(String mrUuid, String inputUuid, List<KeyValuePair> afterCombining);
+	void replaceMap(String mrUuid, String inputUuid, List<KeyValuePair> afterCombining);
 
 	void destroy(String mrUuid, String inputUuid);
 

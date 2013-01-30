@@ -5,15 +5,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
 import ch.zhaw.mapreduce.Context;
-import ch.zhaw.mapreduce.FilePersistence;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.WorkerTask;
+import ch.zhaw.mapreduce.registry.Registry;
 import ch.zhaw.mapreduce.registry.WorkerExecutor;
 
 /**
@@ -23,6 +24,9 @@ import ch.zhaw.mapreduce.registry.WorkerExecutor;
  * 
  */
 public class ThreadWorker implements Worker {
+
+	@Inject
+	private Logger logger;
 
 	private final ConcurrentMap<String, ConcurrentMap<String, Context>> contexts = new ConcurrentHashMap<String, ConcurrentMap<String, Context>>();
 
@@ -56,18 +60,15 @@ public class ThreadWorker implements Worker {
 		String mrUuid = task.getMapReduceTaskUUID();
 		String inputUuid = task.getUUID();
 		// TODO guice (assisted inject)
-		final Context ctx = new LocalContext(new FilePersistence(), mrUuid, inputUuid);
+		Persistence persistence = Registry.getComponent(Persistence.class);
+		final Context ctx = new LocalContext(persistence, mrUuid, inputUuid);
 		contexts.putIfAbsent(mrUuid, new ConcurrentHashMap<String, Context>());
 		ConcurrentMap<String, Context> inputs = contexts.get(mrUuid);
 		inputs.put(inputUuid, ctx);
 		this.executor.execute(new Runnable() {
 			@Override
 			public void run() {
-				try {
-					task.runTask(ctx);					
-				} catch (ComputationStoppedException stopped) {
-					// TODO LOG
-				}
+				task.runTask(ctx);
 				pool.workerIsFinished(ThreadWorker.this);
 			}
 
@@ -93,7 +94,11 @@ public class ThreadWorker implements Worker {
 	/** {@inheritDoc} */
 	@Override
 	public void cleanAllResults(String mapReduceTaskUUID) {
-		for (Map.Entry<String, Context> inputs : this.contexts.get(mapReduceTaskUUID).entrySet()) {
+		Map<String, Context> mrContexts = this.contexts.get(mapReduceTaskUUID);
+		if (mrContexts == null) {
+			logger.finest("Nothing to delete for " + mapReduceTaskUUID);
+		}
+		for (Map.Entry<String, Context> inputs : mrContexts.entrySet()) {
 			inputs.getValue().destroy();
 		}
 		this.contexts.remove(mapReduceTaskUUID);
@@ -108,7 +113,7 @@ class LocalContext implements Context {
 	private final String mrUuid;
 
 	private final String inputUuid;
-	
+
 	private volatile boolean stopped = false;
 
 	LocalContext(Persistence persistence, String mrUuid, String inputUuid) {
@@ -122,7 +127,7 @@ class LocalContext implements Context {
 		if (stopped) {
 			throw new ComputationStoppedException();
 		}
-		persistence.store(mrUuid, inputUuid, key, value);
+		persistence.storeMap(mrUuid, inputUuid, key, value);
 	}
 
 	@Override
@@ -130,15 +135,15 @@ class LocalContext implements Context {
 		if (stopped) {
 			throw new ComputationStoppedException();
 		}
-		persistence.store(mrUuid, inputUuid, result);
-	} 
+		persistence.storeReduce(mrUuid, inputUuid, result);
+	}
 
 	@Override
 	public List<KeyValuePair> getMapResult() {
 		if (stopped) {
 			throw new ComputationStoppedException();
 		}
-		return persistence.get(mrUuid, inputUuid);
+		return persistence.getMap(mrUuid, inputUuid);
 	}
 
 	@Override
@@ -146,7 +151,7 @@ class LocalContext implements Context {
 		if (stopped) {
 			throw new ComputationStoppedException();
 		}
-		persistence.replace(mrUuid, inputUuid, afterCombining);
+		persistence.replaceMap(mrUuid, inputUuid, afterCombining);
 	}
 
 	@Override

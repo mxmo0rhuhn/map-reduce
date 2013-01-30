@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
@@ -19,6 +20,9 @@ import ch.zhaw.mapreduce.registry.MapReduceTaskUUID;
 import ch.zhaw.mapreduce.registry.Registry;
 
 public final class Master {
+	
+	@Inject
+	private Logger logger;
 
 	private final Pool pool;
 
@@ -38,28 +42,35 @@ public final class Master {
 			final CombinerInstruction combinerInstruction,
 			final ReduceInstruction reduceInstruction, Iterator<String> input)
 			throws InterruptedException {
-
 		// MAP
 		// Alle derzeitigen aufgaben die ausgeführt werden
-		System.out.println("Starte MAP Phase");
+		logger.info("MAP started");
 		Set<WorkerTask> mapTasks = runMap(mapInstruction, combinerInstruction, input);
+		logger.info("MAP all tasks enqueued");
 		Set<WorkerTask> mapResults = waitForWorkers(mapTasks);
-		System.out.println("MAP Phase fertig");
+		logger.info("MAP done");
 
 		// SHUFFLE
-		System.out.println("Starte SHUFFLE Phase");
+		logger.info("SHUFFLE started");
 		Shuffler s = createShuffler(mapResults);
-		System.out.println("SHUFFLE Phase fertig");
+		logger.info("SHUFFLE done");
 
 		// REDUCE
-		System.out.println("Starte REDUCE Phase");
+		logger.info("REDUCE started");
 		Set<WorkerTask> reduceTasks = runReduce(reduceInstruction, s.getResults());
+		logger.info("REDUCE all tasks enqueued");
 		Set<WorkerTask> reduceResults = waitForWorkers(reduceTasks);
-		System.out.println("REDUCE Phase fertig");
+		logger.info("REDUCE done");
 
+		// Collecting results
+		logger.info("Collecting results started");
 		Map<String, String> results = collectResults(reduceResults);
+		logger.info("Collecting results done");
 
+		// Cleaning results from workers
+		logger.info("Cleaning results started");
 		this.pool.cleanResults(mapReduceTaskUUID);
+		logger.info("Cleaning results done");
 		return results;
 	}
 
@@ -129,20 +140,18 @@ public final class Master {
 		do {
 			// Schauen welche Tasks noch ausstehend sind
 			List<WorkerTask> toRemove = new LinkedList<WorkerTask>();
-			for (WorkerTask curWorkerTask : activeWorkerTasks) {
-				switch (curWorkerTask.getCurrentState()) {
+			for (WorkerTask task : activeWorkerTasks) {
+				switch (task.getCurrentState()) {
 				case COMPLETED:
-					toRemove.add(curWorkerTask);
-					results.add(curWorkerTask);
+					logger.finer("Task completed");
+					toRemove.add(task);
+					results.add(task);
 					break;
 				case FAILED:
-					// System.out.println("State:  " + curWorkerTask.getCurrentState());
-					// System.out.println("Worker: " + curWorkerTask.getWorker());
+					logger.finer("Task failed");
 					break;
 				default:
-
-					// Falls es diesen Status überhaupt gibt
-
+					logger.fine("Task " + task.getCurrentState());
 				}
 			}
 			activeWorkerTasks.removeAll(toRemove);

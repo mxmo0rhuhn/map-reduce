@@ -4,7 +4,9 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import ch.zhaw.mapreduce.FilePersistence;
 import ch.zhaw.mapreduce.Master;
+import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Shuffler;
 import ch.zhaw.mapreduce.WorkerTaskFactory;
@@ -18,6 +20,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.matcher.Matchers;
+import com.google.inject.name.Names;
 
 /**
  * In dieser Klasse befinden sich die Bindings für Guice - also welche Implementationen für welche Interfaces verwendet
@@ -39,12 +42,15 @@ public class MapReduceConfig extends AbstractModule {
 		install(new FactoryModuleBuilder().implement(MapWorkerTask.class, MapWorkerTask.class)
 				.implement(ReduceWorkerTask.class, ReduceWorkerTask.class).build(WorkerTaskFactory.class));
 
-		bind(Worker.class).to(ThreadWorker.class);
-		bind(Pool.class);
-		
-		// Master soll einfach von Guice verwaltet werden. Ohne Interface
 		bind(Master.class);
+		bind(Pool.class);
+		bind(Worker.class).to(ThreadWorker.class);
+		bind(Persistence.class).to(FilePersistence.class);
 		bind(Shuffler.class).to(InMemoryShuffler.class);
+		
+		bind(String.class).annotatedWith(Names.named("filepersistence.directory")).toInstance(System.getProperty("java.io.tmpdir") + "/map/filepers/");
+		bind(String.class).annotatedWith(Names.named("filepersistence.ending")).toInstance(".ser");
+		
 
 		// see PostConstructFeature
 		bindListener(Matchers.any(), new PostConstructFeature());
