@@ -112,4 +112,9 @@ public class ReduceWorkerTask implements WorkerTask {
 	public Worker getWorker() {
 		return myWorker;
 	}
+
+	@Override
+	public String getInput() {
+		return this.key;
+	}
 }

@@ -134,4 +134,9 @@ public class MapWorkerTask implements WorkerTask {
 	public List<KeyValuePair> getResults(String mapReduceTaskUUID) {
 		return myWorker.getMapResult(mapReduceTaskUID, inputUID);
 	}
+
+	@Override
+	public String getInput() {
+		return this.toDo;
+	}
 }

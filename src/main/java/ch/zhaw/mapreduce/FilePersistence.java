@@ -38,7 +38,7 @@ public class FilePersistence implements Persistence {
 	@Override
 	public void store(String mrUuid, String inputUuid, String result) {
 
-		List<String> toFile = get;
+		List<String> toFile = null; // TODO 
 		File storageFile = new File(path+mrUuid+inputUuid+fileEnding);
 		
 		try {
@@ -64,7 +64,8 @@ public class FilePersistence implements Persistence {
 	public List<KeyValuePair> get(String mrUuid, String inputUuid) {
 		List<KeyValuePair> toFile;
 		try {
-			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(storageFile));
+			// TODO implement
+			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(""));
 			toFile = (List<KeyValuePair>) ois.readObject();
 		} catch (Exception e) {
 			toFile = new ArrayList<KeyValuePair>();
@@ -84,6 +85,6 @@ public class FilePersistence implements Persistence {
 
 	}
 	private ObjectInputStream getFile(String mrUuid, String inputUuid) throws IOException {
-		return 
+		return null;
 	}
 }

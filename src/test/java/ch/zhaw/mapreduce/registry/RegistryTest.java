@@ -22,13 +22,12 @@ import org.junit.runner.RunWith;
 import ch.zhaw.mapreduce.CombinerInstruction;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;
-import ch.zhaw.mapreduce.MapWorkerTask;
 import ch.zhaw.mapreduce.Master;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.ReduceInstruction;
-import ch.zhaw.mapreduce.ReduceWorkerTask;
 import ch.zhaw.mapreduce.WorkerTaskFactory;
-import ch.zhaw.mapreduce.impl.LocalThreadPool;
+import ch.zhaw.mapreduce.impl.MapWorkerTask;
+import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 import ch.zhaw.mapreduce.workers.Worker;
 
 import com.google.inject.AbstractModule;
@@ -101,13 +100,12 @@ public class RegistryTest {
 
 			@Override
 			protected void configure() {
-				bind(Pool.class).to(LocalThreadPool.class);
+				bind(Pool.class);
 				bindListener(Matchers.any(), new PostConstructFeature());
 			}
 			
 			@Provides
 			@PoolExecutor
-			@SuppressWarnings("unused") // guice will
 			public Executor poolExec() {
 				return Executors.newSingleThreadExecutor();
 			}

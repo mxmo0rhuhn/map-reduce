@@ -40,7 +40,7 @@ public class MapReduceConfig extends AbstractModule {
 				.implement(ReduceWorkerTask.class, ReduceWorkerTask.class).build(WorkerTaskFactory.class));
 
 		bind(Worker.class).to(ThreadWorker.class);
-		bind(Pool.class).to(Pool.class);
+		bind(Pool.class);
 		
 		// Master soll einfach von Guice verwaltet werden. Ohne Interface
 		bind(Master.class);
