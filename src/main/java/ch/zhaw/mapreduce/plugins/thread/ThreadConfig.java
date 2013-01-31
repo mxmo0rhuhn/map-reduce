@@ -13,7 +13,7 @@ public class ThreadConfig extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(Worker.class).to(ThreadWorker.class);
-		bind(Integer.class).annotatedWith(Names.named("thread.nrworkers")).toInstance(1);
+		bind(Integer.class).annotatedWith(Names.named("thread.nrworkers")).toInstance(2);
 		bind(Executor.class).toInstance(Executors.newSingleThreadExecutor());
 	}
 
