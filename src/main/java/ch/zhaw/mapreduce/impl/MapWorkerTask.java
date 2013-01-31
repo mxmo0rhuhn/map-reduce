@@ -12,8 +12,8 @@ import ch.zhaw.mapreduce.ComputationStoppedException;
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;
+import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.workers.Worker;
 
 import com.google.inject.assistedinject.Assisted;
 

@@ -14,9 +14,9 @@ import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
+import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
 import ch.zhaw.mapreduce.registry.Registry;
-import ch.zhaw.mapreduce.workers.Worker;
 
 /**
  * Implementation von einem Thread-basierten Worker. Der Task wird ueber einen Executor ausgefuehrt.

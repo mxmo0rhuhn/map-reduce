@@ -3,8 +3,8 @@ package ch.zhaw.mapreduce.plugins.socket;
 import java.util.List;
 
 import ch.zhaw.mapreduce.KeyValuePair;
+import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.workers.Worker;
 
 /**
  * @author Max

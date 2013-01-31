@@ -9,8 +9,8 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import ch.zhaw.mapreduce.KeyValuePair;
+import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.workers.Worker;
 
 import com.google.android.gcm.server.Message;
 import com.google.android.gcm.server.Message.Builder;
