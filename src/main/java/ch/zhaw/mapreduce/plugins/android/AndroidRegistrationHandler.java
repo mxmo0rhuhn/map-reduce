@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce.android;
+package ch.zhaw.mapreduce.plugins.android;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -13,7 +13,6 @@ import javax.inject.Inject;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.mrcomm.CommException;
 import ch.zhaw.mapreduce.mrcomm.RegisterComm;
-import ch.zhaw.mapreduce.workers.Worker;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;

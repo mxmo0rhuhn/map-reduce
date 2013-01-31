@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce.android;
+package ch.zhaw.mapreduce.plugins.android;
 
 import java.io.IOException;
 import java.util.List;

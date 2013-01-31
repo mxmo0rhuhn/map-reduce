@@ -1,6 +1,11 @@
-package ch.zhaw.mapreduce;
+package ch.zhaw.mapreduce.plugins.socket;
 
 import java.util.List;
+
+import ch.zhaw.mapreduce.ComputationStoppedException;
+import ch.zhaw.mapreduce.Context;
+import ch.zhaw.mapreduce.KeyValuePair;
+import ch.zhaw.mapreduce.WorkerTask;
 
 
 public class SocketAgent {

@@ -1,12 +1,11 @@
-package ch.zhaw.mapreduce.android;
+package ch.zhaw.mapreduce.plugins.android;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import ch.zhaw.mapreduce.AgentAdapter;
 import ch.zhaw.mapreduce.mrcomm.RegisterComm;
 import ch.zhaw.mapreduce.mrcomm.json.JsonRegisterComm;
-import ch.zhaw.mapreduce.registry.AndroidRegisterExecutor;
+import ch.zhaw.mapreduce.plugins.AgentAdapter;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;

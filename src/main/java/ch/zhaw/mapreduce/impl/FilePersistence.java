@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce;
+package ch.zhaw.mapreduce.impl;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,6 +15,9 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
+
+import ch.zhaw.mapreduce.KeyValuePair;
+import ch.zhaw.mapreduce.Persistence;
 
 public class FilePersistence implements Persistence {
 

@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce.registry;
+package ch.zhaw.mapreduce.plugins.android;
 
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 

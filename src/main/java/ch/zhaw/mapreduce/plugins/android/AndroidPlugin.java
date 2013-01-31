@@ -1,11 +1,11 @@
-package ch.zhaw.mapreduce.android;
+package ch.zhaw.mapreduce.plugins.android;
 
-import ch.zhaw.mapreduce.AdapterPlugin;
-import ch.zhaw.mapreduce.AgentAdapter;
+import ch.zhaw.mapreduce.plugins.AgentAdapter;
+import ch.zhaw.mapreduce.plugins.Plugin;
 
 import com.google.inject.Injector;
 
-public class AndroidAdapterPlugin implements AdapterPlugin {
+public class AndroidPlugin implements Plugin {
 
 	@Override
 	public AgentAdapter createAdapter(Injector parent) {

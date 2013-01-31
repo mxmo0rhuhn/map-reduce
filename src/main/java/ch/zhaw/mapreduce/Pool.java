@@ -16,7 +16,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import ch.zhaw.mapreduce.registry.PoolExecutor;
-import ch.zhaw.mapreduce.workers.Worker;
 
 /**
  * Implementation des Pools mit lokalen Threads auf dem jeweiligen PC

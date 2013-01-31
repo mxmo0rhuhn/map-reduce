@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce.workers;
+package ch.zhaw.mapreduce.plugins.thread;
 
 import java.util.List;
 import java.util.Map;
@@ -16,7 +16,7 @@ import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.WorkerTask;
 import ch.zhaw.mapreduce.registry.Registry;
-import ch.zhaw.mapreduce.registry.WorkerExecutor;
+import ch.zhaw.mapreduce.workers.Worker;
 
 /**
  * Implementation von einem Thread-basierten Worker. Der Task wird ueber einen Executor ausgefuehrt.
@@ -48,7 +48,7 @@ public class ThreadWorker implements Worker {
 	 * @param executor
 	 */
 	@Inject
-	public ThreadWorker(Pool pool, @WorkerExecutor Executor executor) {
+	public ThreadWorker(Pool pool, Executor executor) {
 		this.pool = pool;
 		this.executor = executor;
 	}

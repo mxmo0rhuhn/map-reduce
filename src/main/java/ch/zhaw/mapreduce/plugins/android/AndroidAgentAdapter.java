@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce.android;
+package ch.zhaw.mapreduce.plugins.android;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -7,9 +7,8 @@ import java.util.concurrent.Executor;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import ch.zhaw.mapreduce.AdapterException;
-import ch.zhaw.mapreduce.AgentAdapter;
-import ch.zhaw.mapreduce.registry.AndroidRegisterExecutor;
+import ch.zhaw.mapreduce.plugins.AdapterException;
+import ch.zhaw.mapreduce.plugins.AgentAdapter;
 
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;

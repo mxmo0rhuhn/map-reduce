@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce;
+package ch.zhaw.mapreduce.plugins;
 
 public interface AgentAdapter {
 	
