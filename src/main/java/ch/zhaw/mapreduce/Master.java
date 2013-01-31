@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,7 +49,8 @@ public final class Master {
 		// MAP
 		// Alle derzeitigen aufgaben die ausgeführt werden
 		logger.info("MAP started");
-		Set<WorkerTask> mapTasks = runMap(mapInstruction, combinerInstruction, input);
+		Set<WorkerTask> activeTasks = new LinkedHashSet<WorkerTask>();
+		Map<String, String> mapTasks = runMap(mapInstruction, combinerInstruction, input, activeTasks);
 		logger.info("MAP all tasks enqueued");
 		Set<WorkerTask> mapResults = waitForWorkers(mapTasks);
 		logger.info("MAP done");
@@ -77,22 +79,23 @@ public final class Master {
 		return results;
 	}
 
-	Set<WorkerTask> runMap(MapInstruction mapInstruction, CombinerInstruction combinerInstruction,
-			Iterator<String> input) {
-		Set<WorkerTask> activeWorkerTasks = new LinkedHashSet<WorkerTask>();
+	Map<String, String> runMap(MapInstruction mapInstruction, CombinerInstruction combinerInstruction,
+			Iterator<String> input, Set<WorkerTask> activeTasks) {
+		Map<String, String> inputToUuidMapping = new LinkedHashMap<String, String>();
 		// reiht für jeden Input - Teil einen MapWorkerTask in den Pool ein
 		while (input.hasNext()) {
 
 			String mapTaskUuid = UUID.randomUUID().toString();
 			String todo = input.next();
+			inputToUuidMapping.put(todo, mapTaskUuid);
 
 			MapWorkerTask mapTask = runnerFactory.createMapWorkerTask(mapReduceTaskUUID, mapTaskUuid, mapInstruction,
 					combinerInstruction, todo);
 
-			activeWorkerTasks.add(mapTask);
+			activeTasks.add(mapTask);
 			pool.enqueueWork(mapTask);
 		}
-		return activeWorkerTasks;
+		return inputToUuidMapping;
 	}
 
 	Shuffler createShuffler(Collection<WorkerTask> mapResults) {
@@ -106,9 +109,11 @@ public final class Master {
 		return s;
 	}
 
-	Set<WorkerTask> runReduce(ReduceInstruction reduceInstruction,
-			Iterator<Map.Entry<String, List<KeyValuePair>>> shuffleResults) {
-		Set<WorkerTask> reduceTasks = new LinkedHashSet<WorkerTask>();
+	Map<String, Map.Entry<String, List<KeyValuePair>>> runReduce(ReduceInstruction reduceInstruction,
+			Iterator<Map.Entry<String, List<KeyValuePair>>> shuffleResults, Set<WorkerTask> activeTasks) {
+		
+		Map<String, Map.Entry<String, List<KeyValuePair>>> reduceToUuid = new HashMap<String, Map.Entry<String, List<KeyValuePair>>>();
+		activeTasks = new LinkedHashSet<WorkerTask>();
 		// reiht für jeden Input - Teil einen MapWorkerTask in den Pool ein
 		while (shuffleResults.hasNext()) {
 			Map.Entry<String, List<KeyValuePair>> curKeyValuePairs = shuffleResults.next();
@@ -117,10 +122,12 @@ public final class Master {
 			ReduceWorkerTask reduceTask = runnerFactory.createReduceWorkerTask(mapReduceTaskUUID, reduceTaskUuid,
 					curKeyValuePairs.getKey(), reduceInstruction, curKeyValuePairs.getValue());
 
-			reduceTasks.add(reduceTask);
+			
+			activeTasks.add(reduceTask);
 			pool.enqueueWork(reduceTask);
+			reduceToUuid.put(reduceTaskUuid, new KeyVal(curKeyValuePairs.getKey(), curKeyValuePairs.getValue()));
 		}
-		return reduceTasks;
+		return reduceToUuid;
 	}
 
 	Map<String, String> collectResults(Set<WorkerTask> reduceResults) {
@@ -154,6 +161,7 @@ public final class Master {
 					break;
 				case FAILED:
 					logger.finer("Task failed");
+					toRemove.add(task);
 					break;
 				case INPROGRESS:
 					logger.finest("Task in progress");
@@ -165,5 +173,33 @@ public final class Master {
 			activeWorkerTasks.removeAll(toRemove);
 		} while (!activeWorkerTasks.isEmpty());
 		return results;
+	}
+
+	private static final class KeyVal implements Map.Entry<String, List<KeyValuePair>> {
+
+		private final String key;
+
+		private final List<KeyValuePair> val;
+
+		KeyVal(String key, List<KeyValuePair> val) {
+			this.key = key;
+			this.val = val;
+		}
+
+		@Override
+		public String getKey() {
+			return this.key;
+		}
+
+		@Override
+		public List<KeyValuePair> getValue() {
+			return this.val;
+		}
+
+		@Override
+		public List<KeyValuePair> setValue(List<KeyValuePair> value) {
+			throw new UnsupportedOperationException();
+		}
+
 	}
 }
