@@ -5,7 +5,6 @@ import java.util.concurrent.Executors;
 
 import ch.zhaw.mapreduce.mrcomm.RegisterComm;
 import ch.zhaw.mapreduce.mrcomm.json.JsonRegisterComm;
-import ch.zhaw.mapreduce.plugins.AgentAdapter;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -17,7 +16,7 @@ public class AndroidConfig extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(AgentAdapter.class).to(AndroidAgentAdapter.class);
+		bind(AndroidAgentAdapter.class);
 		bind(HttpHandler.class).to(AndroidRegistrationHandler.class);
 		bind(RegisterComm.class).to(JsonRegisterComm.class);
 

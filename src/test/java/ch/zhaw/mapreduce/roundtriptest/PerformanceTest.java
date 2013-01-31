@@ -15,8 +15,8 @@ import ch.zhaw.mapreduce.MapReduceTask;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.ReduceEmitter;
 import ch.zhaw.mapreduce.ReduceInstruction;
+import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.registry.Registry;
-import ch.zhaw.mapreduce.workers.Worker;
 
 public class PerformanceTest {
 	

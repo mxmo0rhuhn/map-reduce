@@ -21,7 +21,7 @@ public final class Loader {
 		this.propName = propName;
 	}
 
-	public List<Plugin> loadPlugins() {
+	public List<AgentPlugin> loadPlugins() {
 		String props = System.getProperty(propName);
 		if (props == null) {
 			logger.warning("No plugins found");
@@ -31,10 +31,10 @@ public final class Loader {
 		return loadClasses(pluginNames);
 	}
 
-	private List<Plugin> loadClasses(String[] pluginNames) {
-		List<Plugin> instances = new LinkedList<Plugin>();
+	private List<AgentPlugin> loadClasses(String[] pluginNames) {
+		List<AgentPlugin> instances = new LinkedList<AgentPlugin>();
 		for (String pluginName : pluginNames) {
-			Plugin plugin = instantiate(pluginName);
+			AgentPlugin plugin = instantiate(pluginName);
 			if (plugin != null) {
 				instances.add(plugin);
 			}
@@ -49,11 +49,11 @@ public final class Loader {
 	 * @param pluginName
 	 * @return
 	 */
-	private Plugin instantiate(String pluginName) {
+	private AgentPlugin instantiate(String pluginName) {
 		String baseName = Loader.class.getPackage().getName();
 		String className = String.format("%s.%s.%sPlugin", baseName, pluginName.toLowerCase(), pluginName);
 		try {
-			Class<Plugin> klass = (Class<Plugin>) Class.forName(className);
+			Class<AgentPlugin> klass = (Class<AgentPlugin>) Class.forName(className);
 			return klass.newInstance();
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, "Failed to load Plugin " + className, e);

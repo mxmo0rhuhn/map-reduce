@@ -39,7 +39,9 @@ public final class Registry {
 	 * @param Interface
 	 *            oder Klasse, für die ein Binding existiert.
 	 * @return eine Instanz vom Typ
+	 * @deprecated wir sollten einen zentralen Einstiegspunkt fuer Guice haben
 	 */
+	@Deprecated
 	public static <T> T getComponent(Class<T> type) {
 		return INSTANCE.injector.getInstance(type);
 	}

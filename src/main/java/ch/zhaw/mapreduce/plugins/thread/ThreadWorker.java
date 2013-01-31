@@ -16,7 +16,8 @@ import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.registry.Registry;
+
+import com.google.inject.Provider;
 
 /**
  * Implementation von einem Thread-basierten Worker. Der Task wird ueber einen Executor ausgefuehrt.
@@ -40,6 +41,8 @@ public class ThreadWorker implements Worker {
 	 * Der Executor ist fuer asynchrone ausfuehren.
 	 */
 	private final Executor executor;
+	
+	private final Provider<Persistence> persistenceProvider;
 
 	/**
 	 * Erstellt einen neunen ThreadWorker mit dem gegebenen Pool und Executor.
@@ -48,9 +51,10 @@ public class ThreadWorker implements Worker {
 	 * @param executor
 	 */
 	@Inject
-	public ThreadWorker(Pool pool, Executor executor) {
+	public ThreadWorker(Pool pool, Executor executor, Provider<Persistence> persistenceProvider) {
 		this.pool = pool;
 		this.executor = executor;
+		this.persistenceProvider = persistenceProvider;
 	}
 
 	/**
@@ -60,9 +64,7 @@ public class ThreadWorker implements Worker {
 	public void executeTask(final WorkerTask task) {
 		String mrUuid = task.getMapReduceTaskUUID();
 		String taskUuid = task.getUUID();
-		// TODO guice (assisted inject)
-		Persistence persistence = Registry.getComponent(Persistence.class);
-		final Context ctx = new LocalContext(persistence, mrUuid, taskUuid);
+		final Context ctx = new LocalContext(persistenceProvider.get(), mrUuid, taskUuid);
 		contexts.putIfAbsent(mrUuid, new ConcurrentHashMap<String, Context>());
 		ConcurrentMap<String, Context> inputs = contexts.get(mrUuid);
 		inputs.put(taskUuid, ctx);

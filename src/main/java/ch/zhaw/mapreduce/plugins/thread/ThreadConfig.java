@@ -1,6 +1,6 @@
 package ch.zhaw.mapreduce.plugins.thread;
 
-import ch.zhaw.mapreduce.plugins.AgentAdapter;
+import ch.zhaw.mapreduce.Worker;
 
 import com.google.inject.AbstractModule;
 
@@ -8,7 +8,7 @@ public class ThreadConfig extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(AgentAdapter.class).to(ThreadAgentAdapter.class);
+		bind(Worker.class).to(ThreadWorker.class);
 	}
 
 }
