@@ -37,6 +37,7 @@ public final class Loader {
 			AgentPlugin plugin = instantiate(pluginName);
 			if (plugin != null) {
 				instances.add(plugin);
+				logger.config("Plugin " + pluginName + " loaded");
 			}
 		}
 		return instances;
@@ -51,7 +52,7 @@ public final class Loader {
 	 */
 	private AgentPlugin instantiate(String pluginName) {
 		String baseName = Loader.class.getPackage().getName();
-		String className = String.format("%s.%s.%sPlugin", baseName, pluginName.toLowerCase(), pluginName);
+		String className = String.format("%s.%s.%sAgentPlugin", baseName, pluginName.toLowerCase(), pluginName);
 		try {
 			Class<AgentPlugin> klass = (Class<AgentPlugin>) Class.forName(className);
 			return klass.newInstance();
