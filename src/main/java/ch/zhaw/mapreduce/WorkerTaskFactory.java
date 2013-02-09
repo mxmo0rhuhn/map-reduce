@@ -54,5 +54,5 @@ public interface WorkerTaskFactory {
 											@Assisted("reduceTaskUuid") String reduceTaskUuid,
 											@Assisted("key") String key,
 											@Assisted ReduceInstruction reduceInstr,
-											@Assisted List<KeyValuePair> toDo);
+											@Assisted List<KeyValuePair<String, String>> toDo);
 }

@@ -45,7 +45,7 @@ public class ReduceWorkerTask implements WorkerTask {
 	/**
 	 * Der zu reduzierende Input
 	 */
-	private final List<KeyValuePair> input;
+	private final List<KeyValuePair<String, String>> input;
 	
 	private final String reduceTaskUuid;
 
@@ -56,7 +56,7 @@ public class ReduceWorkerTask implements WorkerTask {
 
 	@Inject
 	public ReduceWorkerTask(@Assisted("uuid") String mapReduceTaskUUID, @Assisted("reduceTaskUuid") String reduceTaskUuid, @Assisted ReduceInstruction reduceInstruction,
-			@Assisted("key") String key, @Assisted List<KeyValuePair> inputs) {
+			@Assisted("key") String key, @Assisted List<KeyValuePair<String, String>> inputs) {
 		this.mapReduceTaskUUID = mapReduceTaskUUID;
 		this.key = key;
 		this.reduceInstruction = reduceInstruction;

@@ -8,15 +8,15 @@ import java.io.Serializable;
  * @author Max
  * 
  */
-public final class KeyValuePair implements Serializable {
+public final class KeyValuePair<K, V> implements Serializable {
 
 	private static final long serialVersionUID = 1312114797122004977L;
 
-	private final String key;
+	private final K key;
 
-	private final String value;
+	private final V value;
 
-	public KeyValuePair(String key, String value) {
+	public KeyValuePair(K key, V value) {
 		if (key == null || value == null) {
 			throw new IllegalArgumentException("Neither argument must be null");
 		}
@@ -24,11 +24,11 @@ public final class KeyValuePair implements Serializable {
 		this.value = value;
 	}
 
-	public String getKey() {
+	public K getKey() {
 		return key;
 	}
 
-	public String getValue() {
+	public V getValue() {
 		return value;
 	}
 
@@ -42,12 +42,12 @@ public final class KeyValuePair implements Serializable {
 		if (!(obj instanceof KeyValuePair)) {
 			return false;
 		}
-		KeyValuePair other = (KeyValuePair) obj;
+		KeyValuePair<String, String> other = (KeyValuePair<String, String>) obj;
 		return key.equals(other.key) && value.equals(other.value);
 	}
 
 	@Override
 	public String toString() {
-		return key + '=' + value;
+		return key.toString() + " = " + value.toString();
 	}
 }

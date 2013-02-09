@@ -25,5 +25,5 @@ public interface ReduceInstruction {
 	 * @param values
 	 *            die Werte die verdichtet werden sollen
 	 */
-	void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair> values);
+	void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair<String, String>> values);
 }

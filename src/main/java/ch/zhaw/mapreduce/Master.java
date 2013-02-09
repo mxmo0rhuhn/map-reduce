@@ -25,13 +25,9 @@ public final class Master {
 
 	@Inject
 	private Logger logger;
-
 	private final Provider<Shuffler> shufflerProvider;
-
 	private final Pool pool;
-
 	private final String mapReduceTaskUUID;
-
 	private final WorkerTaskFactory runnerFactory;
 
 	@Inject
@@ -49,7 +45,7 @@ public final class Master {
 		// MAP
 		// Alle derzeitigen aufgaben die ausgeführt werden
 		logger.info("MAP started");
-		Set<WorkerTask> activeTasks = new LinkedHashSet<WorkerTask>();
+		Set<KeyValuePair<String, WorkerTask>> activeTasks = new LinkedHashSet<KeyValuePair<String, WorkerTask>>();
 		Map<String, String> mapTasks = runMap(mapInstruction, combinerInstruction, input, activeTasks);
 		logger.info("MAP all tasks enqueued");
 		Set<WorkerTask> mapResults = waitForWorkers(mapTasks);
@@ -80,7 +76,7 @@ public final class Master {
 	}
 
 	Map<String, String> runMap(MapInstruction mapInstruction, CombinerInstruction combinerInstruction,
-			Iterator<String> input, Set<WorkerTask> activeTasks) {
+			Iterator<String> input, Set<KeyValuePair<String, WorkerTask>> activeTasks) {
 		Map<String, String> inputToUuidMapping = new LinkedHashMap<String, String>();
 		// reiht für jeden Input - Teil einen MapWorkerTask in den Pool ein
 		while (input.hasNext()) {
@@ -92,7 +88,7 @@ public final class Master {
 			MapWorkerTask mapTask = runnerFactory.createMapWorkerTask(mapReduceTaskUUID, mapTaskUuid, mapInstruction,
 					combinerInstruction, todo);
 
-			activeTasks.add(mapTask);
+			activeTasks.add(new KeyValuePair<String, WorkerTask>(mapTaskUuid, mapTask));
 			pool.enqueueWork(mapTask);
 		}
 		return inputToUuidMapping;
@@ -102,14 +98,14 @@ public final class Master {
 		Shuffler s = shufflerProvider.get();
 		for (WorkerTask task : mapResults) {
 			MapWorkerTask mapTask = (MapWorkerTask) task;
-			for (KeyValuePair curKeyValuePair : mapTask.getResults(mapReduceTaskUUID)) {
+			for (KeyValuePair<String, String> curKeyValuePair : mapTask.getResults(mapReduceTaskUUID)) {
 				s.put(curKeyValuePair.getKey(), curKeyValuePair.getValue());
 			}
 		}
 		return s;
 	}
 
-	Map<String, Map.Entry<String, List<KeyValuePair>>> runReduce(ReduceInstruction reduceInstruction,
+	Map<String, Map.Entry<String, List<KeyValuePair<String, List<String>>>>> runReduce(ReduceInstruction reduceInstruction,
 			Iterator<Map.Entry<String, List<KeyValuePair>>> shuffleResults, Set<WorkerTask> activeTasks) {
 		
 		Map<String, Map.Entry<String, List<KeyValuePair>>> reduceToUuid = new HashMap<String, Map.Entry<String, List<KeyValuePair>>>();
@@ -175,13 +171,13 @@ public final class Master {
 		return results;
 	}
 
-	private static final class KeyVal implements Map.Entry<String, List<KeyValuePair>> {
+	private static final class KeyVal implements Map.Entry<String, List<KeyValuePair<String, String>>> {
 
 		private final String key;
 
-		private final List<KeyValuePair> val;
+		private final List<KeyValuePair<String, String>> val;
 
-		KeyVal(String key, List<KeyValuePair> val) {
+		KeyVal(String key, List<KeyValuePair<String, String>> val) {
 			this.key = key;
 			this.val = val;
 		}
@@ -192,12 +188,12 @@ public final class Master {
 		}
 
 		@Override
-		public List<KeyValuePair> getValue() {
+		public List<KeyValuePair<String, String>> getValue() {
 			return this.val;
 		}
 
 		@Override
-		public List<KeyValuePair> setValue(List<KeyValuePair> value) {
+		public List<KeyValuePair<String, String>> setValue(List<KeyValuePair<String, String>> value) {
 			throw new UnsupportedOperationException();
 		}
 

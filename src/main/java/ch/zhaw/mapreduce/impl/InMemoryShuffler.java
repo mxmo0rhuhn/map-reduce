@@ -12,21 +12,21 @@ import ch.zhaw.mapreduce.Shuffler;
 
 public class InMemoryShuffler implements Shuffler {
 
-	private final Map<String, List<KeyValuePair>> mapResults = new HashMap<String, List<KeyValuePair>>();
+	private final Map<String, List<KeyValuePair<String, String>>> mapResults = new HashMap<String, List<KeyValuePair<String, String>>>();
 
 	@Override
 	public void put(String key, String value) {
 		if (mapResults.containsKey(key)) {
-			mapResults.get(key).add(new KeyValuePair(key, value));
+			mapResults.get(key).add(new KeyValuePair<String, String>(key, value));
 		} else {
-			List<KeyValuePair> newKeyValueList = new LinkedList<KeyValuePair>();
-			newKeyValueList.add(new KeyValuePair(key, value));
+			List<KeyValuePair<String, String>> newKeyValueList = new LinkedList<KeyValuePair<String, String>>();
+			newKeyValueList.add(new KeyValuePair<String, String>(key, value));
 			mapResults.put(key, newKeyValueList);
 		}
 	}
 
 	@Override
-	public Iterator<Entry<String, List<KeyValuePair>>> getResults() {
+	public Iterator<Entry<String, List<KeyValuePair<String, String>>>> getResults() {
 		return mapResults.entrySet().iterator();
 	}
 }

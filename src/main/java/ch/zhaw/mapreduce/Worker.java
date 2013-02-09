@@ -36,7 +36,7 @@ public interface Worker {
 	 * @param mapReduceTaskUID
 	 *            Die eindeutige ID des MapReduceTask desssen zugehörige Daten zurückgegeben werden sollen.
 	 */
-	List<KeyValuePair> getMapResult(String mapReduceTaskUID, String inputUID);
+	List<KeyValuePair<String, String>> getMapResult(String mapReduceTaskUID, String inputUID);
 
 	/**
 	 * Räumt in einem Worker alle Resultate auf (Speicher freigeben). Zu diesem Zeitpunkt ist die Map- und Reduce-Phase
