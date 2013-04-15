@@ -10,9 +10,9 @@ public interface Persistence {
 
 	List<String> getReduce(String mrUuid, String inputUuid);
 	
-	List<KeyValuePair> getMap(String mrUuid, String inputUuid);
+	List<KeyValuePair<String, String>> getMap(String mrUuid, String inputUuid);
 
-	void replaceMap(String mrUuid, String inputUuid, List<KeyValuePair> afterCombining);
+	void replaceMap(String mrUuid, String inputUuid, List<KeyValuePair<String, String>> afterCombining);
 
 	void destroy(String mrUuid, String inputUuid);
 

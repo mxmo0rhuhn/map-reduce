@@ -8,6 +8,6 @@ public interface Shuffler {
 
 	void put(String key, String value);
 
-	Iterator<Map.Entry<String, List<KeyValuePair>>> getResults(); 
+	Iterator<Map.Entry<String, List<KeyValuePair<String, String>>>> getResults(); 
 
 }

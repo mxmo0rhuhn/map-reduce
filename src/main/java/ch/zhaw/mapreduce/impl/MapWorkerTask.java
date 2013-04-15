@@ -78,8 +78,8 @@ public class MapWorkerTask implements WorkerTask {
 			// Alle Ergebnisse verdichten. Die Ergebnisse aus der derzeitigen Worker sollen
 			// einbezogen werden.
 			if (this.combinerInstruction != null) {
-				List<KeyValuePair> beforeCombining = ctx.getMapResult();
-				List<KeyValuePair> afterCombining = this.combinerInstruction.combine(beforeCombining.iterator());
+				List<KeyValuePair<String, String>> beforeCombining = ctx.getMapResult();
+				List<KeyValuePair<String, String>> afterCombining = this.combinerInstruction.combine(beforeCombining.iterator());
 				ctx.replaceMapResult(afterCombining);
 			}
 			this.currentState = State.COMPLETED;
@@ -137,7 +137,7 @@ public class MapWorkerTask implements WorkerTask {
 		return myWorker;
 	}
 
-	public List<KeyValuePair> getResults(String mapReduceTaskUUID) {
+	public List<KeyValuePair<String, String>> getResults(String mapReduceTaskUUID) {
 		return myWorker.getMapResult(mapReduceTaskUID, mapTaskUuid);
 	}
 

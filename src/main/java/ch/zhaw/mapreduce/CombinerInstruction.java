@@ -21,5 +21,5 @@ public interface CombinerInstruction {
 	 * @param toCombine Die Liste mit values
 	 * @return der aggregierte Wert.
 	 */
-	List<KeyValuePair> combine(Iterator<KeyValuePair> toCombine);
+	List<KeyValuePair<String, String>> combine(Iterator<KeyValuePair<String, String>> toCombine);
 }
