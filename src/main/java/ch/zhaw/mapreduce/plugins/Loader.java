@@ -9,6 +9,13 @@ import java.util.logging.Logger;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+/**
+ * 
+ * Dieser Load lädt Plugins von einem vordefinierten System Property. 
+ * 
+ * @author Reto Hablützel (rethab)
+ *
+ */
 public final class Loader {
 
 	@Inject

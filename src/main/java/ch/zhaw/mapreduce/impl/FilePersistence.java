@@ -19,13 +19,25 @@ import javax.inject.Named;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Persistence;
 
+/**
+ * Persistenz für Dateisysteme. Die (Zwischen-) Resultate werden in eine Dateigeschrieben.
+ * 
+ * @author Reto Hablützel (rethab)
+ * 
+ */
 public class FilePersistence implements Persistence {
 
 	@Inject
 	private Logger logger;
 
+	/**
+	 * Das Verzeichnis, in welches alles geschrieben wird.
+	 */
 	private final String directory;
 
+	/**
+	 * Datei-Erweiterung für alle gespeicherten Dateien.
+	 */
 	private final String ending;
 
 	@Inject
@@ -52,15 +64,23 @@ public class FilePersistence implements Persistence {
 		}
 	}
 
+	/**
+	 * Erstellt eine neue Datei im vorgegebenen Verzeichnis für die spezifizierte MapReduceID und InputID mit der
+	 * vorgegebenen Erweiterung.
+	 */
 	private File createFile(String mrUuid, String inputUuid) {
 		return new File(new File(directory), mrUuid + inputUuid + ending);
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void storeMap(String mrUuid, String inputUuid, String key, String value) {
 		File f = createFile(mrUuid, inputUuid);
 
-		List<KeyValuePair<String, String>> existingValues = new ArrayList<KeyValuePair<String, String>>(getMap(mrUuid, inputUuid));
+		List<KeyValuePair<String, String>> existingValues = new ArrayList<KeyValuePair<String, String>>(getMap(mrUuid,
+				inputUuid));
 		existingValues.add(new KeyValuePair<String, String>(key, value));
 
 		ObjectOutputStream oos = null;
@@ -80,6 +100,9 @@ public class FilePersistence implements Persistence {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void storeReduce(String mrUuid, String inputUuid, String result) {
 		File f = createFile(mrUuid, inputUuid);
@@ -104,6 +127,9 @@ public class FilePersistence implements Persistence {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<KeyValuePair<String, String>> getMap(String mrUuid, String inputUuid) {
 		File f = createFile(mrUuid, inputUuid);
@@ -129,6 +155,9 @@ public class FilePersistence implements Persistence {
 		}
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public List<String> getReduce(String mrUuid, String inputUuid) {
 		File f = createFile(mrUuid, inputUuid);
@@ -154,11 +183,17 @@ public class FilePersistence implements Persistence {
 		}
 	}
 
+	/**
+	 * TODO warum fehlt das??
+	 */
 	@Override
 	public void replaceMap(String mrUuid, String inputUuid, List<KeyValuePair<String, String>> afterCombining) {
 		throw new UnsupportedOperationException();
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public void destroy(String mrUuid, String taskUuid) {
 		File file = createFile(mrUuid, taskUuid);

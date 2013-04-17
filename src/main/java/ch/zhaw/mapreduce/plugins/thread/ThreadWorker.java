@@ -41,7 +41,7 @@ public class ThreadWorker implements Worker {
 	 * Der Executor ist fuer asynchrone ausfuehren.
 	 */
 	private final Executor executor;
-	
+
 	private final Provider<Persistence> persistenceProvider;
 
 	/**
@@ -109,8 +109,18 @@ public class ThreadWorker implements Worker {
 
 }
 
+/**
+ * Kontext für lokale Berechnungen
+ * 
+ * @author Reto Hablützel (rethab)
+ * 
+ */
 class LocalContext implements Context {
 
+	/**
+	 * Die Resultate von den ThreadWorker werden nicht In-Memory gehalten sondern über die Persistence gespeichert.
+	 * Typischerweise dürfte das eine Datei sein.
+	 */
 	private final Persistence persistence;
 
 	private final String mrUuid;
