@@ -46,16 +46,9 @@
 
         <dependencies>
                 <dependency>
-                        <groupId>ch.zhaw.mapreduce.mrcomm</groupId>
-                        <artifactId>mrcomm-json</artifactId>
-                        <version>1.0-SNAPSHOT</version>
-                </dependency>
-                <dependency>
-                        <groupId>android</groupId>
-                        <artifactId>gcm-server</artifactId>
-                        <version>0.0</version>
-                        <scope>system</scope>
-                        <systemPath>/home/rethab/ptemp/map-reduce/lib/gcm-server.jar</systemPath>
+                        <groupId>de.root1</groupId>
+                        <artifactId>simon</artifactId>
+                        <version>1.1.3</version>
                 </dependency>
                 <dependency>
                         <groupId>com.google.inject.extensions</groupId>
@@ -96,4 +89,10 @@
                         <scope>compile</scope>
                 </dependency>
         </dependencies>
+        <repositories>
+                <repository>
+                        <id>de.root1</id>
+                        <url>http://nexus.root1.de/content/repositories/releases</url>
+                </repository>
+        </repositories>
 </project>
