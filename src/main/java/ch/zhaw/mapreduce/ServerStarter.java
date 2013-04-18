@@ -1,5 +1,9 @@
 package ch.zhaw.mapreduce;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.logging.Logger;
+
 import ch.zhaw.mapreduce.plugins.AgentPlugin;
 import ch.zhaw.mapreduce.plugins.Loader;
 import ch.zhaw.mapreduce.plugins.PluginException;
@@ -17,11 +21,28 @@ import com.google.inject.Injector;
  */
 public class ServerStarter {
 
-	public void start() throws PluginException {
+	private final List<AgentPlugin> startedPlugins = new LinkedList<AgentPlugin>();
+
+	private Logger log;
+
+	public void start() {
 		Injector injector = Guice.createInjector(new MapReduceConfig());
+		this.log = injector.getInstance(Logger.class);
 		Loader l = injector.getInstance(Loader.class);
 		for (AgentPlugin plugin : l.loadPlugins()) {
-			plugin.start(injector);
+			try {
+				plugin.start(injector);
+				this.startedPlugins.add(plugin);
+				this.log.info("Loaded Plugin " + plugin.getClass().getName());
+			} catch (PluginException pe) {
+				this.log.severe("Failed to load Plugin " + plugin.getClass().getName() + ": " + pe.getMessage());
+			}
+		}
+	}
+	
+	public void stop() {
+		for (AgentPlugin plugin : this.startedPlugins) {
+			plugin.stop();
 		}
 	}
 
