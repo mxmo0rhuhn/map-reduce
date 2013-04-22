@@ -26,8 +26,7 @@ import ch.zhaw.mapreduce.registry.PoolExecutor;
 @Singleton
 public final class Pool {
 
-	@Inject
-	private Logger logger;
+	private final Logger logger;
 
 	private final List<Worker> existingWorkers = new CopyOnWriteArrayList<Worker>();
 
@@ -48,7 +47,8 @@ public final class Pool {
 	 * Erstellt einen neuen Pool der Aufgaben und Worker entgegen nimmt.
 	 */
 	@Inject
-	public Pool(@PoolExecutor Executor exec) {
+	public Pool(@PoolExecutor Executor exec, Logger logiLog) {
+		this.logger = logiLog;
 		this.workTaskAdministrator = exec;
 	}
 
@@ -136,10 +136,14 @@ public final class Pool {
 		}
 
 	}
+	
+	public void computationStopped(String mapReduceTaskUUID) {
+		// TODO
+	}
 
 	/** {@inheritDoc} */
 	public void cleanResults(String mapReduceTaskUUID) {
-		Worker[] allWorkers = this.existingWorkers.toArray(new Worker[0]);
+		Worker[] allWorkers = this.existingWorkers.toArray(new Worker[this.existingWorkers.size()]);
 		for (Worker worker : allWorkers) {
 			worker.cleanAllResults(mapReduceTaskUUID);
 		}

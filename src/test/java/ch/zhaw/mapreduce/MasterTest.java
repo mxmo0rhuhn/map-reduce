@@ -5,35 +5,38 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.Sequence;
 import org.jmock.integration.junit4.JMock;
 import org.jmock.integration.junit4.JUnit4Mockery;
+import org.jmock.lib.concurrent.DeterministicExecutor;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import com.google.inject.Provider;
-
 import ch.zhaw.mapreduce.roundtriptest.WordsInputSplitter;
+
+import com.google.inject.Provider;
 
 @RunWith(JMock.class)
 public class MasterTest {
 
 	private Mockery context;
-	private Pool pool;
 	private WorkerTaskFactory factory;
 	private Provider<Shuffler> shuffleProvider;
 	private MapInstruction mapInstruction;
 	private ReduceInstruction reduceInstruction;
 	private CombinerInstruction combinerInstruction;
-
+	private Logger dummyOut;
+	
 	private static <T> Provider<T> toProvider(final T instance) {
 		return new Provider<T>() {
 			@Override
@@ -51,17 +54,19 @@ public class MasterTest {
 		this.reduceInstruction = this.context.mock(ReduceInstruction.class);
 		this.combinerInstruction = this.context.mock(CombinerInstruction.class);
 		this.shuffleProvider = toProvider(this.context.mock(Shuffler.class));
+		this.dummyOut = Logger.getLogger(MasterTest.class.getName());
 	}
 
 	@Test
 	public void shouldSetUUId() {
-		Master m = new Master(pool, factory, "uuid", shuffleProvider);
+		Master m = new Master(null, factory, "uuid", shuffleProvider);
 		assertEquals("uuid", m.getMapReduceTaskUUID());
 	}
 
 	@Test
 	public void shouldCreateMapTasks() {
-		Master m = new Master(pool, factory, "uuid", shuffleProvider);
+		DeterministicExecutor exec = new DeterministicExecutor();
+		Master m = new Master(new Pool(exec, dummyOut), factory, "uuid", shuffleProvider);
 		final Sequence seq = this.context.sequence("seq");
 		this.context.checking(new Expectations() {
 			{
@@ -72,8 +77,10 @@ public class MasterTest {
 						with(combinerInstruction), with("bar"));
 			}
 		});
-		Set<WorkerTask> tasks = m.runMap(mapInstruction, combinerInstruction,
-				new WordsInputSplitter("foo bar", 1));
+		Set<KeyValuePair<String, WorkerTask>> activeTasks = new LinkedHashSet<KeyValuePair<String, WorkerTask>>();
+		
+		Map<String, KeyValuePair> tasks = m.runMap(mapInstruction, combinerInstruction,
+				new WordsInputSplitter("foo bar", 1), activeTasks);
 		assertEquals("should have create two map tasks", 2, tasks.size());
 	}
 
