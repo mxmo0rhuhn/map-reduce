@@ -1,6 +1,7 @@
 package ch.zhaw.mapreduce;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -62,6 +63,8 @@ public final class Master {
 		this.mapInstruction = mapInstruction;
 		this.combinerInstruction = combinerInstruction;
 		this.reduceInstruction = reduceInstruction;
+
+		// Alle gerade in der ausführung befindlichen Worker Tasks
 		Set<KeyValuePair<String, WorkerTask>> activeTasks = new LinkedHashSet<KeyValuePair<String, WorkerTask>>();
 
 		// MAP
@@ -102,17 +105,33 @@ public final class Master {
 		return results;
 	}
 
+	/**
+	 * Erstellt für jeden Teil des Inputs eine UUID und ein Mapping auf den input und führt danach
+	 * jeweils einen WorkerTask mit diesem input aus
+	 * 
+	 * @param mapInstruction
+	 *            die Map Anweisung die berechnet werden soll
+	 * @param combinerInstruction
+	 *            ggf die Combine Instruction, die vor der Rückgabe des Ergebnisses ausgeführt
+	 *            werden soll
+	 * @param input
+	 *            iterator über alle Input Teile
+	 * @param activeTasks
+	 *            eine Liste in der alle derzeit aktiven Tasks abgelegt sind
+	 * @return Ein Mapping von UUID auf ein KeyValue Pair UUID und zugehöriger Input
+	 */
 	Map<String, KeyValuePair> runMap(MapInstruction mapInstruction,
 			CombinerInstruction combinerInstruction, Iterator<String> input,
 			Set<KeyValuePair<String, WorkerTask>> activeTasks) {
-		Map<String, KeyValuePair> inputToUuidMapping = new LinkedHashMap<String, KeyValuePair>();
+
+		Map<String, KeyValuePair> uuidToInputMapping = new LinkedHashMap<String, KeyValuePair>();
 
 		// reiht für jeden Input - Teil einen MapWorkerTask in den Pool ein
 		while (input.hasNext()) {
 
 			String mapTaskUuid = UUID.randomUUID().toString();
 			String todo = input.next();
-			inputToUuidMapping
+			uuidToInputMapping
 					.put(mapTaskUuid, new KeyValuePair<String, String>(mapTaskUuid, todo));
 
 			MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapReduceTaskUUID,
@@ -121,7 +140,7 @@ public final class Master {
 			activeTasks.add(new KeyValuePair<String, WorkerTask>(mapTaskUuid, mapTask));
 			pool.enqueueWork(mapTask);
 		}
-		return inputToUuidMapping;
+		return uuidToInputMapping;
 	}
 
 	Shuffler createShuffler(Collection<WorkerTask> mapResults) {
@@ -152,14 +171,14 @@ public final class Master {
 
 		// reiht für jeden Input - Teil einen MapWorkerTask in den Pool ein
 		while (shuffleResults.hasNext()) {
-			Map.Entry<String, List<KeyValuePair>> curKeyValuePairs = shuffleResults
-					.next();
+			Map.Entry<String, List<KeyValuePair>> curKeyValuePairs = shuffleResults.next();
 			KeyValuePair<String, List<KeyValuePair>> curInput = new KeyValuePair<String, List<KeyValuePair>>(
 					curKeyValuePairs.getKey(), curKeyValuePairs.getValue());
 
 			String reduceTaskUuid = UUID.randomUUID().toString();
-			ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(mapReduceTaskUUID,
-					reduceTaskUuid, curInput.getKey(), reduceInstruction, curInput.getValue());
+			ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(
+					mapReduceTaskUUID, reduceTaskUuid, curInput.getKey(), reduceInstruction,
+					curInput.getValue());
 
 			activeTasks.add(new KeyValuePair<String, WorkerTask>(curInput.getKey(), reduceTask));
 			pool.enqueueWork(reduceTask);
@@ -168,6 +187,11 @@ public final class Master {
 		return reduceToUuid;
 	}
 
+	/**
+	 * Sammelt alle results aus den fertiggestellten Reduce WorkerTasks
+	 * @param reduceResults ein Set mit fertiggestellten Reduce Tasks
+	 * @return 
+	 */
 	Map<String, String> collectResults(Set<WorkerTask> reduceResults) {
 		Map<String, String> resultStructure = new HashMap<String, String>();
 		for (WorkerTask task : reduceResults) {
@@ -179,33 +203,47 @@ public final class Master {
 		return resultStructure;
 	}
 
+	/**
+	 * Gibt die UUID der MapReduce Aufgabe zurück
+	 * @return die UUID
+	 */
 	public String getMapReduceTaskUUID() {
 		return this.mapReduceTaskUUID;
 	}
 
+	/**
+	 * Wartet auf die gegebenen Worker und führt ab einem gewissen Schwellwert die verbleibenden Inputwerte redundant aus.
+	 * 
+	 * @param activeWorkerTasks die derzeit aktiven WorkerTasks
+	 * @param uuidToKeyValuePairUUIDInputMapping ein Mapping von InputUUID auf KeyValuePairs aus &lt;InputUUID, Input&gt;
+	 * @return gibt ein Set mit wirklich ausgeführten Workern zurück
+	 * @throws InterruptedException 
+	 */
 	private Set<WorkerTask> waitForWorkers(Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks,
-			Map<String, KeyValuePair> input) throws InterruptedException {
-
-		Map<String, KeyValuePair> inputTodo = input;
+			Map<String, KeyValuePair> originalUuidToKeyValuePairUUIDInputMapping) throws InterruptedException {
+		
+		Map<String, KeyValuePair> remainingUuidMapping = new HashMap<String, KeyValuePair>(originalUuidToKeyValuePairUUIDInputMapping);
 		Set<WorkerTask> results = new LinkedHashSet<WorkerTask>();
 		Set<KeyValuePair> rescheduleInput = new LinkedHashSet<KeyValuePair>();
-		Set<String> doneInput = new LinkedHashSet<String>();
+		Set<String> doneInputUUIDs = new LinkedHashSet<String>();
 
 		int rescheduleCounter = 0;
-		// Fragt alle MapWorker Tasks an ob sie bereits erledigt sind - bis sie erledigt sind ...
-		do {
-			// Schauen welche Tasks noch ausstehend sind
 			List<WorkerTask> toInactiveWorkerTasks = new LinkedList<WorkerTask>();
+			
+		// Fragt alle Tasks an ob sie bereits erledigt sind - bis sie erledigt sind ...
+		do {
+			Thread.sleep(WAITTIME);
+			// Schauen welche Tasks noch ausstehend sind
 			for (KeyValuePair<String, WorkerTask> task : activeWorkerTasks) {
 				switch (task.getValue().getCurrentState()) {
 				case COMPLETED:
 					logger.finer("Task completed");
 
 					// nur übernehmen, wenn Aufgabe nicht bereits erledigt wurde
-					if (!doneInput.contains(task.getKey())) {
+					if (!doneInputUUIDs.contains(task.getKey())) {
 						results.add(task.getValue());
-						doneInput.add(task.getKey());
-						inputTodo.remove(task.getKey());
+						doneInputUUIDs.add(task.getKey());
+						remainingUuidMapping.remove(task.getKey());
 					}
 					toInactiveWorkerTasks.add(task.getValue());
 
@@ -213,23 +251,23 @@ public final class Master {
 				case FAILED:
 					logger.finer("Task failed");
 					toInactiveWorkerTasks.add(task.getValue());
-					rescheduleInput.add(inputTodo.get(task.getKey()));
+					rescheduleInput.add(remainingUuidMapping.get(task.getKey()));
 
 					break;
 				case INPROGRESS:
 					logger.finest("Task in progress");
 					break;
 				default:
-					logger.fine("Task " + task.getValue().getCurrentState());
+			throw new IllegalStateException(task.getValue().getCurrentState().toString());
 				}
 			}
 			activeWorkerTasks.removeAll(toInactiveWorkerTasks);
 
 			// Ein gewisser Prozentsatz der Aufgaben ist erfüllt
-			if ((doneInput.size() * 100) / input.size() <= RESCHEDULESTARTPERCENTAGE) {
+			if ((doneInputUUIDs.size() * 100) / originalUuidToKeyValuePairUUIDInputMapping.size() <= RESCHEDULESTARTPERCENTAGE) {
 
 				if (rescheduleCounter >= RESCHEDULEEVERY) {
-					rescheduleInput.addAll(inputTodo.values());
+					rescheduleInput.addAll(remainingUuidMapping.values());
 					rescheduleCounter = 0;
 				} else {
 					rescheduleCounter++;
@@ -238,13 +276,17 @@ public final class Master {
 
 			reschedule(rescheduleInput, activeWorkerTasks);
 
-			Thread.sleep(WAITTIME);
-		} while (!activeWorkerTasks.isEmpty());
+		} while (!remainingUuidMapping.isEmpty());
 		return results;
 	}
 
-	private void reschedule(Set<KeyValuePair> rescheduleInput,
-			Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks) {
+	/**
+	 * Startet, abhängig von der derzeitigen Phase des Masters Map oder reduce Tasks
+	 * 
+	 * @param rescheduleInput der Input für die Map oder Reduce Tasks
+	 * @param activeWorkerTasks eine Liste mit allen derzeit aktiven WorkerTasks
+	 */
+	private void reschedule(Set<KeyValuePair> rescheduleInput, Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks) {
 		switch (curState) {
 		case MAP:
 			for (KeyValuePair<String, String> rescheduleTodo : rescheduleInput) {
@@ -273,7 +315,7 @@ public final class Master {
 
 			break;
 		default:
-			break;
+			throw new IllegalStateException("Not in a Map or Reduce phase");
 		}
 	}
 }
