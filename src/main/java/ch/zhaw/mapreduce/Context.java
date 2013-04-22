@@ -31,7 +31,7 @@ public interface Context extends MapEmitter, ReduceEmitter {
 	 *             wenn diese Berechnung gestoppt wurde
 	 * @see ComputationStoppedException
 	 */
-	List<KeyValuePair<String, String>> getMapResult() throws ComputationStoppedException;
+	List<KeyValuePair> getMapResult() throws ComputationStoppedException;
 
 	/**
 	 * Liefert das Resultat für diesen ReduceTask. TODO A) was passiert, wenn der task noch nicht beendet ist? B) was
@@ -53,7 +53,7 @@ public interface Context extends MapEmitter, ReduceEmitter {
 	 * @throws ComputationStoppedException
 	 *             wenn diese Berechnung gestoppt wurde
 	 */
-	void replaceMapResult(List<KeyValuePair<String, String>> afterCombining) throws ComputationStoppedException;
+	void replaceMapResult(List<KeyValuePair> afterCombining) throws ComputationStoppedException;
 
 	void destroy();
 }

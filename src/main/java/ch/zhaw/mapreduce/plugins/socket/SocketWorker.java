@@ -33,7 +33,7 @@ public class SocketWorker implements Worker {
 	 * @see ch.zhaw.mapreduce.workers.Worker#getMapResult(java.lang.String, java.lang.String)
 	 */
 	@Override
-	public List<KeyValuePair<String, String>> getMapResult(String mapReduceTaskUID, String inputUID) {
+	public List<KeyValuePair> getMapResult(String mapReduceTaskUID, String inputUID) {
 		// TODO Auto-generated method stub
 		return null;
 	}

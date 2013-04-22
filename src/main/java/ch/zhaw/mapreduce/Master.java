@@ -2,7 +2,6 @@ package ch.zhaw.mapreduce;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -45,13 +44,13 @@ public final class Master {
 	private final Provider<Shuffler> shufflerProvider;
 	private final Pool pool;
 	private final String mapReduceTaskUUID;
-	private final WorkerTaskFactory runnerFactory;
+	private final WorkerTaskFactory workerTaskFactory;
 
 	@Inject
-	public Master(Pool pool, WorkerTaskFactory runnerFactory,
+	public Master(Pool pool, WorkerTaskFactory workerTaskFactory,
 			@MapReduceTaskUUID String mapReduceTaskUUID, Provider<Shuffler> shufflerProvider) {
 		this.pool = pool;
-		this.runnerFactory = runnerFactory;
+		this.workerTaskFactory = workerTaskFactory;
 		this.mapReduceTaskUUID = mapReduceTaskUUID;
 		this.shufflerProvider = shufflerProvider;
 	}
@@ -116,7 +115,7 @@ public final class Master {
 			inputToUuidMapping
 					.put(mapTaskUuid, new KeyValuePair<String, String>(mapTaskUuid, todo));
 
-			MapWorkerTask mapTask = runnerFactory.createMapWorkerTask(mapReduceTaskUUID,
+			MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapReduceTaskUUID,
 					mapTaskUuid, mapInstruction, combinerInstruction, todo);
 
 			activeTasks.add(new KeyValuePair<String, WorkerTask>(mapTaskUuid, mapTask));
@@ -146,20 +145,20 @@ public final class Master {
 	 * @return Alle Inputs
 	 */
 	Map<String, KeyValuePair> runReduce(ReduceInstruction reduceInstruction,
-			Iterator<Map.Entry<String, List<KeyValuePair<String, String>>>> shuffleResults,
+			Iterator<Map.Entry<String, List<KeyValuePair>>> shuffleResults,
 			Set<KeyValuePair<String, WorkerTask>> activeTasks) {
 
 		Map<String, KeyValuePair> reduceToUuid = new LinkedHashMap<String, KeyValuePair>();
 
 		// reiht für jeden Input - Teil einen MapWorkerTask in den Pool ein
 		while (shuffleResults.hasNext()) {
-			Map.Entry<String, List<KeyValuePair<String, String>>> curKeyValuePairs = shuffleResults
+			Map.Entry<String, List<KeyValuePair>> curKeyValuePairs = shuffleResults
 					.next();
-			KeyValuePair<String, List<KeyValuePair<String, String>>> curInput = new KeyValuePair<String, List<KeyValuePair<String, String>>>(
+			KeyValuePair<String, List<KeyValuePair>> curInput = new KeyValuePair<String, List<KeyValuePair>>(
 					curKeyValuePairs.getKey(), curKeyValuePairs.getValue());
 
 			String reduceTaskUuid = UUID.randomUUID().toString();
-			ReduceWorkerTask reduceTask = runnerFactory.createReduceWorkerTask(mapReduceTaskUUID,
+			ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(mapReduceTaskUUID,
 					reduceTaskUuid, curInput.getKey(), reduceInstruction, curInput.getValue());
 
 			activeTasks.add(new KeyValuePair<String, WorkerTask>(curInput.getKey(), reduceTask));
@@ -250,7 +249,7 @@ public final class Master {
 		case MAP:
 			for (KeyValuePair<String, String> rescheduleTodo : rescheduleInput) {
 
-				MapWorkerTask mapTask = runnerFactory.createMapWorkerTask(mapReduceTaskUUID,
+				MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapReduceTaskUUID,
 						rescheduleTodo.getKey(), mapInstruction, combinerInstruction,
 						rescheduleTodo.getValue());
 
@@ -260,10 +259,10 @@ public final class Master {
 			}
 			break;
 		case REDUCE:
-			for (KeyValuePair<String, List<KeyValuePair<String, String>>> rescheduleTodo : rescheduleInput) {
+			for (KeyValuePair<String, List<KeyValuePair>> rescheduleTodo : rescheduleInput) {
 				String reduceTaskUuid = UUID.randomUUID().toString();
 
-				ReduceWorkerTask reduceTask = runnerFactory.createReduceWorkerTask(
+				ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(
 						mapReduceTaskUUID, reduceTaskUuid, rescheduleTodo.getKey(),
 						reduceInstruction, rescheduleTodo.getValue());
 

@@ -82,7 +82,7 @@ public class ThreadWorker implements Worker {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<KeyValuePair<String, String>> getMapResult(String mapReduceTaskUID, String mapTaskUuid) {
+	public List<KeyValuePair> getMapResult(String mapReduceTaskUID, String mapTaskUuid) {
 		return this.contexts.get(mapReduceTaskUID).get(mapTaskUuid).getMapResult();
 	}
 
@@ -122,11 +122,8 @@ class LocalContext implements Context {
 	 * Typischerweise dürfte das eine Datei sein.
 	 */
 	private final Persistence persistence;
-
 	private final String mrUuid;
-
 	private final String taskUuid;
-
 	private volatile boolean stopped = false;
 
 	LocalContext(Persistence persistence, String mrUuid, String taskUuid) {
@@ -152,7 +149,7 @@ class LocalContext implements Context {
 	}
 
 	@Override
-	public List<KeyValuePair<String, String>> getMapResult() {
+	public List<KeyValuePair> getMapResult() {
 		if (stopped) {
 			throw new ComputationStoppedException();
 		}
@@ -160,7 +157,7 @@ class LocalContext implements Context {
 	}
 
 	@Override
-	public void replaceMapResult(List<KeyValuePair<String, String>> afterCombining) {
+	public void replaceMapResult(List<KeyValuePair> afterCombining) {
 		if (stopped) {
 			throw new ComputationStoppedException();
 		}

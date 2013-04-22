@@ -39,13 +39,13 @@ class SocketContext implements Context {
 	}
 
 	@Override
-	public List<KeyValuePair<String, String>> getMapResult() throws ComputationStoppedException {
+	public List<KeyValuePair> getMapResult() throws ComputationStoppedException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public void replaceMapResult(List<KeyValuePair<String, String>> afterCombining)
+	public void replaceMapResult(List<KeyValuePair> afterCombining)
 			throws ComputationStoppedException {
 		// TODO Auto-generated method stub
 		

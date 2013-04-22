@@ -79,7 +79,7 @@ public class FilePersistence implements Persistence {
 	public void storeMap(String mrUuid, String inputUuid, String key, String value) {
 		File f = createFile(mrUuid, inputUuid);
 
-		List<KeyValuePair<String, String>> existingValues = new ArrayList<KeyValuePair<String, String>>(getMap(mrUuid,
+		List<KeyValuePair> existingValues = new ArrayList<KeyValuePair>(getMap(mrUuid,
 				inputUuid));
 		existingValues.add(new KeyValuePair<String, String>(key, value));
 
@@ -131,7 +131,7 @@ public class FilePersistence implements Persistence {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<KeyValuePair<String, String>> getMap(String mrUuid, String inputUuid) {
+	public List<KeyValuePair> getMap(String mrUuid, String inputUuid) {
 		File f = createFile(mrUuid, inputUuid);
 		if (!f.exists()) {
 			logger.finest("Storage file doesn't exist " + f.getAbsolutePath());
@@ -141,7 +141,7 @@ public class FilePersistence implements Persistence {
 		ObjectInputStream ois = null;
 		try {
 			ois = new ObjectInputStream(new FileInputStream(f));
-			return (List<KeyValuePair<String, String>>) ois.readObject();
+			return (List<KeyValuePair>) ois.readObject();
 		} catch (Exception e) {
 			logger.log(Level.SEVERE, "Failed to read storage file " + f.getAbsolutePath(), e);
 			return Collections.emptyList();
@@ -187,7 +187,7 @@ public class FilePersistence implements Persistence {
 	 * TODO warum fehlt das??
 	 */
 	@Override
-	public void replaceMap(String mrUuid, String inputUuid, List<KeyValuePair<String, String>> afterCombining) {
+	public void replaceMap(String mrUuid, String inputUuid, List<KeyValuePair> afterCombining) {
 		throw new UnsupportedOperationException();
 	}
 

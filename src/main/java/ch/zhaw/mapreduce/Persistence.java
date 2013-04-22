@@ -64,7 +64,7 @@ public interface Persistence {
 	 *            die ID vom Input für die Berechnung, die zu diesem Resultat geführt hat
 	 * @return die gespeicherten Resultate falls vorhanden, sonst null
 	 */
-	List<KeyValuePair<String, String>> getMap(String mrUuid, String inputUuid);
+	List<KeyValuePair> getMap(String mrUuid, String inputUuid);
 
 	/**
 	 * Ersetzt das Map-Zswischen-Resultat falls vorhanden. Dies ist notwendig, wenn das Resultat einer Map-Berechnung
@@ -79,7 +79,7 @@ public interface Persistence {
 	 * @throws IllegalArgumentException
 	 *             falls kein Resultat für diese MapReduceID/inputUuid Kombination existiert
 	 */
-	void replaceMap(String mrUuid, String inputUuid, List<KeyValuePair<String, String>> afterCombining)
+	void replaceMap(String mrUuid, String inputUuid, List<KeyValuePair> afterCombining)
 			throws IllegalArgumentException;
 
 	/**

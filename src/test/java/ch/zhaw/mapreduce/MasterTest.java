@@ -19,22 +19,19 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import com.google.inject.Provider;
+
 import ch.zhaw.mapreduce.roundtriptest.WordsInputSplitter;
-import ch.zhaw.mapreduce.workers.Worker;
 
 @RunWith(JMock.class)
 public class MasterTest {
 
 	private Mockery context;
-
 	private Pool pool;
-
 	private WorkerTaskFactory factory;
-
+	private Provider<Shuffler>  shuffleProvider;
 	private MapInstruction mapInstruction;
-
 	private ReduceInstruction reduceInstruction;
-
 	private CombinerInstruction combinerInstruction;
 
 	@Before
@@ -45,11 +42,12 @@ public class MasterTest {
 		this.mapInstruction = this.context.mock(MapInstruction.class);
 		this.reduceInstruction = this.context.mock(ReduceInstruction.class);
 		this.combinerInstruction = this.context.mock(CombinerInstruction.class);
+		this.shuffleProvider = this.context.mock(Provider.class);
 	}
 
 	@Test
 	public void shouldSetUUId() {
-		Master m = new Master(pool, factory, "uuid");
+		Master m = new Master(pool, factory, "uuid", shuffleProvider);
 		assertEquals("uuid", m.getMapReduceTaskUUID());
 	}
 
@@ -152,7 +150,6 @@ class MockWorker implements Worker {
 
 	@Override
 	public List<KeyValuePair> getReduceResults(String mapReduceTaskUID) {
-		return this.pairs.get(mapReduceTaskUID);
 	}
 
 	@Override
@@ -168,6 +165,17 @@ class MockWorker implements Worker {
 	@Override
 	public void replaceMapResult(String mapReduceTaskUID, List<KeyValuePair> newResult) {
 		this.pairs.put(mapReduceTaskUID, newResult);
+	}
+
+	@Override
+	public List<String> getReduceResult(String mapReduceTaskUID, String inputUID) {
+		return this.pairs.get(mapReduceTaskUID);
+	}
+
+	@Override
+	public List<KeyValuePair<String, String>> getMapResult(String mapReduceTaskUID, String inputUID) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
