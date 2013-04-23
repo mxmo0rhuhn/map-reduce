@@ -249,12 +249,15 @@ public final class Master {
 
 					break;
 				case FAILED:
+				case ABORTED:
 					logger.finer("Task failed");
 					toInactiveWorkerTasks.add(task.getValue());
 					rescheduleInput.add(remainingUuidMapping.get(task.getKey()));
 
 					break;
 				case INPROGRESS:
+				case ENQUEUED:
+				case INITIATED:
 					logger.finest("Task in progress");
 					break;
 				default:
