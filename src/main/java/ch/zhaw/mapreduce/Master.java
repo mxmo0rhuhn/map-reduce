@@ -270,6 +270,7 @@ public final class Master {
 
 				if (rescheduleCounter >= RESCHEDULEEVERY) {
 					rescheduleInput.addAll(remainingUuidMapping.values());
+					logger.info("Reschedule workers has started for " + remainingUuidMapping.size() + " Workers");
 					rescheduleCounter = 0;
 				} else {
 					rescheduleCounter++;
@@ -280,6 +281,7 @@ public final class Master {
 			reschedule(rescheduleInput, activeWorkerTasks);
 
 		} while (!remainingUuidMapping.isEmpty());
+		activeWorkerTasks.clear();
 		return results;
 	}
 
