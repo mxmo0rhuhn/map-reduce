@@ -1,23 +1,28 @@
 package ch.zhaw.mapreduce.plugins.thread;
 
+import java.util.logging.Logger;
+
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.plugins.AgentPlugin;
 import ch.zhaw.mapreduce.plugins.PluginException;
 
 import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.name.Names;
 
 public class ThreadAgentPlugin implements AgentPlugin {
-	
+
 	@Override
 	public void start(Injector parent) throws PluginException {
 		Injector child = parent.createChildInjector(new ThreadConfig());
-		Worker w = child.getInstance(Worker.class);
-		
+		Integer nworkers = child.getInstance(Key.get(Integer.class, Names.named("thread.nrworkers")));
 		Pool p = child.getInstance(Pool.class);
-		
-		for (int i = 1; i < Runtime.getRuntime().availableProcessors() + 1; i++) {
-			System.out.println("worker started");
+		Logger log = child.getInstance(Logger.class);
+
+		log.info("Add " + nworkers + " Workers to Pool");
+		for (int i = 1; i < nworkers; i++) {
+			Worker w = child.getInstance(Worker.class);
 			p.donateWorker(w);
 		}
 	}

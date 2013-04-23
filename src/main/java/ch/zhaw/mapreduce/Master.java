@@ -73,7 +73,7 @@ public final class Master {
 		curState = State.MAP;
 		Map<String, KeyValuePair> mapTasks = runMap(mapInstruction, combinerInstruction, input,
 				activeTasks);
-		logger.info("MAP all tasks enqueued");
+		logger.info("MAP " + mapTasks.size() + " tasks enqueued");
 		Set<WorkerTask> mapResults = waitForWorkers(activeTasks, mapTasks);
 		logger.info("MAP done");
 
@@ -88,7 +88,7 @@ public final class Master {
 		curState = State.REDUCE;
 		Map<String, KeyValuePair> reduceInputs = runReduce(reduceInstruction, s.getResults(),
 				activeTasks);
-		logger.info("REDUCE all tasks enqueued");
+		logger.info("REDUCE " + reduceInputs.size() + " tasks enqueued");
 		Set<WorkerTask> reduceResults = waitForWorkers(activeTasks, reduceInputs);
 		logger.info("REDUCE done");
 
@@ -96,7 +96,7 @@ public final class Master {
 		logger.info("Collecting results started");
 		curState = State.NONE;
 		Map<String, String> results = collectResults(reduceResults);
-		logger.info("Collecting results done");
+		logger.info("Collected " + results.size() + " results");
 
 		// Cleaning results from workers
 		logger.info("Cleaning results started");
@@ -131,8 +131,7 @@ public final class Master {
 
 			String mapTaskUuid = UUID.randomUUID().toString();
 			String todo = input.next();
-			uuidToInputMapping
-					.put(mapTaskUuid, new KeyValuePair<String, String>(mapTaskUuid, todo));
+			uuidToInputMapping.put(mapTaskUuid, new KeyValuePair<String, String>(mapTaskUuid, todo));
 
 			MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapReduceTaskUUID,
 					mapTaskUuid, mapInstruction, combinerInstruction, todo);
@@ -277,6 +276,7 @@ public final class Master {
 				}
 			}
 
+			// TODO Max: logging hier mit sinnvollen angaben (z.B. Anzahl reschedulbarer Tasks)
 			reschedule(rescheduleInput, activeWorkerTasks);
 
 		} while (!remainingUuidMapping.isEmpty());
