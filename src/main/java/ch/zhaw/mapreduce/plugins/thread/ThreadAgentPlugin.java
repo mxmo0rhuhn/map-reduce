@@ -21,10 +21,11 @@ public class ThreadAgentPlugin implements AgentPlugin {
 		Logger log = child.getInstance(Logger.class);
 
 		log.info("Add " + nworkers + " Workers to Pool");
-		for (int i = 1; i < nworkers; i++) {
+		for (int i = 0; i < nworkers; i++) {
 			Worker w = child.getInstance(Worker.class);
 			p.donateWorker(w);
 		}
+		log.info("Added " + nworkers + " Workers to Pool");
 	}
 
 	@Override

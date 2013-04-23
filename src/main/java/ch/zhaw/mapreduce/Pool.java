@@ -47,8 +47,8 @@ public final class Pool {
 	 * Erstellt einen neuen Pool der Aufgaben und Worker entgegen nimmt.
 	 */
 	@Inject
-	public Pool(@PoolExecutor Executor exec, Logger logiLog) {
-		this.logger = logiLog;
+	public Pool(@PoolExecutor Executor exec, Logger logger) {
+		this.logger = logger;
 		this.workTaskAdministrator = exec;
 	}
 

@@ -45,4 +45,8 @@ public final class Registry {
 	public static <T> T getComponent(Class<T> type) {
 		return INSTANCE.injector.getInstance(type);
 	}
+	
+	public static Injector getInjector() {
+		return INSTANCE.injector;
+	}
 }

@@ -7,9 +7,7 @@ import java.util.logging.Logger;
 import ch.zhaw.mapreduce.plugins.AgentPlugin;
 import ch.zhaw.mapreduce.plugins.Loader;
 import ch.zhaw.mapreduce.plugins.PluginException;
-import ch.zhaw.mapreduce.registry.MapReduceConfig;
 
-import com.google.inject.Guice;
 import com.google.inject.Injector;
 
 /**
@@ -22,14 +20,21 @@ import com.google.inject.Injector;
 public class ServerStarter {
 
 	private final List<AgentPlugin> startedPlugins = new LinkedList<AgentPlugin>();
+	
+	private final Injector injector;
 
-	private Logger log;
+	private final Logger log;
+	
+	private final Loader loader;
+	
+	public ServerStarter(Injector injector) {
+		this.log = injector.getInstance(Logger.class);
+		this.loader = injector.getInstance(Loader.class);
+		this.injector = injector;
+	}
 
 	public void start() {
-		Injector injector = Guice.createInjector(new MapReduceConfig());
-		this.log = injector.getInstance(Logger.class);
-		Loader l = injector.getInstance(Loader.class);
-		for (AgentPlugin plugin : l.loadPlugins()) {
+		for (AgentPlugin plugin : loader.loadPlugins()) {
 			try {
 				plugin.start(injector);
 				this.startedPlugins.add(plugin);
