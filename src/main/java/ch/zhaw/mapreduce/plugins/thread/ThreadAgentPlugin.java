@@ -13,8 +13,13 @@ public class ThreadAgentPlugin implements AgentPlugin {
 	public void start(Injector parent) throws PluginException {
 		Injector child = parent.createChildInjector(new ThreadConfig());
 		Worker w = child.getInstance(Worker.class);
+		
 		Pool p = child.getInstance(Pool.class);
-		p.donateWorker(w);
+		
+		for (int i = 1; i < Runtime.getRuntime().availableProcessors() + 1; i++) {
+			System.out.println("worker started");
+			p.donateWorker(w);
+		}
 	}
 
 	@Override
