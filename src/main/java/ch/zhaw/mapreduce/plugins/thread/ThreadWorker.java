@@ -100,9 +100,10 @@ public class ThreadWorker implements Worker {
 		Map<String, Context> mrContexts = this.contexts.get(mapReduceTaskUUID);
 		if (mrContexts == null) {
 			logger.finest("Nothing to delete for " + mapReduceTaskUUID);
-		}
-		for (Map.Entry<String, Context> inputs : mrContexts.entrySet()) {
-			inputs.getValue().destroy();
+		} else {
+			for (Map.Entry<String, Context> inputs : mrContexts.entrySet()) {
+				inputs.getValue().destroy();
+			}
 		}
 		this.contexts.remove(mapReduceTaskUUID);
 	}
@@ -118,8 +119,8 @@ public class ThreadWorker implements Worker {
 class LocalContext implements Context {
 
 	/**
-	 * Die Resultate von den ThreadWorker werden nicht In-Memory gehalten sondern über die Persistence gespeichert.
-	 * Typischerweise dürfte das eine Datei sein.
+	 * Die Resultate von den ThreadWorker werden nicht In-Memory gehalten sondern über die
+	 * Persistence gespeichert. Typischerweise dürfte das eine Datei sein.
 	 */
 	private final Persistence persistence;
 	private final String mrUuid;

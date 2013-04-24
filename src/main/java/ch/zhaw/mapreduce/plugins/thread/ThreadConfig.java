@@ -10,7 +10,7 @@ import com.google.inject.name.Names;
 
 public class ThreadConfig extends AbstractModule {
 	
-	public static int NWORKERS = 5;
+	public static int NWORKERS = 500;
 
 	@Override
 	protected void configure() {

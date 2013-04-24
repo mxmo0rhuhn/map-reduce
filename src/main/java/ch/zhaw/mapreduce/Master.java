@@ -34,7 +34,7 @@ public final class Master {
 	private ReduceInstruction reduceInstruction;
 
 	// Prozentsatz der Aufgaben, die noch offen sein müssen bis rescheduled wird
-	private static final int RESCHEDULESTARTPERCENTAGE = 10;
+	private static final int RESCHEDULESTARTPERCENTAGE = 90;
 	// Alle n Warte-Durchläufe wird rescheduled
 	private static final int RESCHEDULEEVERY = 10;
 	// Wartezeit in millisekunden bis in einem Durchlauf wieder die Worker angefragt werden etc
@@ -266,7 +266,7 @@ public final class Master {
 			activeWorkerTasks.removeAll(toInactiveWorkerTasks);
 
 			// Ein gewisser Prozentsatz der Aufgaben ist erfüllt
-			if ((doneInputUUIDs.size() * 100) / originalUuidToKeyValuePairUUIDInputMapping.size() <= RESCHEDULESTARTPERCENTAGE) {
+			if ((doneInputUUIDs.size() * 100) / originalUuidToKeyValuePairUUIDInputMapping.size() >= RESCHEDULESTARTPERCENTAGE) {
 
 				if (rescheduleCounter >= RESCHEDULEEVERY) {
 					rescheduleInput.addAll(remainingUuidMapping.values());
