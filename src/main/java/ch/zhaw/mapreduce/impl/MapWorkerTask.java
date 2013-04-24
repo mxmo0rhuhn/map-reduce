@@ -1,6 +1,7 @@
 package ch.zhaw.mapreduce.impl;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,6 +15,7 @@ import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
+import ch.zhaw.mapreduce.WorkerTask.State;
 
 import com.google.inject.assistedinject.Assisted;
 
@@ -42,19 +44,20 @@ public class MapWorkerTask implements WorkerTask {
 	private final String toDo;
 
 	/** Die eindeutihe ID die jeder input besitzt */
-	private final String mapTaskUuid;
+	private final String workerTaskUuid;
 
 	/** Der Zustand in dem sich der Worker befindet */
 	private volatile State currentState = State.INITIATED;
 
 	@Inject
-	public MapWorkerTask(@Assisted("uuid") String mapReduceTaskUID, @Assisted("mapTaskUuid") String mapTaskUuid,
-			@Assisted MapInstruction mapInstruction, @Assisted @Nullable CombinerInstruction combinerInstruction,
+	public MapWorkerTask(@Assisted("uuid") String mapReduceTaskUID,
+			@Assisted MapInstruction mapInstruction,
+			@Assisted @Nullable CombinerInstruction combinerInstruction,
 			@Assisted("input") String input) {
 		this.mapReduceTaskUID = mapReduceTaskUID;
 		this.mapInstruction = mapInstruction;
 		this.combinerInstruction = combinerInstruction;
-		this.mapTaskUuid = mapTaskUuid;
+		workerTaskUuid = UUID.randomUUID().toString();
 		this.toDo = input;
 	}
 
@@ -75,21 +78,33 @@ public class MapWorkerTask implements WorkerTask {
 			// Mappen
 			this.mapInstruction.map(ctx, toDo);
 
-			// Alle Ergebnisse verdichten. Die Ergebnisse aus der derzeitigen Worker sollen
-			// einbezogen werden.
-			if (this.combinerInstruction != null) {
-				List<KeyValuePair> beforeCombining = ctx.getMapResult();
-				List<KeyValuePair> afterCombining = this.combinerInstruction.combine(beforeCombining.iterator());
-				ctx.replaceMapResult(afterCombining);
+			if (this.currentState.equals(State.INPROGRESS)) {
+				// Alle Ergebnisse verdichten. Die Ergebnisse aus der derzeitigen Worker sollen
+				// einbezogen werden.
+				if (this.combinerInstruction != null) {
+					List<KeyValuePair> beforeCombining = ctx.getMapResult();
+					List<KeyValuePair> afterCombining = this.combinerInstruction
+							.combine(beforeCombining.iterator());
+					ctx.replaceMapResult(afterCombining);
+				}
+			} else {
+				throw new ComputationStoppedException();
 			}
-			this.currentState = State.COMPLETED;
-			logger.finest("State: COMPLETED");
+
+			if (this.currentState.equals(State.INPROGRESS)) {
+				this.currentState = State.COMPLETED;
+				logger.finest("State: COMPLETED");
+			} else {
+				throw new ComputationStoppedException();
+			}
 		} catch (ComputationStoppedException stopped) {
 			logger.finest("State: ABORTED");
 			this.currentState = State.ABORTED;
+			this.myWorker.cleanSpecificResult(mapReduceTaskUID, workerTaskUuid);
 		} catch (Exception e) {
 			logger.log(Level.WARNING, "State: FAILED", e);
 			this.currentState = State.FAILED;
+			this.myWorker.cleanSpecificResult(mapReduceTaskUID, workerTaskUuid);
 		}
 	}
 
@@ -98,7 +113,7 @@ public class MapWorkerTask implements WorkerTask {
 	 */
 	@Override
 	public String getUUID() {
-		return mapTaskUuid;
+		return workerTaskUuid;
 	}
 
 	/**
@@ -138,11 +153,21 @@ public class MapWorkerTask implements WorkerTask {
 	}
 
 	public List<KeyValuePair> getResults(String mapReduceTaskUUID) {
-		return myWorker.getMapResult(mapReduceTaskUID, mapTaskUuid);
+		return myWorker.getMapResult(mapReduceTaskUID, workerTaskUuid);
 	}
 
 	@Override
 	public String getInput() {
 		return this.toDo;
+	}
+
+	@Override
+	public void setState(State newState) {
+		if (newState.equals(State.ABORTED) && !currentState.equals(State.INPROGRESS)) {
+			// Unsicher
+			this.myWorker.cleanSpecificResult(mapReduceTaskUID, workerTaskUuid);
+		} else {
+			currentState = newState;
+		}
 	}
 }

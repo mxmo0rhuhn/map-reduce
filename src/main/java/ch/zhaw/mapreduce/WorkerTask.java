@@ -48,9 +48,27 @@ public interface WorkerTask {
 	 */
 	String getMapReduceTaskUUID();
 
+	/**
+	 * Weist der Aufgabe einen verarbeitenden Worker zu
+	 * @param worker
+	 */
 	void setWorker(Worker worker);
 	
+	/** 
+	 * Gibt den Worker der diese Aufgabe bearbeitet zurück
+	 * @return der Worker
+	 */
 	Worker getWorker();
 
+	/**
+	 * Gibt den von diesem Worker bearbeiteten Input zurück
+	 * @return
+	 */
 	String getInput();
+	
+	/**
+	 * Setzt den Worker Task auf einen bestimmten Zustand.
+	 * @param newState
+	 */
+	void setState(State newState);
 }

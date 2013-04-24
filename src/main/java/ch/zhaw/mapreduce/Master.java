@@ -134,7 +134,7 @@ public final class Master {
 			uuidToInputMapping.put(mapTaskUuid, new KeyValuePair<String, String>(mapTaskUuid, todo));
 
 			MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapReduceTaskUUID,
-					mapTaskUuid, mapInstruction, combinerInstruction, todo);
+					mapInstruction, combinerInstruction, todo);
 
 			activeTasks.add(new KeyValuePair<String, WorkerTask>(mapTaskUuid, mapTask));
 			pool.enqueueWork(mapTask);
@@ -176,7 +176,7 @@ public final class Master {
 
 			String reduceTaskUuid = UUID.randomUUID().toString();
 			ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(
-					mapReduceTaskUUID, reduceTaskUuid, curInput.getKey(), reduceInstruction,
+					mapReduceTaskUUID, curInput.getKey(), reduceInstruction,
 					curInput.getValue());
 
 			activeTasks.add(new KeyValuePair<String, WorkerTask>(curInput.getKey(), reduceTask));
@@ -281,7 +281,7 @@ public final class Master {
 			reschedule(rescheduleInput, activeWorkerTasks);
 
 		} while (!remainingUuidMapping.isEmpty());
-		activeWorkerTasks.clear();
+		stopAndCleanTasks(activeWorkerTasks);
 		return results;
 	}
 
@@ -297,7 +297,7 @@ public final class Master {
 			for (KeyValuePair<String, String> rescheduleTodo : rescheduleInput) {
 
 				MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapReduceTaskUUID,
-						rescheduleTodo.getKey(), mapInstruction, combinerInstruction,
+						mapInstruction, combinerInstruction,
 						rescheduleTodo.getValue());
 
 				activeWorkerTasks.add(new KeyValuePair<String, WorkerTask>(rescheduleTodo.getKey(),
@@ -310,7 +310,7 @@ public final class Master {
 				String reduceTaskUuid = UUID.randomUUID().toString();
 
 				ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(
-						mapReduceTaskUUID, reduceTaskUuid, rescheduleTodo.getKey(),
+						mapReduceTaskUUID, rescheduleTodo.getKey(),
 						reduceInstruction, rescheduleTodo.getValue());
 
 				activeWorkerTasks.add(new KeyValuePair<String, WorkerTask>(rescheduleTodo.getKey(),
@@ -322,5 +322,12 @@ public final class Master {
 		default:
 			throw new IllegalStateException("Not in a Map or Reduce phase");
 		}
+	}
+	
+	private void stopAndCleanTasks(Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks) {
+		for( KeyValuePair<String, WorkerTask> curKV : activeWorkerTasks) {
+			curKV.getValue().setState(WorkerTask.State.ABORTED);
+		}
+		activeWorkerTasks.clear();
 	}
 }

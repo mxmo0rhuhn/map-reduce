@@ -1,6 +1,7 @@
 package ch.zhaw.mapreduce.impl;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -47,7 +48,7 @@ public class ReduceWorkerTask implements WorkerTask {
 	 */
 	private final List<KeyValuePair> input;
 	
-	private final String reduceTaskUuid;
+	private final String workerTaskUuid;
 
 	/**
 	 * Der momentane Status
@@ -55,13 +56,13 @@ public class ReduceWorkerTask implements WorkerTask {
 	private volatile State curState = State.INITIATED;
 
 	@Inject
-	public ReduceWorkerTask(@Assisted("uuid") String mapReduceTaskUUID, @Assisted("reduceTaskUuid") String reduceTaskUuid, @Assisted ReduceInstruction reduceInstruction,
+	public ReduceWorkerTask(@Assisted("uuid") String mapReduceTaskUUID,  @Assisted ReduceInstruction reduceInstruction,
 			@Assisted("key") String key, @Assisted List<KeyValuePair> inputs) {
 		this.mapReduceTaskUUID = mapReduceTaskUUID;
 		this.key = key;
 		this.reduceInstruction = reduceInstruction;
 		this.input = inputs;
-		this.reduceTaskUuid = reduceTaskUuid;
+		this.workerTaskUuid = UUID.randomUUID().toString();
 	}
 
 	/** {@inheritDoc} */
@@ -72,14 +73,22 @@ public class ReduceWorkerTask implements WorkerTask {
 
 		try {
 			this.reduceInstruction.reduce(ctx, key, input.iterator());
-			this.curState = State.COMPLETED;
-			logger.finest("State: COMPLETED");
+			
+			if( curState == State.INPROGRESS) {
+				this.curState = State.COMPLETED;
+				logger.finest("State: COMPLETED");
+			} else {
+				throw new ComputationStoppedException();
+			}
+			
 		} catch (ComputationStoppedException cse) {
 			logger.finest("State: ABORTED");
 			this.curState = State.ABORTED;
+			this.myWorker.cleanSpecificResult(mapReduceTaskUUID, workerTaskUuid);
 		} catch (Exception e) {
 			logger.log(Level.WARNING, "State: FAILED", e);
 			this.curState = State.FAILED;
+			this.myWorker.cleanSpecificResult(mapReduceTaskUUID, workerTaskUuid);
 		}
 	}
 
@@ -92,7 +101,7 @@ public class ReduceWorkerTask implements WorkerTask {
 	/** {@inheritDoc} */
 	@Override
 	public String getUUID() {
-		return this.reduceTaskUuid;
+		return this.workerTaskUuid;
 	}
 
 	/**
@@ -113,7 +122,7 @@ public class ReduceWorkerTask implements WorkerTask {
 	}
 
 	public List<String> getResults(String mapReduceTaskUUID) {
-		return myWorker.getReduceResult(mapReduceTaskUUID, reduceTaskUuid);
+		return myWorker.getReduceResult(mapReduceTaskUUID, workerTaskUuid);
 	}
 
 	@Override
@@ -129,5 +138,10 @@ public class ReduceWorkerTask implements WorkerTask {
 	@Override
 	public String getInput() {
 		return this.key;
+	}
+
+	@Override
+	public void setState(State newState) {
+		this.curState = newState;
 	}
 }

@@ -108,6 +108,12 @@ public class ThreadWorker implements Worker {
 		this.contexts.remove(mapReduceTaskUUID);
 	}
 
+	@Override
+	public void cleanSpecificResult(String mapReduceTaskUID, String inputUUID) {
+		this.contexts.get(mapReduceTaskUID).get(inputUUID).destroy();
+		this.contexts.get(mapReduceTaskUID).remove(inputUUID);
+	}
+
 }
 
 /**

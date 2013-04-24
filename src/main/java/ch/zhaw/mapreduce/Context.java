@@ -55,5 +55,8 @@ public interface Context extends MapEmitter, ReduceEmitter {
 	 */
 	void replaceMapResult(List<KeyValuePair> afterCombining) throws ComputationStoppedException;
 
+	/** 
+	 * Dieser Kontext wird nichtmehr gebraucht und kann zerstört werden
+	 */
 	void destroy();
 }

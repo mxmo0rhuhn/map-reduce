@@ -14,8 +14,8 @@ import ch.zhaw.mapreduce.WorkerTask;
 public interface Worker {
 
 	/**
-	 * Lässt den Worker seine derzeitige Aufgabe bearbeiten. Nach dem Ausführen der Aufgabe muss sich der Worker bei
-	 * seinem Pool melden.
+	 * Lässt den Worker seine derzeitige Aufgabe bearbeiten. Nach dem Ausführen der Aufgabe muss
+	 * sich der Worker bei seinem Pool melden.
 	 * 
 	 * @param task
 	 *            den WorkerTask, der ausgefuert werden soll
@@ -26,21 +26,38 @@ public interface Worker {
 	 * Gibt die derzeit auf dem Worker gespeicherten Strings zurueck
 	 * 
 	 * @param mapReduceTaskUID
-	 *            Die eindeutige ID des MapReduceTask desssen zugehörige Daten zurückgegeben werden sollen.
+	 *            Die eindeutige ID des MapReduceTask desssen zugehörige Daten zurückgegeben werden
+	 *            sollen.
+	 * @param workerTaskUUID
+	 *            Die eindeutige ID des WorkerTasks desssen zugehörige Daten gelöscht werden sollen.
 	 */
-	List<String> getReduceResult(String mapReduceTaskUID, String inputUID);
+	List<String> getReduceResult(String mapReduceTaskUID, String workerTaskUUID);
 
 	/**
 	 * Gibt die derzeit auf dem Worker gespeicherten KeyValue Pairs zurück
 	 * 
 	 * @param mapReduceTaskUID
-	 *            Die eindeutige ID des MapReduceTask desssen zugehörige Daten zurückgegeben werden sollen.
+	 *            Die eindeutige ID des MapReduceTask desssen zugehörige Daten zurückgegeben werden
+	 *            sollen.
+	 * @param workerTaskUUID
+	 *            Die eindeutige ID des WorkerTasks desssen zugehörige Daten gelöscht werden sollen.
 	 */
-	List<KeyValuePair> getMapResult(String mapReduceTaskUID, String inputUID);
+	List<KeyValuePair> getMapResult(String mapReduceTaskUID, String workerTaskUUID);
 
 	/**
-	 * Räumt in einem Worker alle Resultate auf (Speicher freigeben). Zu diesem Zeitpunkt ist die Map- und Reduce-Phase
-	 * abgeschlossen.
+	 * Räumt alle Resultate zu einem speziellen auf dem Worker ausgeführten Task auf
+	 * 
+	 * @param mapReduceTaskUID
+	 *            Die eindeutige ID des MapReduceTask desssen zugehörige Daten gelöscht werden
+	 *            sollen.
+	 * @param workerTaskUUID
+	 *            Die eindeutige ID des WorkerTasks desssen zugehörige Daten gelöscht werden sollen.
+	 */
+	void cleanSpecificResult(String mapReduceTaskUID, String workerTaskUUID);
+
+	/**
+	 * Räumt in einem Worker alle Resultate auf (Speicher freigeben). Zu diesem Zeitpunkt ist die
+	 * Map- und Reduce-Phase abgeschlossen.
 	 * 
 	 * @param mapReduceTaskUUID
 	 *            diese Berechnung ist fertig
