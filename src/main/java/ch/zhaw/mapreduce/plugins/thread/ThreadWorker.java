@@ -40,8 +40,6 @@ public class ThreadWorker implements Worker {
 	 */
 	private final Executor executor;
 
-	private final Persistence persistence;
-
 	private final ContextFactory ctxFactory;
 
 	/**
@@ -51,10 +49,9 @@ public class ThreadWorker implements Worker {
 	 * @param executor
 	 */
 	@Inject
-	public ThreadWorker(Pool pool, Executor executor, Persistence persistence, ContextFactory ctxFactory) {
+	public ThreadWorker(Pool pool, Executor executor, ContextFactory ctxFactory) {
 		this.pool = pool;
 		this.executor = executor;
-		this.persistence = persistence;
 		this.ctxFactory = ctxFactory;
 	}
 
@@ -65,7 +62,7 @@ public class ThreadWorker implements Worker {
 	public void executeTask(final WorkerTask task) {
 		String mrUuid = task.getMapReduceTaskUUID();
 		String taskUuid = task.getUUID();
-		final Context ctx = this.ctxFactory.createContext(this.persistence, mrUuid, taskUuid);
+		final Context ctx = this.ctxFactory.createContext(mrUuid, taskUuid);
 		this.contexts.putIfAbsent(mrUuid, new ConcurrentHashMap<String, Context>());
 		ConcurrentMap<String, Context> inputs = this.contexts.get(mrUuid);
 		inputs.put(taskUuid, ctx);
