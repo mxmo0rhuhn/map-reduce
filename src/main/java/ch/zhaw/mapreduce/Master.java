@@ -146,8 +146,7 @@ public final class Master {
 		Shuffler s = shufflerProvider.get();
 		for (WorkerTask task : mapResults) {
 			MapWorkerTask mapTask = (MapWorkerTask) task;
-			for (KeyValuePair<String, String> curKeyValuePair : mapTask
-					.getResults(mapReduceTaskUUID)) {
+			for (KeyValuePair<String, String> curKeyValuePair : mapTask.getResults(mapReduceTaskUUID)) {
 				s.put(curKeyValuePair.getKey(), curKeyValuePair.getValue());
 			}
 		}

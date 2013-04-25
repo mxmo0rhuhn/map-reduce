@@ -44,7 +44,7 @@ public final class Loader {
 			AgentPlugin plugin = instantiate(pluginName);
 			if (plugin != null) {
 				instances.add(plugin);
-				logger.config("Plugin " + pluginName + " loaded");
+				logger.fine("Plugin " + pluginName + " found");
 			}
 		}
 		return instances;

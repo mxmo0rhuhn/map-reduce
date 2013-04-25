@@ -152,6 +152,7 @@ public class MapWorkerTask implements WorkerTask {
 		return myWorker;
 	}
 
+	// TODO was soll der parameter??
 	public List<KeyValuePair> getResults(String mapReduceTaskUUID) {
 		return myWorker.getMapResult(mapReduceTaskUID, workerTaskUuid);
 	}

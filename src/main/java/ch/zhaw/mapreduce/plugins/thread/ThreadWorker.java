@@ -1,5 +1,6 @@
 package ch.zhaw.mapreduce.plugins.thread;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -82,8 +83,18 @@ public class ThreadWorker implements Worker {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<KeyValuePair> getMapResult(String mapReduceTaskUID, String mapTaskUuid) {
-		return this.contexts.get(mapReduceTaskUID).get(mapTaskUuid).getMapResult();
+	public List<KeyValuePair> getMapResult(String mapReduceTaskUUID, String mapTaskUUID) {
+		ConcurrentMap<String, Context> computationCtx = this.contexts.get(mapReduceTaskUUID);
+		if (computationCtx == null) {
+			this.logger.fine("MapReduceTaskUUID not found: " + mapReduceTaskUUID);
+			return Collections.emptyList();
+		}
+		Context taskCtx = computationCtx.get(mapTaskUUID);
+		if (taskCtx == null) {
+			this.logger.finer("MapTaskUUID not found: " + mapTaskUUID);
+			return Collections.emptyList();
+		}
+		return taskCtx.getMapResult();
 	}
 
 	/**
