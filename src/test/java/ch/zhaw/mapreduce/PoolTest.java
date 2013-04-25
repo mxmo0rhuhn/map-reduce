@@ -19,10 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import ch.zhaw.mapreduce.Pool;
-import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.workers.ThreadWorker;
-import ch.zhaw.mapreduce.workers.Worker;
+import ch.zhaw.mapreduce.plugins.thread.ThreadWorker;
 
 @RunWith(JMock.class)
 public class PoolTest {
@@ -81,17 +78,22 @@ public class PoolTest {
 	@Test
 	public void shouldExecuteWork() throws InterruptedException {
 		final WorkerTask task = this.context.mock(WorkerTask.class);
+		final Persistence persistence = this.context.mock(Persistence.class);
+		final ContextFactory ctxFactory = this.context.mock(ContextFactory.class);
+		final Context ctx = this.context.mock(Context.class);
 		final Executor poolExec = Executors.newSingleThreadExecutor();
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
 		Pool p = new Pool(poolExec);
 		p.init();
-		final ThreadWorker worker = new ThreadWorker(p, threadExec);
+		final ThreadWorker worker = new ThreadWorker(p, threadExec, persistence, ctxFactory);
 		p.donateWorker(worker);
-
 		this.context.checking(new Expectations() {
 			{
-				exactly(2).of(task).getMapReduceTaskUUID();
-				one(task).runTask(worker);
+				oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrTaskUUID"));
+				oneOf(task).getUUID(); will(returnValue("taskUUID"));
+				oneOf(ctxFactory).createContext(persistence, "mrTaskUUID", "taskUUID"); will(returnValue(ctx));
+				oneOf(task).setWorker(worker);
+				oneOf(task).runTask(ctx);
 			}
 		});
 
@@ -103,14 +105,17 @@ public class PoolTest {
 	public void shouldBeAvailableAgain() {
 		final WorkerTask workerTask = this.context.mock(WorkerTask.class);
 		final Pool pool = new Pool(this.executor);
+		final Persistence persistence = this.context.mock(Persistence.class);
+		final Context ctx = this.context.mock(Context.class);
+		final ContextFactory factory = this.context.mock(ContextFactory.class);
 		pool.init();
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
-		final ThreadWorker worker = new ThreadWorker(pool, threadExec);
+		final ThreadWorker worker = new ThreadWorker(pool, threadExec, persistence, factory);
 		pool.donateWorker(worker);
 		this.context.checking(new Expectations() {
 			{
 				exactly(2).of(workerTask).getMapReduceTaskUUID();
-				oneOf(workerTask).runTask(worker);
+				oneOf(workerTask).runTask(ctx);
 			}
 		});
 		pool.enqueueWork(workerTask);

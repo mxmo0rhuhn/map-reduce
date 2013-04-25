@@ -62,6 +62,18 @@ class SocketContext implements Context {
 		// TODO Auto-generated method stub
 		return null;
 	}
+
+	@Override
+	public String getMapReduceTaskUUID() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getTaskUUID() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
 	
 }

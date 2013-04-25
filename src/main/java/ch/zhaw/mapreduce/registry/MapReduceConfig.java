@@ -47,8 +47,6 @@ public class MapReduceConfig extends AbstractModule {
 		bind(Persistence.class).to(FilePersistence.class);
 		bind(Shuffler.class).to(InMemoryShuffler.class);
 		
-		bind(String.class).annotatedWith(Names.named("filepersistence.directory")).toInstance(System.getProperty("java.io.tmpdir") + "/mapred/filepers/");
-		bind(String.class).annotatedWith(Names.named("filepersistence.ending")).toInstance(".ser");
 		bind(String.class).annotatedWith(Names.named("plugins.property")).toInstance("mrplugins");
 		
 		// see PostConstructFeature

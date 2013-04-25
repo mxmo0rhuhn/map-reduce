@@ -26,7 +26,7 @@ import ch.zhaw.mapreduce.registry.PoolExecutor;
 @Singleton
 public final class Pool {
 
-	private final Logger logger;
+	private static final Logger logger = Logger.getLogger(Pool.class.getName());
 
 	private final List<Worker> existingWorkers = new CopyOnWriteArrayList<Worker>();
 
@@ -47,8 +47,7 @@ public final class Pool {
 	 * Erstellt einen neuen Pool der Aufgaben und Worker entgegen nimmt.
 	 */
 	@Inject
-	public Pool(@PoolExecutor Executor exec, Logger logger) {
-		this.logger = logger;
+	public Pool(@PoolExecutor Executor exec) {
 		this.workTaskAdministrator = exec;
 	}
 

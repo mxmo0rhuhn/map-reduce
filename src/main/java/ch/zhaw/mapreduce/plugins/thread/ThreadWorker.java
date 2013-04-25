@@ -10,15 +10,13 @@ import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
-import ch.zhaw.mapreduce.ComputationStoppedException;
 import ch.zhaw.mapreduce.Context;
+import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
-
-import com.google.inject.Provider;
 
 /**
  * Implementation von einem Thread-basierten Worker. Der Task wird ueber einen Executor ausgefuehrt.
@@ -28,8 +26,7 @@ import com.google.inject.Provider;
  */
 public class ThreadWorker implements Worker {
 
-	@Inject
-	private Logger logger;
+	private static final Logger LOG = Logger.getLogger(ThreadWorker.class.getName());
 
 	private final ConcurrentMap<String, ConcurrentMap<String, Context>> contexts = new ConcurrentHashMap<String, ConcurrentMap<String, Context>>();
 
@@ -43,7 +40,9 @@ public class ThreadWorker implements Worker {
 	 */
 	private final Executor executor;
 
-	private final Provider<Persistence> persistenceProvider;
+	private final Persistence persistence;
+
+	private final ContextFactory ctxFactory;
 
 	/**
 	 * Erstellt einen neunen ThreadWorker mit dem gegebenen Pool und Executor.
@@ -52,10 +51,11 @@ public class ThreadWorker implements Worker {
 	 * @param executor
 	 */
 	@Inject
-	public ThreadWorker(Pool pool, Executor executor, Provider<Persistence> persistenceProvider) {
+	public ThreadWorker(Pool pool, Executor executor, Persistence persistence, ContextFactory ctxFactory) {
 		this.pool = pool;
 		this.executor = executor;
-		this.persistenceProvider = persistenceProvider;
+		this.persistence = persistence;
+		this.ctxFactory = ctxFactory;
 	}
 
 	/**
@@ -65,9 +65,9 @@ public class ThreadWorker implements Worker {
 	public void executeTask(final WorkerTask task) {
 		String mrUuid = task.getMapReduceTaskUUID();
 		String taskUuid = task.getUUID();
-		final Context ctx = new LocalContext(persistenceProvider.get(), mrUuid, taskUuid);
-		contexts.putIfAbsent(mrUuid, new ConcurrentHashMap<String, Context>());
-		ConcurrentMap<String, Context> inputs = contexts.get(mrUuid);
+		final Context ctx = this.ctxFactory.createContext(this.persistence, mrUuid, taskUuid);
+		this.contexts.putIfAbsent(mrUuid, new ConcurrentHashMap<String, Context>());
+		ConcurrentMap<String, Context> inputs = this.contexts.get(mrUuid);
 		inputs.put(taskUuid, ctx);
 		this.executor.execute(new Runnable() {
 			@Override
@@ -86,12 +86,12 @@ public class ThreadWorker implements Worker {
 	public List<KeyValuePair> getMapResult(String mapReduceTaskUUID, String mapTaskUUID) {
 		ConcurrentMap<String, Context> computationCtx = this.contexts.get(mapReduceTaskUUID);
 		if (computationCtx == null) {
-			this.logger.fine("MapReduceTaskUUID not found: " + mapReduceTaskUUID);
+			LOG.fine("MapReduceTaskUUID not found: " + mapReduceTaskUUID);
 			return Collections.emptyList();
 		}
 		Context taskCtx = computationCtx.get(mapTaskUUID);
 		if (taskCtx == null) {
-			this.logger.finer("MapTaskUUID not found: " + mapTaskUUID);
+			LOG.finer("MapTaskUUID not found: " + mapTaskUUID);
 			return Collections.emptyList();
 		}
 		return taskCtx.getMapResult();
@@ -110,7 +110,7 @@ public class ThreadWorker implements Worker {
 	public void cleanAllResults(String mapReduceTaskUUID) {
 		Map<String, Context> mrContexts = this.contexts.get(mapReduceTaskUUID);
 		if (mrContexts == null) {
-			logger.finest("Nothing to delete for " + mapReduceTaskUUID);
+			LOG.finest("Nothing to delete for " + mapReduceTaskUUID);
 		} else {
 			for (Map.Entry<String, Context> inputs : mrContexts.entrySet()) {
 				inputs.getValue().destroy();
@@ -123,74 +123,6 @@ public class ThreadWorker implements Worker {
 	public void cleanSpecificResult(String mapReduceTaskUID, String inputUUID) {
 		this.contexts.get(mapReduceTaskUID).get(inputUUID).destroy();
 		this.contexts.get(mapReduceTaskUID).remove(inputUUID);
-	}
-
-}
-
-/**
- * Kontext für lokale Berechnungen
- * 
- * @author Reto Hablützel (rethab)
- * 
- */
-class LocalContext implements Context {
-
-	/**
-	 * Die Resultate von den ThreadWorker werden nicht In-Memory gehalten sondern über die
-	 * Persistence gespeichert. Typischerweise dürfte das eine Datei sein.
-	 */
-	private final Persistence persistence;
-	private final String mrUuid;
-	private final String taskUuid;
-	private volatile boolean stopped = false;
-
-	LocalContext(Persistence persistence, String mrUuid, String taskUuid) {
-		this.mrUuid = mrUuid;
-		this.taskUuid = taskUuid;
-		this.persistence = persistence;
-	}
-
-	@Override
-	public void emitIntermediateMapResult(String key, String value) {
-		if (stopped) {
-			throw new ComputationStoppedException();
-		}
-		persistence.storeMap(mrUuid, taskUuid, key, value);
-	}
-
-	@Override
-	public void emit(String result) {
-		if (stopped) {
-			throw new ComputationStoppedException();
-		}
-		persistence.storeReduce(mrUuid, taskUuid, result);
-	}
-
-	@Override
-	public List<KeyValuePair> getMapResult() {
-		if (stopped) {
-			throw new ComputationStoppedException();
-		}
-		return persistence.getMap(mrUuid, taskUuid);
-	}
-
-	@Override
-	public void replaceMapResult(List<KeyValuePair> afterCombining) {
-		if (stopped) {
-			throw new ComputationStoppedException();
-		}
-		persistence.replaceMap(mrUuid, taskUuid, afterCombining);
-	}
-
-	@Override
-	public void destroy() {
-		stopped = true;
-		persistence.destroy(mrUuid, taskUuid);
-	}
-
-	@Override
-	public List<String> getReduceResult() {
-		return persistence.getReduce(mrUuid, taskUuid);
 	}
 
 }

@@ -1,6 +1,7 @@
 package ch.zhaw.mapreduce;
 
 import static org.junit.Assert.assertEquals;
+import static ch.zhaw.mapreduce.TestUtil.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,15 +38,6 @@ public class MasterTest {
 	private CombinerInstruction combinerInstruction;
 	private Logger dummyOut;
 	
-	private static <T> Provider<T> toProvider(final T instance) {
-		return new Provider<T>() {
-			@Override
-			public T get() {
-				return instance;
-			}
-		};
-	}
-
 	@Before
 	public void initMock() {
 		this.context = new JUnit4Mockery();
