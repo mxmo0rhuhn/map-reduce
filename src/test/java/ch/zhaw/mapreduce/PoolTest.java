@@ -78,20 +78,19 @@ public class PoolTest {
 	@Test
 	public void shouldExecuteWork() throws InterruptedException {
 		final WorkerTask task = this.context.mock(WorkerTask.class);
-		final Persistence persistence = this.context.mock(Persistence.class);
 		final ContextFactory ctxFactory = this.context.mock(ContextFactory.class);
 		final Context ctx = this.context.mock(Context.class);
 		final Executor poolExec = Executors.newSingleThreadExecutor();
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
 		Pool p = new Pool(poolExec);
 		p.init();
-		final ThreadWorker worker = new ThreadWorker(p, threadExec, persistence, ctxFactory);
+		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxFactory);
 		p.donateWorker(worker);
 		this.context.checking(new Expectations() {
 			{
 				oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrTaskUUID"));
 				oneOf(task).getUUID(); will(returnValue("taskUUID"));
-				oneOf(ctxFactory).createContext(persistence, "mrTaskUUID", "taskUUID"); will(returnValue(ctx));
+				oneOf(ctxFactory).createContext("mrTaskUUID", "taskUUID"); will(returnValue(ctx));
 				oneOf(task).setWorker(worker);
 				oneOf(task).runTask(ctx);
 			}
@@ -102,25 +101,30 @@ public class PoolTest {
 	}
 
 	@Test
-	public void shouldBeAvailableAgain() {
-		final WorkerTask workerTask = this.context.mock(WorkerTask.class);
-		final Pool pool = new Pool(this.executor);
-		final Persistence persistence = this.context.mock(Persistence.class);
+	public void workerShouldBeFreeAgainAfterwards() {
+		final WorkerTask task = this.context.mock(WorkerTask.class);
+		final ContextFactory ctxFactory = this.context.mock(ContextFactory.class);
 		final Context ctx = this.context.mock(Context.class);
-		final ContextFactory factory = this.context.mock(ContextFactory.class);
-		pool.init();
+		final Executor poolExec = Executors.newSingleThreadExecutor();
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
-		final ThreadWorker worker = new ThreadWorker(pool, threadExec, persistence, factory);
-		pool.donateWorker(worker);
+		Pool p = new Pool(poolExec);
+		p.init();
+		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxFactory);
+		p.donateWorker(worker);
 		this.context.checking(new Expectations() {
 			{
-				exactly(2).of(workerTask).getMapReduceTaskUUID();
-				oneOf(workerTask).runTask(ctx);
+				oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrTaskUUID"));
+				oneOf(task).getUUID(); will(returnValue("taskUUID"));
+				oneOf(ctxFactory).createContext("mrTaskUUID", "taskUUID"); will(returnValue(ctx));
+				oneOf(task).setWorker(worker);
+				oneOf(task).runTask(ctx);
 			}
 		});
-		pool.enqueueWork(workerTask);
+
+		assertEquals(1, p.getFreeWorkers());
+		p.enqueueWork(task);
 		assertTrue(threadExec.waitForExpectedTasks(300, TimeUnit.MILLISECONDS));
-		assertEquals(1, pool.getFreeWorkers());
+		assertEquals(1, p.getFreeWorkers());
 	}
 
 	@Test
