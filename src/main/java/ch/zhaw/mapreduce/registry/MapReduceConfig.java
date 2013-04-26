@@ -44,7 +44,6 @@ public class MapReduceConfig extends AbstractModule {
 		bind(Master.class);
 		bind(Pool.class);
 		bind(Loader.class);
-		bind(Persistence.class).to(FilePersistence.class);
 		bind(Shuffler.class).to(InMemoryShuffler.class);
 		
 		bind(String.class).annotatedWith(Names.named("plugins.property")).toInstance("mrplugins");
@@ -62,6 +61,12 @@ public class MapReduceConfig extends AbstractModule {
 	@Provides
 	@MapReduceTaskUUID
 	public String getMapReduceTaskUUID() {
+		return UUID.randomUUID().toString();
+	}
+	
+	@Provides
+	@WorkerTaskUUID
+	public String getWorkerTaskUUID() {
 		return UUID.randomUUID().toString();
 	}
 	

@@ -1,7 +1,6 @@
 package ch.zhaw.mapreduce.impl;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -15,7 +14,7 @@ import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.WorkerTask.State;
+import ch.zhaw.mapreduce.registry.WorkerTaskUUID;
 
 import com.google.inject.assistedinject.Assisted;
 
@@ -26,8 +25,7 @@ import com.google.inject.assistedinject.Assisted;
  */
 public class MapWorkerTask implements WorkerTask {
 
-	@Inject
-	private Logger logger;
+	private Logger logger = Logger.getLogger(MapWorkerTask.class.getName());
 
 	private volatile Worker myWorker;
 
@@ -50,14 +48,13 @@ public class MapWorkerTask implements WorkerTask {
 	private volatile State currentState = State.INITIATED;
 
 	@Inject
-	public MapWorkerTask(@Assisted("uuid") String mapReduceTaskUID,
-			@Assisted MapInstruction mapInstruction,
-			@Assisted @Nullable CombinerInstruction combinerInstruction,
+	public MapWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUUID, @WorkerTaskUUID String taskUUID,
+			@Assisted MapInstruction mapInstruction, @Assisted @Nullable CombinerInstruction combinerInstruction,
 			@Assisted("input") String input) {
-		this.mapReduceTaskUID = mapReduceTaskUID;
+		this.mapReduceTaskUID = mapReduceTaskUUID;
 		this.mapInstruction = mapInstruction;
 		this.combinerInstruction = combinerInstruction;
-		workerTaskUuid = UUID.randomUUID().toString();
+		this.workerTaskUuid = taskUUID;
 		this.toDo = input;
 	}
 
@@ -83,8 +80,7 @@ public class MapWorkerTask implements WorkerTask {
 				// einbezogen werden.
 				if (this.combinerInstruction != null) {
 					List<KeyValuePair> beforeCombining = ctx.getMapResult();
-					List<KeyValuePair> afterCombining = this.combinerInstruction
-							.combine(beforeCombining.iterator());
+					List<KeyValuePair> afterCombining = this.combinerInstruction.combine(beforeCombining.iterator());
 					ctx.replaceMapResult(afterCombining);
 				}
 			} else {

@@ -28,10 +28,10 @@ import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.WorkerTaskFactory;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
 import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
-import ch.zhaw.mapreduce.workers.Worker;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
+import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.matcher.Matchers;
 
@@ -39,47 +39,46 @@ import com.google.inject.matcher.Matchers;
 public class RegistryTest {
 
 	private Mockery context;
-	
+
 	private String input;
-	
-	private String inputUUID;
-	
+
 	private List<KeyValuePair> toDo;
 
 	@Before
 	public void initMock() {
 		this.context = new JUnit4Mockery();
 		this.input = "input";
-		this.inputUUID = "inputUUID";
 		this.toDo = Collections.emptyList();
 	}
 
 	@Test
 	public void shouldDefineBindingForMaster() {
-		assertNotNull(Registry.getComponent(Master.class));
+		assertNotNull(Guice.createInjector(new MapReduceConfig()).getInstance(Master.class));
 	}
 
 	@Test
 	public void poolShouldBeSingleton() {
-		Pool p1 = Registry.getComponent(Pool.class);
-		Pool p2 = Registry.getComponent(Pool.class);
+		Injector injector = Guice.createInjector(new MapReduceConfig());
+		Pool p1 = injector.getInstance(Pool.class);
+		Pool p2 = injector.getInstance(Pool.class);
 		assertSame(p1, p2);
 	}
 
 	@Test
 	public void poolShouldBeSingletonInDifferentThreads() throws InterruptedException {
+		final Injector injector = Guice.createInjector(new MapReduceConfig());
 		final Pool[] pools = new Pool[2];
 		Thread t1 = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				pools[0] = Registry.getComponent(Pool.class);
+				pools[0] = injector.getInstance(Pool.class);
 			}
 		});
 
 		Thread t2 = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				pools[1] = Registry.getComponent(Pool.class);
+				pools[1] = injector.getInstance(Pool.class);
 			}
 		});
 
@@ -88,7 +87,7 @@ public class RegistryTest {
 		t1.join();
 		t2.join();
 		assertSame(pools[0], pools[1]);
-		assertSame(pools[1], Registry.getComponent(Pool.class));
+		assertSame(pools[1], injector.getInstance(Pool.class));
 	}
 
 	@Test
@@ -103,7 +102,7 @@ public class RegistryTest {
 				bind(Pool.class);
 				bindListener(Matchers.any(), new PostConstructFeature());
 			}
-			
+
 			@Provides
 			@PoolExecutor
 			public Executor poolExec() {
@@ -115,42 +114,35 @@ public class RegistryTest {
 	}
 
 	@Test
-	public void workerShouldBePrototype() {
-		Worker w1 = Registry.getComponent(Worker.class);
-		Worker w2 = Registry.getComponent(Worker.class);
-		assertNotSame(w1, w2);
-	}
-
-	@Test
 	public void shouldSetMapAndCombinerTaskToMapRunner() {
-		WorkerTaskFactory factory = Registry.getComponent(WorkerTaskFactory.class);
+		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
 		MapInstruction mapTask = this.context.mock(MapInstruction.class);
 		CombinerInstruction combinerTask = this.context.mock(CombinerInstruction.class);
-		MapWorkerTask mapWorkerTask = factory.createMapWorkerTask("uuid", mapTask, combinerTask, inputUUID, input);
+		MapWorkerTask mapWorkerTask = factory.createMapWorkerTask("uuid", mapTask, combinerTask, input);
 		assertSame(mapTask, mapWorkerTask.getMapInstruction());
 		assertSame(combinerTask, mapWorkerTask.getCombinerInstruction());
 	}
 
 	@Test
 	public void shouldCopeWithNullCombinerTask() {
-		WorkerTaskFactory factory = Registry.getComponent(WorkerTaskFactory.class);
+		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
 		MapInstruction mapTask = this.context.mock(MapInstruction.class);
-		MapWorkerTask mapperTask = factory.createMapWorkerTask("uuid", mapTask, null, inputUUID, input);
+		MapWorkerTask mapperTask = factory.createMapWorkerTask("uuid", mapTask, null, input);
 		assertNotNull(mapperTask);
 	}
 
 	@Test
 	public void shouldCreatePrototypesForMapRunners() {
-		WorkerTaskFactory factory = Registry.getComponent(WorkerTaskFactory.class);
+		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
 		MapInstruction mapTask = this.context.mock(MapInstruction.class);
 		CombinerInstruction combinerTask = this.context.mock(CombinerInstruction.class);
-		assertNotSame(factory.createMapWorkerTask("uuid1", mapTask, combinerTask, inputUUID, input),
-				factory.createMapWorkerTask("uuid2", mapTask, combinerTask, inputUUID, input));
+		assertNotSame(factory.createMapWorkerTask("uuid1", mapTask, combinerTask, input),
+				factory.createMapWorkerTask("uuid2", mapTask, combinerTask, input));
 	}
 
 	@Test
 	public void shouldSetReduceTaskToReduceRunner() {
-		WorkerTaskFactory factory = Registry.getComponent(WorkerTaskFactory.class);
+		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
 		ReduceInstruction reduceTask = this.context.mock(ReduceInstruction.class);
 		ReduceWorkerTask reduceRunner = factory.createReduceWorkerTask("uuid", "key", reduceTask, this.toDo);
 		assertSame(reduceTask, reduceRunner.getReduceTask());
@@ -158,29 +150,51 @@ public class RegistryTest {
 
 	@Test
 	public void shouldCreatePrototypesForReduceRunners() {
-		WorkerTaskFactory factory = Registry.getComponent(WorkerTaskFactory.class);
+		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
 		ReduceInstruction reduceTask = this.context.mock(ReduceInstruction.class);
-		assertNotSame(factory.createReduceWorkerTask("uuid1", "key1", reduceTask, toDo), factory.createReduceWorkerTask("uuid2", "key2", reduceTask, toDo));
+		assertNotSame(factory.createReduceWorkerTask("uuid1", "key1", reduceTask, toDo),
+				factory.createReduceWorkerTask("uuid2", "key2", reduceTask, toDo));
 	}
-	
+
 	@Test
-	public void shouldSetUUIDToMapTask() {
-		WorkerTaskFactory factory = Registry.getComponent(WorkerTaskFactory.class);
-		MapWorkerTask mwt = factory.createMapWorkerTask("uuid", this.context.mock(MapInstruction.class), null, inputUUID, input);
+	public void shouldSetMapReduceUUIDToMapTask() {
+		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
+		MapWorkerTask mwt = factory.createMapWorkerTask("uuid", this.context.mock(MapInstruction.class), null, input);
 		assertEquals("uuid", mwt.getMapReduceTaskUUID());
 	}
-	
+
+	@Test
+	public void shouldSetWorkerTaskUUIDToMapTask() {
+		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
+		MapWorkerTask mwt = factory.createMapWorkerTask("uuid", this.context.mock(MapInstruction.class), null, input);
+		assertNotNull(mwt.getUUID());
+	}
+
+	@Test
+	public void shouldGenerateDistinctWorkerTaskUUIDs() {
+		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
+		MapWorkerTask mwt1 = factory.createMapWorkerTask("uuid", this.context.mock(MapInstruction.class, "mi1"), null, input);
+		MapWorkerTask mwt2 = factory.createMapWorkerTask("uuid", this.context.mock(MapInstruction.class, "mi2"), null, input);
+		String uuid1 = mwt1.getUUID();
+		String uuid2 = mwt2.getUUID();
+		assertNotNull(uuid1);
+		assertNotNull(uuid2);
+		assertFalse(uuid1.equals(uuid2));
+	}
+
 	@Test
 	public void shouldSetUUIDToReduceTask() {
-		WorkerTaskFactory factory = Registry.getComponent(WorkerTaskFactory.class);
-		ReduceWorkerTask mwt = factory.createReduceWorkerTask("uuid", "key", this.context.mock(ReduceInstruction.class), toDo);
+		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
+		ReduceWorkerTask mwt = factory.createReduceWorkerTask("uuid", "key",
+				this.context.mock(ReduceInstruction.class), toDo);
 		assertEquals("uuid", mwt.getMapReduceTaskUUID());
 	}
-	
+
 	@Test
 	public void shouldProvideDifferentUUIDEveryTime() {
-		Master m1 = Registry.getComponent(Master.class);
-		Master m2 = Registry.getComponent(Master.class);
+		Injector injector = Guice.createInjector(new MapReduceConfig());
+		Master m1 = injector.getInstance(Master.class);
+		Master m2 = injector.getInstance(Master.class);
 		assertFalse(m1.getMapReduceTaskUUID().equals(m2.getMapReduceTaskUUID()));
 	}
 }

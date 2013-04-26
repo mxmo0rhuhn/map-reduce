@@ -34,7 +34,7 @@ import ch.zhaw.mapreduce.MapEmitter;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.WorkerTask.State;
-import ch.zhaw.mapreduce.workers.ThreadWorker;
+import ch.zhaw.mapreduce.plugins.thread.ThreadWorker;
 
 @RunWith(JMock.class)
 public class MapWorkerTaskTest {

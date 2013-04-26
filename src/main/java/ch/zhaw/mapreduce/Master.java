@@ -40,9 +40,10 @@ public final class Master {
 	// Wartezeit in millisekunden bis in einem Durchlauf wieder die Worker angefragt werden etc
 	private static final int WAITTIME = 1000;
 
-	@Inject
-	private Logger logger;
+	private Logger logger = Logger.getLogger(Master.class.getName());
+	
 	private final Provider<Shuffler> shufflerProvider;
+	
 	private final Pool pool;
 	private final String mapReduceTaskUUID;
 	private final WorkerTaskFactory workerTaskFactory;

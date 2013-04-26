@@ -56,7 +56,7 @@ public class ReduceWorkerTask implements WorkerTask {
 	private volatile State curState = State.INITIATED;
 
 	@Inject
-	public ReduceWorkerTask(@Assisted("uuid") String mapReduceTaskUUID,  @Assisted ReduceInstruction reduceInstruction,
+	public ReduceWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUUID,  @Assisted ReduceInstruction reduceInstruction,
 			@Assisted("key") String key, @Assisted List<KeyValuePair> inputs) {
 		this.mapReduceTaskUUID = mapReduceTaskUUID;
 		this.key = key;
