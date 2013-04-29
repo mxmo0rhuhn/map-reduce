@@ -13,7 +13,6 @@ import javax.inject.Inject;
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
-import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
@@ -117,9 +116,19 @@ public class ThreadWorker implements Worker {
 	}
 
 	@Override
-	public void cleanSpecificResult(String mapReduceTaskUID, String inputUUID) {
-		this.contexts.get(mapReduceTaskUID).get(inputUUID).destroy();
-		this.contexts.get(mapReduceTaskUID).remove(inputUUID);
+	public void cleanSpecificResult(String mapReduceTaskUUID, String taskUUID) {
+		ConcurrentMap<String, Context> tasks = this.contexts.get(mapReduceTaskUUID);
+		if (tasks == null) {
+			LOG.finest("Nothing to clean for " + mapReduceTaskUUID);
+		} else {
+			Context ctx = tasks.get(taskUUID);
+			if (ctx == null) {
+				LOG.finest("Nothing to delete for " + mapReduceTaskUUID + " and " + taskUUID);
+			} else {
+				ctx.destroy();
+				tasks.remove(taskUUID);
+			}
+		}
 	}
 
 }

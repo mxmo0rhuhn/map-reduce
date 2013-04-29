@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jmock.Expectations;
 import org.jmock.Mockery;
+import org.jmock.Sequence;
 import org.jmock.integration.junit4.JMock;
 import org.jmock.integration.junit4.JUnit4Mockery;
 import org.jmock.lib.concurrent.ExactCommandExecutor;
@@ -35,6 +36,7 @@ import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapEmitter;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.Pool;
+import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask.State;
 import ch.zhaw.mapreduce.plugins.thread.ThreadWorker;
 
@@ -56,7 +58,7 @@ public class MapWorkerTaskTest {
 	@Before
 	public void initMock() {
 		this.context = new JUnit4Mockery();
-		this.p = this.context.mock(Pool.class);
+		this.p = new Pool(Executors.newSingleThreadExecutor());
 		this.mapInstr = this.context.mock(MapInstruction.class);
 		this.combInstr = this.context.mock(CombinerInstruction.class);
 		this.inputUUID = "inputUUID";
@@ -124,9 +126,14 @@ public class MapWorkerTaskTest {
 				throw new NullPointerException();
 			}
 		}, combInstr, input);
+		final Worker worker = this.context.mock(Worker.class);
+		this.context.checking(new Expectations() {{ 
+			oneOf(worker).cleanSpecificResult("mrtUuid", inputUUID);
+		}});
+		task.setWorker(worker);
 		task.runTask(null);
 		assertEquals(State.FAILED, task.getCurrentState());
-		assertNull(task.getWorker());
+		assertSame(worker, task.getWorker());
 	}
 
 	@Test
@@ -135,7 +142,12 @@ public class MapWorkerTaskTest {
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
 			}
-		}, combInstr, input);
+		}, null, input);
+		final Worker worker = this.context.mock(Worker.class);
+		this.context.checking(new Expectations() {{ 
+			never(worker);
+		}});
+		task.setWorker(worker);
 		task.runTask(null);
 		assertEquals(State.COMPLETED, task.getCurrentState());
 	}
@@ -148,7 +160,8 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldBeInProgressWhileRunning() throws InterruptedException, BrokenBarrierException {
-		ContextFactory ctxFactory = this.context.mock(ContextFactory.class);
+		final ContextFactory ctxFactory = this.context.mock(ContextFactory.class);
+		final Context ctx = this.context.mock(Context.class);
 		Executor poolExec = Executors.newSingleThreadExecutor();
 		final CyclicBarrier barrier = new CyclicBarrier(2);
 		Executor taskExec = Executors.newSingleThreadExecutor();
@@ -167,7 +180,10 @@ public class MapWorkerTaskTest {
 				}
 			}
 		}, null, input);
-		task.runTask(null);
+		this.context.checking(new Expectations() {{ 
+			oneOf(ctxFactory).createContext("mrtUuid", "inputUUID"); will(returnValue(ctx));
+		}});
+		pool.enqueueWork(task);
 		Thread.yield();
 		Thread.sleep(200);
 		assertEquals(State.INPROGRESS, task.getCurrentState());
@@ -180,7 +196,8 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldBeAbleToRerunTests() {
-		ContextFactory ctxFactory = this.context.mock(ContextFactory.class);
+		final ContextFactory ctxFactory = this.context.mock(ContextFactory.class);
+		final Context ctx = this.context.mock(Context.class);
 		Executor poolExec = Executors.newSingleThreadExecutor();
 		ExactCommandExecutor threadExec1 = new ExactCommandExecutor(1);
 		ExactCommandExecutor threadExec2 = new ExactCommandExecutor(1);
@@ -205,11 +222,19 @@ public class MapWorkerTaskTest {
 				}
 			}
 		}, null, input);
-		task.runTask(null);
+		final Sequence seq = this.context.sequence("rerun");
+		this.context.checking(new Expectations() {{ 
+			oneOf(ctxFactory).createContext("mrtUuid", "inputUUID"); will(returnValue(ctx));
+			inSequence(seq);
+			oneOf(ctx).destroy();
+			inSequence(seq);
+			oneOf(ctxFactory).createContext("mrtUuid", "inputUUID"); will(returnValue(ctx));
+		}});
+		pool.enqueueWork(task);
 		assertTrue(threadExec1.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.FAILED, task.getCurrentState());
-		assertNull(task.getWorker());
-		task.runTask(null);
+		assertSame(worker1, task.getWorker());
+		pool.enqueueWork(task);
 		assertTrue(threadExec2.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.COMPLETED, task.getCurrentState());
 		assertSame(worker2, task.getWorker());
