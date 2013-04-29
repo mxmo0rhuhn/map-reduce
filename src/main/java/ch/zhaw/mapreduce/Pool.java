@@ -8,7 +8,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
@@ -27,7 +26,7 @@ import ch.zhaw.mapreduce.registry.PoolExecutor;
 @Singleton
 public final class Pool {
 
-	private static final Logger logger = Logger.getLogger(Pool.class.getName());
+	private static final Logger LOG = Logger.getLogger(Pool.class.getName());
 
 	private final List<Worker> existingWorkers = new CopyOnWriteArrayList<Worker>();
 
@@ -61,7 +60,7 @@ public final class Pool {
 		// nur starten, wenn er noch nicht gestartet wurde
 		if (this.isRunning.compareAndSet(false, true)) {
 			this.workTaskAdministrator.execute(new WorkerTaskAdministrator());
-			logger.log(Level.INFO, "Pool started");
+			LOG.info("Pool started");
 		} else {
 			throw new IllegalStateException("Cannot start Pool twice");
 		}
@@ -89,8 +88,10 @@ public final class Pool {
 	 * {@inheritDoc}
 	 */
 	public void workerIsFinished(Worker finishedWorker) {
-		logger.log(Level.FINEST, "Put Worker back to queue");
-		workingWorker.remove(finishedWorker);
+		LOG.finest("Put Worker back to queue");
+		if (!workingWorker.remove(finishedWorker)) {
+			LOG.warning("Worker was not working before");
+		}
 		availableWorkerBlockingQueue.add(finishedWorker);
 	}
 
@@ -98,7 +99,7 @@ public final class Pool {
 	 * {@inheritDoc}
 	 */
 	public boolean enqueueWork(WorkerTask task) {
-		logger.log(Level.FINEST, "Enqueue Task");
+		LOG.finest("Enqueue Task");
 		task.setState(State.ENQUEUED);
 		return taskQueue.offer(task);
 	}
@@ -107,7 +108,7 @@ public final class Pool {
 	 * {@inheritDoc}
 	 */
 	public boolean donateWorker(Worker newWorker) {
-		logger.log(Level.FINEST, "Donate Worker");
+		LOG.finest("Donate Worker");
 		this.existingWorkers.add(newWorker);
 		return availableWorkerBlockingQueue.offer(newWorker);
 	}
@@ -121,16 +122,16 @@ public final class Pool {
 		public void run() {
 			try {
 				while (true) {
-					logger.log(Level.FINEST, "Take Task and Worker");
+					LOG.finest("Take Task and Worker");
 					WorkerTask task = taskQueue.take(); // blockiert bis ein Task da ist
 					Worker worker = availableWorkerBlockingQueue.take(); // blockiert, bis ein Worker frei ist
 					workingWorker.add(worker);
 					task.setWorker(worker);
-					logger.log(Level.FINEST, "Execute Task on Worker");
+					LOG.finest("Execute Task on Worker");
 					worker.executeTask(task);
 				}
 			} catch (InterruptedException e) {
-				logger.log(Level.INFO, "Interrupted, stopping WorkerTaskAdministrator");
+				LOG.info("Interrupted, stopping WorkerTaskAdministrator");
 				isRunning.set(false);
 				Thread.currentThread().interrupt();
 			}
