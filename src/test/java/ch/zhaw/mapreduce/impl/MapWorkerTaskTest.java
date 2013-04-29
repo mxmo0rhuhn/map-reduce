@@ -6,11 +6,9 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
@@ -45,8 +43,6 @@ public class MapWorkerTaskTest {
 
 	private Mockery context;
 
-	private Pool p;
-
 	private MapInstruction mapInstr;
 
 	private CombinerInstruction combInstr;
@@ -54,13 +50,18 @@ public class MapWorkerTaskTest {
 	private String inputUUID;
 
 	private String input;
+	
+	private Context ctx;
+	
+	private ContextFactory ctxFactory;
 
 	@Before
 	public void initMock() {
 		this.context = new JUnit4Mockery();
-		this.p = new Pool(Executors.newSingleThreadExecutor());
 		this.mapInstr = this.context.mock(MapInstruction.class);
 		this.combInstr = this.context.mock(CombinerInstruction.class);
+		this.ctx = this.context.mock(Context.class);
+		this.ctxFactory = this.context.mock(ContextFactory.class);
 		this.inputUUID = "inputUUID";
 		this.input = "hello";
 	}
@@ -91,7 +92,6 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldRunMapInstruction() {
-		final Context ctx = this.context.mock(Context.class);
 		Executor poolExec = Executors.newSingleThreadExecutor();
 		Pool pool = new Pool(poolExec);
 		pool.init();
@@ -160,8 +160,6 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldBeInProgressWhileRunning() throws InterruptedException, BrokenBarrierException {
-		final ContextFactory ctxFactory = this.context.mock(ContextFactory.class);
-		final Context ctx = this.context.mock(Context.class);
 		Executor poolExec = Executors.newSingleThreadExecutor();
 		final CyclicBarrier barrier = new CyclicBarrier(2);
 		Executor taskExec = Executors.newSingleThreadExecutor();
@@ -196,8 +194,6 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldBeAbleToRerunTests() {
-		final ContextFactory ctxFactory = this.context.mock(ContextFactory.class);
-		final Context ctx = this.context.mock(Context.class);
 		Executor poolExec = Executors.newSingleThreadExecutor();
 		ExactCommandExecutor threadExec1 = new ExactCommandExecutor(1);
 		ExactCommandExecutor threadExec2 = new ExactCommandExecutor(1);
@@ -254,49 +250,16 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldCombineAfterTask() {
-		ContextFactory ctxFactory = this.context.mock(ContextFactory.class);
-		final Executor poolExec = Executors.newSingleThreadExecutor();
-		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
-		final Pool pool = new Pool(poolExec);
-		final ThreadWorker worker = new ThreadWorker(pool, threadExec, ctxFactory);
-		final MapWorkerTask task = new MapWorkerTask("mrtuid", "inputUUID", new WordCounterMapper(),
-				new WordCounterCombiner(), "foo bar foo");
-		pool.init();
-		pool.donateWorker(worker);
-		task.runTask(null);
-		Thread.yield();
-		assertTrue(threadExec.waitForExpectedTasks(300, TimeUnit.MILLISECONDS));
-		List<KeyValuePair> res = worker.getMapResult("mrtuid", "iputUUID");
-		assertTrue(res.contains(new KeyValuePair("foo", "1 1")));
-		assertTrue(res.contains(new KeyValuePair("bar", "1")));
-	}
-
-}
-
-class WordCounterMapper implements MapInstruction {
-	@Override
-	public void map(MapEmitter emitter, String toDo) {
-		for (String word : toDo.trim().split(" ")) {
-			emitter.emitIntermediateMapResult(word.trim(), "1");
-		}
-	}
-}
-
-class WordCounterCombiner implements CombinerInstruction {
-	@Override
-	public List<KeyValuePair> combine(Iterator<KeyValuePair> toCombine) {
-		Map<String, KeyValuePair> combined = new HashMap<String, KeyValuePair>();
-		while (toCombine.hasNext()) {
-			KeyValuePair val = toCombine.next();
-			if (!combined.containsKey(val.getKey())) {
-				combined.put((String) val.getKey(), val);
-			} else {
-				String old = (String) combined.get(val.getKey()).getValue();
-				String new_ = (String) val.getValue();
-				KeyValuePair newVal = new KeyValuePair(val.getKey(), old + ' ' + new_);
-				combined.put((String) val.getKey(), newVal);
-			}
-		}
-		return new ArrayList<KeyValuePair>(combined.values());
+		final MapWorkerTask task = new MapWorkerTask("mrtuid", "inputUUID", mapInstr, combInstr, "hello");
+		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "1")});
+		final List<KeyValuePair> combined = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "2")});
+		this.context.checking(new Expectations() {{ 
+			oneOf(mapInstr).map(ctx, "hello");
+			oneOf(ctx).getMapResult(); will(returnValue(result));
+			// TODO check genauer iterator mit erwarteten werten, nicht einfach irgendeiner
+			oneOf(combInstr).combine(with(aNonNull(Iterator.class))); will(returnValue(combined));
+			oneOf(ctx).replaceMapResult(combined);
+		}});
+		task.runTask(ctx);
 	}
 }
