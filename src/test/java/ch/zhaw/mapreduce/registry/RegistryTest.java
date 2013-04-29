@@ -12,12 +12,10 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import org.jmock.Mockery;
-import org.jmock.integration.junit4.JMock;
-import org.jmock.integration.junit4.JUnit4Mockery;
-import org.junit.Before;
+import org.jmock.auto.Mock;
+import org.jmock.integration.junit4.JUnitRuleMockery;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import ch.zhaw.mapreduce.CombinerInstruction;
 import ch.zhaw.mapreduce.KeyValuePair;
@@ -35,21 +33,23 @@ import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.matcher.Matchers;
 
-@RunWith(JMock.class)
 public class RegistryTest {
 
-	private Mockery context;
+	@Rule 
+	public JUnitRuleMockery mockery = new JUnitRuleMockery();
+	
+	@Mock
+	private MapInstruction mapInstr;
+	
+	@Mock
+	private CombinerInstruction combInstr;
+	
+	@Mock
+	private ReduceInstruction reduceInstr;
 
-	private String input;
+	private String input = "input";
 
-	private List<KeyValuePair> toDo;
-
-	@Before
-	public void initMock() {
-		this.context = new JUnit4Mockery();
-		this.input = "input";
-		this.toDo = Collections.emptyList();
-	}
+	private List<KeyValuePair> toDo = Collections.emptyList();
 
 	@Test
 	public void shouldDefineBindingForMaster() {
@@ -116,65 +116,58 @@ public class RegistryTest {
 	@Test
 	public void shouldSetMapAndCombinerTaskToMapRunner() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapInstruction mapTask = this.context.mock(MapInstruction.class);
-		CombinerInstruction combinerTask = this.context.mock(CombinerInstruction.class);
-		MapWorkerTask mapWorkerTask = factory.createMapWorkerTask("uuid", mapTask, combinerTask, input);
-		assertSame(mapTask, mapWorkerTask.getMapInstruction());
-		assertSame(combinerTask, mapWorkerTask.getCombinerInstruction());
+		MapWorkerTask mapWorkerTask = factory.createMapWorkerTask("uuid", mapInstr, combInstr, input);
+		assertSame(mapInstr, mapWorkerTask.getMapInstruction());
+		assertSame(combInstr, mapWorkerTask.getCombinerInstruction());
 	}
 
 	@Test
 	public void shouldCopeWithNullCombinerTask() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapInstruction mapTask = this.context.mock(MapInstruction.class);
-		MapWorkerTask mapperTask = factory.createMapWorkerTask("uuid", mapTask, null, input);
+		MapWorkerTask mapperTask = factory.createMapWorkerTask("uuid", mapInstr, null, input);
 		assertNotNull(mapperTask);
 	}
 
 	@Test
 	public void shouldCreatePrototypesForMapRunners() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapInstruction mapTask = this.context.mock(MapInstruction.class);
-		CombinerInstruction combinerTask = this.context.mock(CombinerInstruction.class);
-		assertNotSame(factory.createMapWorkerTask("uuid1", mapTask, combinerTask, input),
-				factory.createMapWorkerTask("uuid2", mapTask, combinerTask, input));
+		assertNotSame(factory.createMapWorkerTask("uuid1", mapInstr, combInstr, input),
+				factory.createMapWorkerTask("uuid2", mapInstr, combInstr, input));
 	}
 
 	@Test
 	public void shouldSetReduceTaskToReduceRunner() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		ReduceInstruction reduceTask = this.context.mock(ReduceInstruction.class);
-		ReduceWorkerTask reduceRunner = factory.createReduceWorkerTask("uuid", "key", reduceTask, this.toDo);
-		assertSame(reduceTask, reduceRunner.getReduceTask());
+		ReduceWorkerTask reduceRunner = factory.createReduceWorkerTask("uuid", "key", reduceInstr, this.toDo);
+		assertSame(reduceInstr, reduceRunner.getReduceTask());
 	}
 
 	@Test
 	public void shouldCreatePrototypesForReduceRunners() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		ReduceInstruction reduceTask = this.context.mock(ReduceInstruction.class);
-		assertNotSame(factory.createReduceWorkerTask("uuid1", "key1", reduceTask, toDo),
-				factory.createReduceWorkerTask("uuid2", "key2", reduceTask, toDo));
+		assertNotSame(factory.createReduceWorkerTask("uuid1", "key1", reduceInstr, toDo),
+				factory.createReduceWorkerTask("uuid2", "key2", reduceInstr, toDo));
 	}
 
 	@Test
 	public void shouldSetMapReduceUUIDToMapTask() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapWorkerTask mwt = factory.createMapWorkerTask("uuid", this.context.mock(MapInstruction.class), null, input);
+		MapWorkerTask mwt = factory.createMapWorkerTask("uuid", mapInstr, null, input);
 		assertEquals("uuid", mwt.getMapReduceTaskUUID());
 	}
 
 	@Test
 	public void shouldSetWorkerTaskUUIDToMapTask() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapWorkerTask mwt = factory.createMapWorkerTask("uuid", this.context.mock(MapInstruction.class), null, input);
+		MapWorkerTask mwt = factory.createMapWorkerTask("uuid", mapInstr, null, input);
 		assertNotNull(mwt.getUUID());
 	}
 
 	@Test
 	public void shouldGenerateDistinctWorkerTaskUUIDs() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapWorkerTask mwt1 = factory.createMapWorkerTask("uuid", this.context.mock(MapInstruction.class, "mi1"), null, input);
-		MapWorkerTask mwt2 = factory.createMapWorkerTask("uuid", this.context.mock(MapInstruction.class, "mi2"), null, input);
+		MapWorkerTask mwt1 = factory.createMapWorkerTask("uuid", mapInstr, null, input);
+		MapWorkerTask mwt2 = factory.createMapWorkerTask("uuid", mapInstr, null, input);
 		String uuid1 = mwt1.getUUID();
 		String uuid2 = mwt2.getUUID();
 		assertNotNull(uuid1);
@@ -186,7 +179,7 @@ public class RegistryTest {
 	public void shouldSetUUIDToReduceTask() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
 		ReduceWorkerTask mwt = factory.createReduceWorkerTask("uuid", "key",
-				this.context.mock(ReduceInstruction.class), toDo);
+				reduceInstr, toDo);
 		assertEquals("uuid", mwt.getMapReduceTaskUUID());
 	}
 
