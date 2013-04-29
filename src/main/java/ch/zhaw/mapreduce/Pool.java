@@ -15,6 +15,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import ch.zhaw.mapreduce.WorkerTask.State;
 import ch.zhaw.mapreduce.registry.PoolExecutor;
 
 /**
@@ -98,6 +99,7 @@ public final class Pool {
 	 */
 	public boolean enqueueWork(WorkerTask task) {
 		logger.log(Level.FINEST, "Enqueue Task");
+		task.setState(State.ENQUEUED);
 		return taskQueue.offer(task);
 	}
 

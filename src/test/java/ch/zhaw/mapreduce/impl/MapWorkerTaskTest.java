@@ -242,13 +242,13 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldBeEnqueuedAfterSubmissionToPool() {
-		final MapWorkerTask task = new MapWorkerTask("mrtuid", inputUUID, mapInstr, combInstr, input);
-		this.context.checking(new Expectations() {
-			{
-				oneOf(p).enqueueWork(task);
-			}
-		});
-		task.runTask(null);
+		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		pool.init();
+		final MapWorkerTask task = new MapWorkerTask("mrtuid", inputUUID, mapInstr, null, input);
+		this.context.checking(new Expectations() {{ 
+			never(mapInstr);
+		}});
+		pool.enqueueWork(task);
 		assertEquals(State.ENQUEUED, task.getCurrentState());
 	}
 
