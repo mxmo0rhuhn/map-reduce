@@ -18,14 +18,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jmock.Expectations;
-import org.jmock.Mockery;
 import org.jmock.Sequence;
-import org.jmock.integration.junit4.JMock;
-import org.jmock.integration.junit4.JUnit4Mockery;
+import org.jmock.auto.Auto;
+import org.jmock.auto.Mock;
+import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.jmock.lib.concurrent.ExactCommandExecutor;
-import org.junit.Before;
+import org.jmock.lib.concurrent.Synchroniser;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import ch.zhaw.mapreduce.CombinerInstruction;
 import ch.zhaw.mapreduce.Context;
@@ -38,33 +38,36 @@ import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask.State;
 import ch.zhaw.mapreduce.plugins.thread.ThreadWorker;
 
-@RunWith(JMock.class)
 public class MapWorkerTaskTest {
 
-	private Mockery context;
+	@Rule
+	public JUnitRuleMockery mockery = new JUnitRuleMockery() {
+		{
+			setThreadingPolicy(new Synchroniser());
+		}
+	};
 
+	@Auto
+	private Sequence events;
+
+	@Mock
 	private MapInstruction mapInstr;
 
+	@Mock
 	private CombinerInstruction combInstr;
 
-	private String inputUUID;
-
-	private String input;
-	
+	@Mock
 	private Context ctx;
-	
+
+	@Mock
 	private ContextFactory ctxFactory;
 
-	@Before
-	public void initMock() {
-		this.context = new JUnit4Mockery();
-		this.mapInstr = this.context.mock(MapInstruction.class);
-		this.combInstr = this.context.mock(CombinerInstruction.class);
-		this.ctx = this.context.mock(Context.class);
-		this.ctxFactory = this.context.mock(ContextFactory.class);
-		this.inputUUID = "inputUUID";
-		this.input = "hello";
-	}
+	@Mock
+	private Worker worker;
+
+	private String inputUUID = "inputUUID";
+
+	private String input = "hello";
 
 	@Test
 	public void shouldSetMapReduceTaskUUID() {
@@ -103,7 +106,7 @@ public class MapWorkerTaskTest {
 				}
 			}
 		}, null, input);
-		this.context.checking(new Expectations() {
+		this.mockery.checking(new Expectations() {
 			{
 				oneOf(ctx).emitIntermediateMapResult("hello", "1");
 			}
@@ -126,10 +129,11 @@ public class MapWorkerTaskTest {
 				throw new NullPointerException();
 			}
 		}, combInstr, input);
-		final Worker worker = this.context.mock(Worker.class);
-		this.context.checking(new Expectations() {{ 
-			oneOf(worker).cleanSpecificResult("mrtUuid", inputUUID);
-		}});
+		this.mockery.checking(new Expectations() {
+			{
+				oneOf(worker).cleanSpecificResult("mrtUuid", inputUUID);
+			}
+		});
 		task.setWorker(worker);
 		task.runTask(null);
 		assertEquals(State.FAILED, task.getCurrentState());
@@ -143,10 +147,11 @@ public class MapWorkerTaskTest {
 			public void map(MapEmitter emitter, String toDo) {
 			}
 		}, null, input);
-		final Worker worker = this.context.mock(Worker.class);
-		this.context.checking(new Expectations() {{ 
-			never(worker);
-		}});
+		this.mockery.checking(new Expectations() {
+			{
+				never(worker);
+			}
+		});
 		task.setWorker(worker);
 		task.runTask(null);
 		assertEquals(State.COMPLETED, task.getCurrentState());
@@ -178,9 +183,12 @@ public class MapWorkerTaskTest {
 				}
 			}
 		}, null, input);
-		this.context.checking(new Expectations() {{ 
-			oneOf(ctxFactory).createContext("mrtUuid", "inputUUID"); will(returnValue(ctx));
-		}});
+		this.mockery.checking(new Expectations() {
+			{
+				oneOf(ctxFactory).createContext("mrtUuid", "inputUUID");
+				will(returnValue(ctx));
+			}
+		});
 		pool.enqueueWork(task);
 		Thread.yield();
 		Thread.sleep(200);
@@ -218,14 +226,17 @@ public class MapWorkerTaskTest {
 				}
 			}
 		}, null, input);
-		final Sequence seq = this.context.sequence("rerun");
-		this.context.checking(new Expectations() {{ 
-			oneOf(ctxFactory).createContext("mrtUuid", "inputUUID"); will(returnValue(ctx));
-			inSequence(seq);
-			oneOf(ctx).destroy();
-			inSequence(seq);
-			oneOf(ctxFactory).createContext("mrtUuid", "inputUUID"); will(returnValue(ctx));
-		}});
+		this.mockery.checking(new Expectations() {
+			{
+				oneOf(ctxFactory).createContext("mrtUuid", "inputUUID");
+				will(returnValue(ctx));
+				inSequence(events);
+				oneOf(ctx).destroy();
+				inSequence(events);
+				oneOf(ctxFactory).createContext("mrtUuid", "inputUUID");
+				will(returnValue(ctx));
+			}
+		});
 		pool.enqueueWork(task);
 		assertTrue(threadExec1.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.FAILED, task.getCurrentState());
@@ -241,9 +252,11 @@ public class MapWorkerTaskTest {
 		Pool pool = new Pool(Executors.newSingleThreadExecutor());
 		pool.init();
 		final MapWorkerTask task = new MapWorkerTask("mrtuid", inputUUID, mapInstr, null, input);
-		this.context.checking(new Expectations() {{ 
-			never(mapInstr);
-		}});
+		this.mockery.checking(new Expectations() {
+			{
+				never(mapInstr);
+			}
+		});
 		pool.enqueueWork(task);
 		assertEquals(State.ENQUEUED, task.getCurrentState());
 	}
@@ -251,15 +264,19 @@ public class MapWorkerTaskTest {
 	@Test
 	public void shouldCombineAfterTask() {
 		final MapWorkerTask task = new MapWorkerTask("mrtuid", "inputUUID", mapInstr, combInstr, "hello");
-		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "1")});
-		final List<KeyValuePair> combined = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "2")});
-		this.context.checking(new Expectations() {{ 
-			oneOf(mapInstr).map(ctx, "hello");
-			oneOf(ctx).getMapResult(); will(returnValue(result));
-			// TODO check genauer iterator mit erwarteten werten, nicht einfach irgendeiner
-			oneOf(combInstr).combine(with(aNonNull(Iterator.class))); will(returnValue(combined));
-			oneOf(ctx).replaceMapResult(combined);
-		}});
+		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[] { new KeyValuePair("hello", "1") });
+		final List<KeyValuePair> combined = Arrays.asList(new KeyValuePair[] { new KeyValuePair("hello", "2") });
+		this.mockery.checking(new Expectations() {
+			{
+				oneOf(mapInstr).map(ctx, "hello");
+				oneOf(ctx).getMapResult();
+				will(returnValue(result));
+				// TODO check genauer iterator mit erwarteten werten, nicht einfach irgendeiner
+				oneOf(combInstr).combine(with(aNonNull(Iterator.class)));
+				will(returnValue(combined));
+				oneOf(ctx).replaceMapResult(combined);
+			}
+		});
 		task.runTask(ctx);
 	}
 }
