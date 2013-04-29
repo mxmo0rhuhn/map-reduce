@@ -1,7 +1,6 @@
 package ch.zhaw.mapreduce;
 
 import static org.junit.Assert.assertEquals;
-import static ch.zhaw.mapreduce.TestUtil.*;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,44 +10,43 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Logger;
 
 import org.jmock.Expectations;
-import org.jmock.Mockery;
 import org.jmock.Sequence;
-import org.jmock.integration.junit4.JMock;
+import org.jmock.auto.Auto;
+import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnit4Mockery;
 import org.jmock.lib.concurrent.DeterministicExecutor;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import ch.zhaw.mapreduce.roundtriptest.WordsInputSplitter;
 
 import com.google.inject.Provider;
 
-@RunWith(JMock.class)
 public class MasterTest {
-
-	private Mockery context;
-	private WorkerTaskFactory factory;
-	private Provider<Shuffler> shuffleProvider;
-	private MapInstruction mapInstruction;
-	private ReduceInstruction reduceInstruction;
-	private CombinerInstruction combinerInstruction;
-	private Logger dummyOut;
 	
-	@Before
-	public void initMock() {
-		this.context = new JUnit4Mockery();
-		this.factory = this.context.mock(WorkerTaskFactory.class);
-		this.mapInstruction = this.context.mock(MapInstruction.class);
-		this.reduceInstruction = this.context.mock(ReduceInstruction.class);
-		this.combinerInstruction = this.context.mock(CombinerInstruction.class);
-		this.shuffleProvider = toProvider(this.context.mock(Shuffler.class));
-		this.dummyOut = Logger.getLogger(MasterTest.class.getName());
-	}
+	@Rule
+	public JUnit4Mockery mockery = new JUnit4Mockery();
+	
+	@Auto
+	private Sequence events;
 
+	@Mock
+	private WorkerTaskFactory factory;
+	
+	@Mock
+	private Provider<Shuffler> shuffleProvider;
+	
+	@Mock
+	private MapInstruction mapInstruction;
+	
+	@Mock
+	private ReduceInstruction reduceInstruction;
+	
+	@Mock
+	private CombinerInstruction combinerInstruction;
+	
 	@Test
 	public void shouldSetUUId() {
 		Master m = new Master(null, factory, "uuid", shuffleProvider);
@@ -58,13 +56,12 @@ public class MasterTest {
 	@Test
 	public void shouldCreateMapTasks() {
 		DeterministicExecutor exec = new DeterministicExecutor();
-		Master m = new Master(new Pool(exec, dummyOut), factory, "uuid", shuffleProvider);
-		final Sequence seq = this.context.sequence("seq");
-		this.context.checking(new Expectations() {
+		Master m = new Master(new Pool(exec), factory, "uuid", shuffleProvider);
+		this.mockery.checking(new Expectations() {
 			{
 				oneOf(factory).createMapWorkerTask(with("uuid"), with(aNonNull(String.class)),
 						with(mapInstruction), with(combinerInstruction), with("foo"));
-				inSequence(seq);
+				inSequence(events);
 				oneOf(factory).createMapWorkerTask(with("uuid"), with(aNonNull(String.class)), with(mapInstruction),
 						with(combinerInstruction), with("bar"));
 			}
@@ -88,11 +85,10 @@ public class MasterTest {
 				add(worker2);
 			}
 		};
-		final Sequence seq = this.context.sequence("seq");
-		this.context.checking(new Expectations() {
+		this.mockery.checking(new Expectations() {
 			{
 				oneOf(worker1).getMapResults("uuid");
-				inSequence(seq);
+				inSequence(events);
 				oneOf(worker2).getMapResults("uuid");
 			}
 		});
@@ -135,12 +131,11 @@ public class MasterTest {
 				add(new KeyValuePair("key2", "value2"));
 			}
 		});
-		final Sequence seq = this.context.sequence("seq");
 		this.context.checking(new Expectations() {
 			{
 				oneOf(factory).createReduceWorkerTask(with("uuid"), with("key1"),
 						with(reduceInstruction), with(aNonNull(List.class)));
-				inSequence(seq);
+				inSequence(events);
 				oneOf(factory).createReduceWorkerTask(with("uuid"), with("key2"),
 						with(reduceInstruction), with(aNonNull(List.class)));
 			}

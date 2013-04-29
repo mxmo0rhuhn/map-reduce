@@ -11,28 +11,32 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.jmock.Expectations;
-import org.jmock.Mockery;
-import org.jmock.integration.junit4.JMock;
-import org.jmock.integration.junit4.JUnit4Mockery;
+import org.jmock.auto.Mock;
+import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.jmock.lib.concurrent.ExactCommandExecutor;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import ch.zhaw.mapreduce.plugins.thread.ThreadWorker;
 
-@RunWith(JMock.class)
 public class PoolTest {
 
-	private Mockery context;
-
-	private Executor executor;
-
-	@Before
-	public void initMock() {
-		this.context = new JUnit4Mockery();
-		this.executor = Executors.newSingleThreadExecutor();
-	}
+	@Rule
+	public JUnitRuleMockery mockery = new JUnitRuleMockery();
+	
+	@Mock
+	private Worker worker;
+	
+	@Mock
+	private WorkerTask task;
+	
+	@Mock
+	private ContextFactory ctxFactory;
+	
+	@Mock
+	private Context ctx;
+	
+	private Executor executor = Executors.newSingleThreadExecutor();
 
 	@Test
 	public void shouldHaveZeroInitialWorker() {
@@ -44,18 +48,17 @@ public class PoolTest {
 
 	@Test
 	public void shouldHaveOneWorker() {
-		Worker w = this.context.mock(Worker.class);
 		Pool p = new Pool(executor);
 		p.init();
-		p.donateWorker(w);
+		p.donateWorker(worker);
 		assertEquals(1, p.getCurrentPoolSize());
 		assertEquals(1, p.getFreeWorkers());
 	}
 
 	@Test
 	public void shouldHaveTwoWorker() {
-		Worker w1 = this.context.mock(Worker.class, "w1");
-		Worker w2 = this.context.mock(Worker.class, "w2");
+		Worker w1 = this.mockery.mock(Worker.class, "w1");
+		Worker w2 = this.mockery.mock(Worker.class, "w2");
 		Pool p = new Pool(executor);
 		p.init();
 		p.donateWorker(w1);
@@ -77,16 +80,13 @@ public class PoolTest {
 
 	@Test
 	public void shouldExecuteWork() throws InterruptedException {
-		final WorkerTask task = this.context.mock(WorkerTask.class);
-		final ContextFactory ctxFactory = this.context.mock(ContextFactory.class);
-		final Context ctx = this.context.mock(Context.class);
 		final Executor poolExec = Executors.newSingleThreadExecutor();
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
 		Pool p = new Pool(poolExec);
 		p.init();
 		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxFactory);
 		p.donateWorker(worker);
-		this.context.checking(new Expectations() {
+		this.mockery.checking(new Expectations() {
 			{
 				oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrTaskUUID"));
 				oneOf(task).getUUID(); will(returnValue("taskUUID"));
@@ -102,16 +102,13 @@ public class PoolTest {
 
 	@Test
 	public void workerShouldBeFreeAgainAfterwards() {
-		final WorkerTask task = this.context.mock(WorkerTask.class);
-		final ContextFactory ctxFactory = this.context.mock(ContextFactory.class);
-		final Context ctx = this.context.mock(Context.class);
 		final Executor poolExec = Executors.newSingleThreadExecutor();
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
 		Pool p = new Pool(poolExec);
 		p.init();
 		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxFactory);
 		p.donateWorker(worker);
-		this.context.checking(new Expectations() {
+		this.mockery.checking(new Expectations() {
 			{
 				oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrTaskUUID"));
 				oneOf(task).getUUID(); will(returnValue("taskUUID"));
