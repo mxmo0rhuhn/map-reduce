@@ -122,20 +122,15 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldSetStateToFailedOnException() {
-		final MapWorkerTask task = new MapWorkerTask("mrtUuid", inputUUID, new MapInstruction() {
-
-			@Override
-			public void map(MapEmitter emitter, String toDo) {
-				throw new NullPointerException();
-			}
-		}, combInstr, input);
+		final MapWorkerTask task = new MapWorkerTask("mrtUuid", inputUUID, mapInstr, combInstr, input);
 		this.mockery.checking(new Expectations() {
 			{
+				oneOf(mapInstr).map(ctx, input); will(throwException(new NullPointerException()));
 				oneOf(worker).cleanSpecificResult("mrtUuid", inputUUID);
 			}
 		});
 		task.setWorker(worker);
-		task.runTask(null);
+		task.runTask(ctx);
 		assertEquals(State.FAILED, task.getCurrentState());
 		assertSame(worker, task.getWorker());
 	}

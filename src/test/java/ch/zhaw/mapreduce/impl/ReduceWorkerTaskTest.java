@@ -22,6 +22,7 @@ import org.jmock.Expectations;
 import org.jmock.Mockery;
 import org.jmock.integration.junit4.JMock;
 import org.jmock.integration.junit4.JUnit4Mockery;
+import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.jmock.lib.concurrent.ExactCommandExecutor;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,25 +35,16 @@ import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.WorkerTask.State;
 import ch.zhaw.mapreduce.workers.ThreadWorker;
 
-@RunWith(JMock.class)
 public class ReduceWorkerTaskTest {
 
-	private Mockery context;
+	@Rule
+	public JUnitRuleMockery mockery = new JUnitRuleMockery();
 
-	private Pool p;
-
+	@Mock
 	private ReduceInstruction redInstr;
 
-	private List<KeyValuePair> keyVals;
-
-	@Before
-	public void initMockery() {
-		this.context = new JUnit4Mockery();
-		this.p = this.context.mock(Pool.class);
-		this.redInstr = this.context.mock(ReduceInstruction.class);
-		this.keyVals = Arrays.asList(new KeyValuePair[] { new KeyValuePair("hello", "1"), new KeyValuePair("foo", "1"),
+	private List<KeyValuePair> keyVals = Arrays.asList(new KeyValuePair[] { new KeyValuePair("hello", "1"), new KeyValuePair("foo", "1"),
 				new KeyValuePair("hello", "2") });
-	}
 
 	@Test
 	public void shouldSetMrUuid() {
@@ -75,7 +67,7 @@ public class ReduceWorkerTaskTest {
 	@Test
 	public void shouldBeEnqueuedAfterSubmissionToPool() {
 		final ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", redInstr, keyVals);
-		this.context.checking(new Expectations() {
+		this.mockery.checking(new Expectations() {
 			{
 				oneOf(p).enqueueWork(task);
 			}
