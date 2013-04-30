@@ -100,7 +100,8 @@ public final class Pool {
 	 */
 	public boolean enqueueWork(WorkerTask task) {
 		LOG.finest("Enqueue Task");
-		task.setState(State.ENQUEUED);
+		//TODO Reto: Konzept erarbeiten 
+//		task.setState(State.ENQUEUED);
 		return taskQueue.offer(task);
 	}
 

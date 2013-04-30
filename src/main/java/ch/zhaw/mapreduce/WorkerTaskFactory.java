@@ -30,7 +30,7 @@ public interface WorkerTaskFactory {
 	 * @return eine neue Instanz eines MapWorkerTask
 	 */
 	MapWorkerTask createMapWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUUID,
-									  MapInstruction mapInstr,
+									  MapInstruction mapInstruction,
 									  CombinerInstruction combinerInstr,
 									  @Assisted("input") String input);
 

@@ -16,10 +16,12 @@ import org.jmock.Sequence;
 import org.jmock.auto.Auto;
 import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnit4Mockery;
+import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.jmock.lib.concurrent.DeterministicExecutor;
 import org.junit.Rule;
 import org.junit.Test;
 
+import ch.zhaw.mapreduce.impl.MapWorkerTask;
 import ch.zhaw.mapreduce.roundtriptest.WordsInputSplitter;
 
 import com.google.inject.Provider;
@@ -27,7 +29,7 @@ import com.google.inject.Provider;
 public class MasterTest {
 	
 	@Rule
-	public JUnit4Mockery mockery = new JUnit4Mockery();
+	public JUnitRuleMockery mockery = new JUnitRuleMockery();
 	
 	@Auto
 	private Sequence events;
@@ -59,11 +61,11 @@ public class MasterTest {
 		Master m = new Master(new Pool(exec), factory, "uuid", shuffleProvider);
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(factory).createMapWorkerTask(with("uuid"), with(aNonNull(String.class)),
-						with(mapInstruction), with(combinerInstruction), with("foo"));
+				oneOf(factory).createMapWorkerTask(with("uuid"), 
+						with(mapInstruction), with(combinerInstruction), with("foo")); will(returnValue(new MapWorkerTask("MRuuid", "uuid", mapInstruction, combinerInstruction, "foo")));
 				inSequence(events);
-				oneOf(factory).createMapWorkerTask(with("uuid"), with(aNonNull(String.class)), with(mapInstruction),
-						with(combinerInstruction), with("bar"));
+				oneOf(factory).createMapWorkerTask(with("uuid"), with(mapInstruction),
+						with(combinerInstruction), with("bar")); will(returnValue(new MapWorkerTask("MRuuid", "uuid", mapInstruction, combinerInstruction, "foo")));
 			}
 		});
 		Set<KeyValuePair<String, WorkerTask>> activeTasks = new LinkedHashSet<KeyValuePair<String, WorkerTask>>();

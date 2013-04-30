@@ -49,7 +49,8 @@ public class MapWorkerTask implements WorkerTask {
 
 	@Inject
 	public MapWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUUID,
-			@WorkerTaskUUID String taskUUID, @Assisted MapInstruction mapInstruction,
+			@WorkerTaskUUID String taskUUID, 
+			@Assisted MapInstruction mapInstruction,
 			@Assisted @Nullable CombinerInstruction combinerInstruction,
 			@Assisted("input") String input) {
 		this.mapReduceTaskUID = mapReduceTaskUUID;
