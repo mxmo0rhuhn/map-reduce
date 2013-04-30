@@ -147,7 +147,7 @@ public final class Master {
 		Shuffler s = shufflerProvider.get();
 		for (WorkerTask task : mapResults) {
 			MapWorkerTask mapTask = (MapWorkerTask) task;
-			for (KeyValuePair<String, String> curKeyValuePair : mapTask.getResults(mapReduceTaskUUID)) {
+			for (KeyValuePair<String, String> curKeyValuePair : mapTask.getResults()) {
 				s.put(curKeyValuePair.getKey(), curKeyValuePair.getValue());
 			}
 		}
@@ -326,7 +326,7 @@ public final class Master {
 	
 	private void stopAndCleanTasks(Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks) {
 		for( KeyValuePair<String, WorkerTask> curKV : activeWorkerTasks) {
-			curKV.getValue().setState(WorkerTask.State.ABORTED);
+			curKV.getValue().abort();
 		}
 		activeWorkerTasks.clear();
 	}

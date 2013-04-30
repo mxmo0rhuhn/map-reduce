@@ -18,6 +18,8 @@ public class SocketWorker implements Worker {
 	 */
 	@Override
 	public void executeTask(WorkerTask task) {
+		// Sich selbst als thread starten => analog ThreadWorker
+				
 		// Aufgabe an Agent senden 
 		
 		// Agent sendet ergebnis
@@ -25,6 +27,7 @@ public class SocketWorker implements Worker {
 		// Ergebnis in eine lokale persistenz ablegen
 		
 		// Worker Task auf erledigt setzen
+		task.finished();
 	}
 
 	/* (non-Javadoc)
@@ -56,6 +59,12 @@ public class SocketWorker implements Worker {
 
 	@Override
 	public void cleanSpecificResult(String mapReduceTaskUID, String inputUID) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void stopCurrentTask(String mapReduceUUID, String taskUUID) {
 		// TODO Auto-generated method stub
 		
 	}

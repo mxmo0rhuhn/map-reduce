@@ -48,8 +48,9 @@ public class MapWorkerTask implements WorkerTask {
 	private volatile State currentState = State.INITIATED;
 
 	@Inject
-	public MapWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUUID, @WorkerTaskUUID String taskUUID,
-			@Assisted MapInstruction mapInstruction, @Assisted @Nullable CombinerInstruction combinerInstruction,
+	public MapWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUUID,
+			@WorkerTaskUUID String taskUUID, @Assisted MapInstruction mapInstruction,
+			@Assisted @Nullable CombinerInstruction combinerInstruction,
 			@Assisted("input") String input) {
 		this.mapReduceTaskUID = mapReduceTaskUUID;
 		this.mapInstruction = mapInstruction;
@@ -75,28 +76,17 @@ public class MapWorkerTask implements WorkerTask {
 			// Mappen
 			this.mapInstruction.map(ctx, toDo);
 
-			if (this.currentState.equals(State.INPROGRESS)) {
-				// Alle Ergebnisse verdichten. Die Ergebnisse aus der derzeitigen Worker sollen
-				// einbezogen werden.
-				if (this.combinerInstruction != null) {
-					List<KeyValuePair> beforeCombining = ctx.getMapResult();
-					List<KeyValuePair> afterCombining = this.combinerInstruction.combine(beforeCombining.iterator());
-					ctx.replaceMapResult(afterCombining);
-				}
-			} else {
-				throw new ComputationStoppedException();
+			// Alle Ergebnisse verdichten. Die Ergebnisse aus der derzeitigen Worker sollen
+			// einbezogen werden.
+			if (this.combinerInstruction != null) {
+				List<KeyValuePair> beforeCombining = ctx.getMapResult();
+				List<KeyValuePair> afterCombining = this.combinerInstruction
+						.combine(beforeCombining.iterator());
+				ctx.replaceMapResult(afterCombining);
 			}
-
-			if (this.currentState.equals(State.INPROGRESS)) {
-				this.currentState = State.COMPLETED;
-				logger.finest("State: COMPLETED");
-			} else {
-				throw new ComputationStoppedException();
-			}
-		} catch (ComputationStoppedException stopped) {
-			logger.finest("State: ABORTED");
-			this.currentState = State.ABORTED;
-			this.myWorker.cleanSpecificResult(mapReduceTaskUID, workerTaskUuid);
+			this.currentState = State.COMPLETED;
+			logger.finest("State: COMPLETED");
+			
 		} catch (Exception e) {
 			logger.log(Level.WARNING, "State: FAILED", e);
 			this.currentState = State.FAILED;
@@ -148,8 +138,7 @@ public class MapWorkerTask implements WorkerTask {
 		return myWorker;
 	}
 
-	// TODO was soll der parameter??
-	public List<KeyValuePair> getResults(String mapReduceTaskUUID) {
+	public List<KeyValuePair> getResults() {
 		return myWorker.getMapResult(mapReduceTaskUID, workerTaskUuid);
 	}
 
@@ -159,12 +148,13 @@ public class MapWorkerTask implements WorkerTask {
 	}
 
 	@Override
-	public void setState(State newState) {
-		if (newState.equals(State.ABORTED) && !currentState.equals(State.INPROGRESS)) {
-			// Unsicher
-			this.myWorker.cleanSpecificResult(mapReduceTaskUID, workerTaskUuid);
-		} else {
-			currentState = newState;
-		}
+	public void abort() {
+		this.myWorker.stopCurrentTask(mapReduceTaskUID, workerTaskUuid);
+		this.currentState = State.ABORTED;
+	}
+
+	@Override
+	public void finished() {
+		this.currentState = State.COMPLETED;
 	}
 }

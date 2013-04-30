@@ -24,7 +24,8 @@ public class RegistrationServerImpl implements RegistrationServer {
 	@Override
 	public void register(String ip, int port, ClientCallback clientCallback) {
 		log.info("New Worker: " + ip + ":" + port);
-		// TODO add to pool
+		// TODO erstelle socket worker 
+		// adde zu pool
 		clientCallback.acknowledge();
 	}
 

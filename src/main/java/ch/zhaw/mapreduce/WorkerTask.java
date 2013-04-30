@@ -67,8 +67,12 @@ public interface WorkerTask {
 	String getInput();
 	
 	/**
-	 * Setzt den Worker Task auf einen bestimmten Zustand.
-	 * @param newState
+	 * Bricht die Aufgabe ab, weil die Berechnung fertig ist (z.B. ein anderer Worker war schneller).
 	 */
-	void setState(State newState);
+	void abort();
+	
+	/**
+	 * Task ist fertiggestellt. Resultate sind zur Abholung bereit.
+	 */
+	void finished();
 }

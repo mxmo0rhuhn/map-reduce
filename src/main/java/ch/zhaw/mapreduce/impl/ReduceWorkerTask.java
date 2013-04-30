@@ -7,7 +7,6 @@ import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
-import ch.zhaw.mapreduce.ComputationStoppedException;
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.ReduceInstruction;
@@ -73,17 +72,9 @@ public class ReduceWorkerTask implements WorkerTask {
 		try {
 			this.reduceInstruction.reduce(ctx, key, input.iterator());
 			
-			if( curState == State.INPROGRESS) {
 				this.curState = State.COMPLETED;
 				LOG.finest("State: COMPLETED");
-			} else {
-				throw new ComputationStoppedException();
-			}
 			
-		} catch (ComputationStoppedException cse) {
-			LOG.finest("State: ABORTED");
-			this.curState = State.ABORTED;
-			this.myWorker.cleanSpecificResult(mapReduceTaskUUID, workerTaskUuid);
 		} catch (Exception e) {
 			LOG.log(Level.WARNING, "State: FAILED", e);
 			this.curState = State.FAILED;
@@ -140,7 +131,13 @@ public class ReduceWorkerTask implements WorkerTask {
 	}
 
 	@Override
-	public void setState(State newState) {
-		this.curState = newState;
+	public void abort() {
+		this.myWorker.stopCurrentTask(mapReduceTaskUUID, workerTaskUuid);
+		this.curState = State.ABORTED;
+	}
+
+	@Override
+	public void finished() {
+		this.curState = State.COMPLETED;
 	}
 }

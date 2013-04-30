@@ -23,6 +23,20 @@ public interface Worker {
 	void executeTask(WorkerTask task);
 
 	/**
+	 * Hält die derzeitige Berechnung an, falls die Berechnung noch den im Input mitgegebenen
+	 * Parametern entspricht. Z.B. wenn die Resultate der Berechnung nicht weiterhin von Relevanz
+	 * sind.
+	 * 
+	 * @param mapReduceTaskUID
+	 *            Die eindeutige ID des MapReduceTask der gestoppt werden soll und dessen zugehörige
+	 *            Daten gelöscht werden sollen.
+	 * @param workerTaskUUID
+	 *            Die eindeutige ID des WorkerTasks der gestoppt und desssen zugehörige Daten
+	 *            gelöscht werden sollen.
+	 */
+	void stopCurrentTask(String mapReduceUUID, String taskUUID);
+
+	/**
 	 * Gibt die derzeit auf dem Worker gespeicherten Strings zurueck
 	 * 
 	 * @param mapReduceTaskUID

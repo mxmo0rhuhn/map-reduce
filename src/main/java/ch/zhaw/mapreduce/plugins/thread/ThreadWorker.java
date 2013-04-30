@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
@@ -37,7 +38,7 @@ public class ThreadWorker implements Worker {
 	/**
 	 * Der Executor ist fuer asynchrone ausfuehren.
 	 */
-	private final Executor executor;
+	private final ExecutorService executor;
 
 	private final ContextFactory ctxFactory;
 
@@ -48,7 +49,7 @@ public class ThreadWorker implements Worker {
 	 * @param executor
 	 */
 	@Inject
-	public ThreadWorker(Pool pool, Executor executor, ContextFactory ctxFactory) {
+	public ThreadWorker(Pool pool, ExecutorService executor, ContextFactory ctxFactory) {
 		this.pool = pool;
 		this.executor = executor;
 		this.ctxFactory = ctxFactory;
@@ -65,14 +66,21 @@ public class ThreadWorker implements Worker {
 		this.contexts.putIfAbsent(mrUuid, new ConcurrentHashMap<String, Context>());
 		ConcurrentMap<String, Context> inputs = this.contexts.get(mrUuid);
 		inputs.put(taskUuid, ctx);
-		this.executor.execute(new Runnable() {
+		Future<Void> result = this.executor.submit(new Callable<Void>() {
 			@Override
-			public void run() {
+			public Void call() {
 				task.runTask(ctx);
 				pool.workerIsFinished(ThreadWorker.this);
+				return null;
 			}
 
 		});
+	}
+	 
+	@Override
+	public void stopCurrentTask(String mapReduceUUID, String taskUUID) {
+		result.cancel(true);
+	this.executor.	
 	}
 
 	/**
