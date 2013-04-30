@@ -11,18 +11,24 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.jmock.Expectations;
+import org.jmock.Sequence;
+import org.jmock.auto.Auto;
 import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.jmock.lib.concurrent.ExactCommandExecutor;
 import org.junit.Rule;
 import org.junit.Test;
 
+import ch.zhaw.mapreduce.WorkerTask.State;
 import ch.zhaw.mapreduce.plugins.thread.ThreadWorker;
 
 public class PoolTest {
 
 	@Rule
 	public JUnitRuleMockery mockery = new JUnitRuleMockery();
+	
+	@Auto
+	private Sequence events;
 	
 	@Mock
 	private Worker worker;
@@ -88,11 +94,16 @@ public class PoolTest {
 		p.donateWorker(worker);
 		this.mockery.checking(new Expectations() {
 			{
+				oneOf(task).setState(State.ENQUEUED);
+				inSequence(events);
 				oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrTaskUUID"));
 				oneOf(task).getUUID(); will(returnValue("taskUUID"));
 				oneOf(ctxFactory).createContext("mrTaskUUID", "taskUUID"); will(returnValue(ctx));
 				oneOf(task).setWorker(worker);
+				inSequence(events);
+				oneOf(task).setState(State.INPROGRESS);
 				oneOf(task).runTask(ctx);
+				oneOf(task).setState(State.COMPLETED);
 			}
 		});
 
