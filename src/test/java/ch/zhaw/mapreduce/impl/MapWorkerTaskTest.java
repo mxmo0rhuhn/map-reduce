@@ -137,18 +137,14 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldSetStateToCompletedOnSuccess() {
-		final MapWorkerTask task = new MapWorkerTask("mrtUuid", inputUUID, new MapInstruction() {
-			@Override
-			public void map(MapEmitter emitter, String toDo) {
-			}
-		}, null, input);
+		final MapWorkerTask task = new MapWorkerTask("mrtUuid", inputUUID, mapInstr, null, input);
 		this.mockery.checking(new Expectations() {
 			{
-				never(worker);
+				oneOf(mapInstr).map(ctx, input);
 			}
 		});
 		task.setWorker(worker);
-		task.runTask(null);
+		task.runTask(ctx);
 		assertEquals(State.COMPLETED, task.getCurrentState());
 	}
 
