@@ -1,12 +1,9 @@
 package ch.zhaw.mapreduce.impl;
 
-
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -19,21 +16,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jmock.Expectations;
-import org.jmock.Mockery;
-import org.jmock.integration.junit4.JMock;
-import org.jmock.integration.junit4.JUnit4Mockery;
+import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.jmock.lib.concurrent.ExactCommandExecutor;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
+import ch.zhaw.mapreduce.Context;
+import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.ReduceEmitter;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.WorkerTask.State;
-import ch.zhaw.mapreduce.workers.ThreadWorker;
+import ch.zhaw.mapreduce.plugins.thread.ThreadWorker;
 
 public class ReduceWorkerTaskTest {
 
@@ -42,55 +38,57 @@ public class ReduceWorkerTaskTest {
 
 	@Mock
 	private ReduceInstruction redInstr;
-
-	private List<KeyValuePair> keyVals = Arrays.asList(new KeyValuePair[] { new KeyValuePair("hello", "1"), new KeyValuePair("foo", "1"),
+	
+	@Mock
+	private Context ctx;
+	
+	@Mock
+	private ContextFactory ctxFactory;
+	
+	private final String key = "key";
+	
+	private final List<KeyValuePair> keyVals = Arrays.asList(new KeyValuePair[] { new KeyValuePair("hello", "1"), new KeyValuePair("foo", "1"),
 				new KeyValuePair("hello", "2") });
 
 	@Test
 	public void shouldSetMrUuid() {
-		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", redInstr, keyVals);
+		ReduceWorkerTask task = new ReduceWorkerTask("mruid", redInstr, "key", keyVals);
 		assertEquals("mruid", task.getMapReduceTaskUUID());
 	}
 
 	@Test
 	public void shouldSetReduceInstruction() {
-		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", redInstr, keyVals);
+		ReduceWorkerTask task = new ReduceWorkerTask("mruid", redInstr, "key", keyVals);
 		assertSame(redInstr, task.getReduceTask());
 	}
 
 	@Test
 	public void shouldBeInitiatedInitially() {
-		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", redInstr, keyVals);
+		ReduceWorkerTask task = new ReduceWorkerTask("mruid", redInstr, "key", keyVals);
 		assertEquals(State.INITIATED, task.getCurrentState());
 	}
 
 	@Test
 	public void shouldBeEnqueuedAfterSubmissionToPool() {
-		final ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", redInstr, keyVals);
+		final ReduceWorkerTask task = new ReduceWorkerTask("mruid", redInstr, key, keyVals);
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(p).enqueueWork(task);
+				oneOf(redInstr).reduce(with(ctx), with(key), with(aNonNull(Iterator.class)));
 			}
 		});
-		task.runReduceTask();
+		task.runTask(ctx);
 		assertEquals(State.ENQUEUED, task.getCurrentState());
 	}
 
 	@Test
 	public void shouldBeCompletedAfterSuccessfulExecution() {
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
-		pool.init();
-		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		ThreadWorker worker = new ThreadWorker(pool, exec);
-		pool.donateWorker(worker);
-		final ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", redInstr, keyVals);
-		this.context.checking(new Expectations() {
+		final ReduceWorkerTask task = new ReduceWorkerTask("mruid", redInstr, key, keyVals);
+		this.mockery.checking(new Expectations() {
 			{
-				oneOf(redInstr).reduce(with(task), with("key"), with(aNonNull(Iterator.class)));
+				oneOf(redInstr).reduce(with(ctx), with(key), with(aNonNull(Iterator.class)));
 			}
 		});
-		task.runReduceTask();
-		assertTrue(exec.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
+		task.runTask(ctx);
 		assertEquals(State.COMPLETED, task.getCurrentState());
 	}
 

@@ -24,8 +24,7 @@ import com.google.inject.assistedinject.Assisted;
  */
 public class ReduceWorkerTask implements WorkerTask {
 
-	@Inject
-	private Logger logger;
+	private static final Logger LOG = Logger.getLogger(ReduceWorkerTask.class.getName());
 
 	private volatile Worker myWorker;
 	/**
@@ -69,24 +68,24 @@ public class ReduceWorkerTask implements WorkerTask {
 	@Override
 	public void runTask(Context ctx) {
 		this.curState = State.INPROGRESS;
-		logger.finest("State: INPROGRESS");
+		LOG.finest("State: INPROGRESS");
 
 		try {
 			this.reduceInstruction.reduce(ctx, key, input.iterator());
 			
 			if( curState == State.INPROGRESS) {
 				this.curState = State.COMPLETED;
-				logger.finest("State: COMPLETED");
+				LOG.finest("State: COMPLETED");
 			} else {
 				throw new ComputationStoppedException();
 			}
 			
 		} catch (ComputationStoppedException cse) {
-			logger.finest("State: ABORTED");
+			LOG.finest("State: ABORTED");
 			this.curState = State.ABORTED;
 			this.myWorker.cleanSpecificResult(mapReduceTaskUUID, workerTaskUuid);
 		} catch (Exception e) {
-			logger.log(Level.WARNING, "State: FAILED", e);
+			LOG.log(Level.WARNING, "State: FAILED", e);
 			this.curState = State.FAILED;
 			this.myWorker.cleanSpecificResult(mapReduceTaskUUID, workerTaskUuid);
 		}
