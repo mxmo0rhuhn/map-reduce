@@ -97,8 +97,18 @@ public class ThreadWorker implements Worker {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<String> getReduceResult(String mapReduceTaskUID, String inputUUID) {
-		return this.contexts.get(mapReduceTaskUID).get(inputUUID).getReduceResult();
+	public List<String> getReduceResult(String mapReduceTaskUUID, String reduceTaskUUID) {
+		ConcurrentMap<String, Context> computationCtx = this.contexts.get(mapReduceTaskUUID);
+		if (computationCtx == null) {
+			LOG.fine("MapReduceTaskUUID not found: " + mapReduceTaskUUID);
+			return Collections.emptyList();
+		}
+		Context taskCtx = computationCtx.get(reduceTaskUUID);
+		if (taskCtx == null) {
+			LOG.finer("ReduceTaskUUID not found: " + reduceTaskUUID);
+			return Collections.emptyList();
+		}
+		return taskCtx.getReduceResult();
 	}
 
 	/** {@inheritDoc} */
