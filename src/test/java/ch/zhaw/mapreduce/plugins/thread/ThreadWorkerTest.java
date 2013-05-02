@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce.impl;
+package ch.zhaw.mapreduce.plugins.thread;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -15,7 +16,6 @@ import org.jmock.Sequence;
 import org.jmock.auto.Auto;
 import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnitRuleMockery;
-import org.jmock.lib.concurrent.DeterministicExecutor;
 import org.jmock.lib.concurrent.ExactCommandExecutor;
 import org.junit.Rule;
 import org.junit.Test;
@@ -366,7 +366,7 @@ public class ThreadWorkerTest {
 	
 	@Test
 	public void shouldDoNothingWhenAskedToCleanInexistentMapReduceUUID() {
-		DeterministicExecutor exec = new DeterministicExecutor();
+		ExecutorService exec = Executors.newSingleThreadExecutor();
 		Pool pool = new Pool(Executors.newSingleThreadExecutor());
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
@@ -375,7 +375,7 @@ public class ThreadWorkerTest {
 	
 	@Test
 	public void shouldDoNothingWhenAskedToCleanInexistentTaskUUID() {
-		DeterministicExecutor exec = new DeterministicExecutor();
+		ExecutorService exec = Executors.newSingleThreadExecutor();
 		Pool pool = new Pool(Executors.newSingleThreadExecutor());
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);

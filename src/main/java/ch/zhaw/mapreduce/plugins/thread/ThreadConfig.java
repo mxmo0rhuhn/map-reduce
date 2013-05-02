@@ -1,6 +1,6 @@
 package ch.zhaw.mapreduce.plugins.thread;
 
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import ch.zhaw.mapreduce.Context;
@@ -23,7 +23,7 @@ public class ThreadConfig extends AbstractModule {
 		bind(Worker.class).to(ThreadWorker.class);
 		
 		bind(Integer.class).annotatedWith(Names.named("thread.nrworkers")).toInstance(NWORKERS);
-		bind(Executor.class).toInstance(Executors.newSingleThreadExecutor());
+		bind(ExecutorService.class).annotatedWith(Names.named("ThreadWorker")).toInstance(Executors.newSingleThreadExecutor());
 		bind(Persistence.class).to(FilePersistence.class);
 		
 		bind(String.class).annotatedWith(Names.named("filepersistence.directory")).toInstance(System.getProperty("java.io.tmpdir") + "/mapred/filepers/");

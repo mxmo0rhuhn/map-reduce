@@ -12,6 +12,7 @@ import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
+import ch.zhaw.mapreduce.registry.WorkerTaskUUID;
 
 import com.google.inject.assistedinject.Assisted;
 
@@ -45,7 +46,7 @@ public class ReduceWorkerTask implements WorkerTask {
 	 * Der zu reduzierende Input
 	 */
 	private final List<KeyValuePair> input;
-	
+
 	private final String workerTaskUuid;
 
 	/**
@@ -54,13 +55,14 @@ public class ReduceWorkerTask implements WorkerTask {
 	private volatile State curState = State.INITIATED;
 
 	@Inject
-	public ReduceWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUUID,  @Assisted ReduceInstruction reduceInstruction,
-			@Assisted("key") String key, @Assisted List<KeyValuePair> inputs) {
+	public ReduceWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUUID,
+			@Assisted ReduceInstruction reduceInstruction, @Assisted("key") String key,
+			@Assisted List<KeyValuePair> inputs, @WorkerTaskUUID String workerTaskUuid) {
 		this.mapReduceTaskUUID = mapReduceTaskUUID;
 		this.key = key;
 		this.reduceInstruction = reduceInstruction;
 		this.input = inputs;
-		this.workerTaskUuid = UUID.randomUUID().toString();
+		this.workerTaskUuid = workerTaskUuid;
 	}
 
 	/** {@inheritDoc} */
@@ -71,10 +73,8 @@ public class ReduceWorkerTask implements WorkerTask {
 
 		try {
 			this.reduceInstruction.reduce(ctx, key, input.iterator());
-			
-				this.curState = State.COMPLETED;
-				LOG.finest("State: COMPLETED");
-			
+			this.curState = State.COMPLETED;
+			LOG.finest("State: COMPLETED");
 		} catch (Exception e) {
 			LOG.log(Level.WARNING, "State: FAILED", e);
 			this.curState = State.FAILED;
@@ -99,7 +99,7 @@ public class ReduceWorkerTask implements WorkerTask {
 	 * 
 	 * @return Gibt den ReduceTask fuer diesen Runner zurueck. null wenn keiner gesetzt ist.
 	 */
-	public ReduceInstruction getReduceTask() {
+	public ReduceInstruction getReduceInstruction() {
 		return this.reduceInstruction;
 	}
 
@@ -139,5 +139,10 @@ public class ReduceWorkerTask implements WorkerTask {
 	@Override
 	public void finished() {
 		this.curState = State.COMPLETED;
+	}
+
+	@Override
+	public void enqueued() {
+		this.curState = State.ENQUEUED;
 	}
 }

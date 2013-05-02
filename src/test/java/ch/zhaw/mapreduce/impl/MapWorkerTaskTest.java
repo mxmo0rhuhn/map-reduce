@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -125,7 +126,8 @@ public class MapWorkerTaskTest {
 		final MapWorkerTask task = new MapWorkerTask("mrtUuid", inputUUID, mapInstr, combInstr, input);
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(mapInstr).map(ctx, input); will(throwException(new NullPointerException()));
+				oneOf(mapInstr).map(ctx, input);
+				will(throwException(new NullPointerException()));
 				oneOf(worker).cleanSpecificResult("mrtUuid", inputUUID);
 			}
 		});
@@ -156,9 +158,9 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldBeInProgressWhileRunning() throws InterruptedException, BrokenBarrierException {
-		Executor poolExec = Executors.newSingleThreadExecutor();
+		ExecutorService poolExec = Executors.newSingleThreadExecutor();
 		final CyclicBarrier barrier = new CyclicBarrier(2);
-		Executor taskExec = Executors.newSingleThreadExecutor();
+		ExecutorService taskExec = Executors.newSingleThreadExecutor();
 		final Pool pool = new Pool(poolExec);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, taskExec, ctxFactory);
@@ -193,7 +195,7 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldBeAbleToRerunTests() {
-		Executor poolExec = Executors.newSingleThreadExecutor();
+		ExecutorService poolExec = Executors.newSingleThreadExecutor();
 		ExactCommandExecutor threadExec1 = new ExactCommandExecutor(1);
 		ExactCommandExecutor threadExec2 = new ExactCommandExecutor(1);
 		final Pool pool = new Pool(poolExec);

@@ -1,9 +1,16 @@
 package org.jmock.lib.concurrent;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -21,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Reto Hablützel (rethab)
  * 
  */
-public class ExactCommandExecutor implements Executor {
+public class ExactCommandExecutor implements ExecutorService {
 
 	/**
 	 * Commands to be executed
@@ -112,4 +119,105 @@ public class ExactCommandExecutor implements Executor {
 			throw new IllegalStateException("Cannot accept more work");
 		}
 	}
+
+	@Override
+	public void shutdown() {
+		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public List<Runnable> shutdownNow() {
+		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public boolean isShutdown() {
+		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public boolean isTerminated() {
+		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public <T> Future<T> submit(final Callable<T> task) {
+		execute(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					task.call();
+				} catch (Exception e) {
+					throw new IllegalStateException(e);
+				}
+			}
+		});
+		return new DummyFuture<T>();
+	}
+
+	@Override
+	public <T> Future<T> submit(Runnable task, T result) {
+		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public Future<?> submit(Runnable task) {
+		return null;
+	}
+
+	@Override
+	public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
+		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+			throws InterruptedException {
+		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
+		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+			throws InterruptedException, ExecutionException, TimeoutException {
+		throw new UnsupportedOperationException("not supported");
+	}
+}
+
+class DummyFuture<T> implements Future<T> {
+
+	@Override
+	public boolean cancel(boolean mayInterruptIfRunning) {
+		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public boolean isCancelled() {
+		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public boolean isDone() {
+		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public T get() throws InterruptedException, ExecutionException {
+		throw new UnsupportedOperationException("not supported");
+	}
+
+	@Override
+	public T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+		throw new UnsupportedOperationException("not supported");
+	}
+
 }

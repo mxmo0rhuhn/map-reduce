@@ -3,9 +3,11 @@ package ch.zhaw.mapreduce.plugins.thread;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
@@ -17,6 +19,8 @@ import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
+
+import com.google.inject.name.Named;
 
 /**
  * Implementation von einem Thread-basierten Worker. Der Task wird ueber einen Executor ausgefuehrt.
@@ -43,13 +47,21 @@ public class ThreadWorker implements Worker {
 	private final ContextFactory ctxFactory;
 
 	/**
+	 * Moegliche Tasks, die gerade von diesem Worker ausgefuehrt werden.
+	 * 
+	 * @DesignReason Map: damit nicht ein task einer anderen id gekillt wird
+	 * @DesignReason Weak: weil wir nicht genau wissen, wann wir aufräumen können, überlassen wir das dem GC
+	 */
+	private final WeakHashMap<String, Future<Void>> tasks = new WeakHashMap<String, Future<Void>>();
+
+	/**
 	 * Erstellt einen neunen ThreadWorker mit dem gegebenen Pool und Executor.
 	 * 
 	 * @param pool
 	 * @param executor
 	 */
 	@Inject
-	public ThreadWorker(Pool pool, ExecutorService executor, ContextFactory ctxFactory) {
+	public ThreadWorker(Pool pool, @Named("ThreadWorker") ExecutorService executor, ContextFactory ctxFactory) {
 		this.pool = pool;
 		this.executor = executor;
 		this.ctxFactory = ctxFactory;
@@ -66,21 +78,33 @@ public class ThreadWorker implements Worker {
 		this.contexts.putIfAbsent(mrUuid, new ConcurrentHashMap<String, Context>());
 		ConcurrentMap<String, Context> inputs = this.contexts.get(mrUuid);
 		inputs.put(taskUuid, ctx);
-		Future<Void> result = this.executor.submit(new Callable<Void>() {
+		Future<Void> action = this.executor.submit(new Callable<Void>() {
 			@Override
 			public Void call() {
 				task.runTask(ctx);
+				// TODO das ist nur eine moegliche stelle, um den worker zurueck in den pool zu schieben. sollte das
+				// zentral geloest werden?
 				pool.workerIsFinished(ThreadWorker.this);
 				return null;
 			}
-
 		});
+		this.tasks.put(mrUuid + taskUuid, action);
 	}
-	 
+
 	@Override
 	public void stopCurrentTask(String mapReduceUUID, String taskUUID) {
-		result.cancel(true);
-	this.executor.	
+		Future<Void> task = this.tasks.get(mapReduceUUID + taskUUID);
+		if (task != null) {
+			if (task.cancel(true)) {
+				// Task wurde abgebrochen
+				pool.workerIsFinished(this);
+			} else {
+				// Task war schon beendet. Worker ist bereits zurueck im Pool
+			}
+			LOG.fine("Stopped Task");
+		} else {
+			LOG.warning("No current Task available for this MapReduceID");
+		}
 	}
 
 	/**

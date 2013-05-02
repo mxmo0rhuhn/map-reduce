@@ -139,7 +139,7 @@ public class RegistryTest {
 	public void shouldSetReduceTaskToReduceRunner() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
 		ReduceWorkerTask reduceRunner = factory.createReduceWorkerTask("uuid", "key", reduceInstr, this.toDo);
-		assertSame(reduceInstr, reduceRunner.getReduceTask());
+		assertSame(reduceInstr, reduceRunner.getReduceInstruction());
 	}
 
 	@Test

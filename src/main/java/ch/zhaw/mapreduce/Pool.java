@@ -14,7 +14,6 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import ch.zhaw.mapreduce.WorkerTask.State;
 import ch.zhaw.mapreduce.registry.PoolExecutor;
 
 /**
@@ -100,8 +99,7 @@ public final class Pool {
 	 */
 	public boolean enqueueWork(WorkerTask task) {
 		LOG.finest("Enqueue Task");
-		//TODO Reto: Konzept erarbeiten 
-//		task.setState(State.ENQUEUED);
+		task.enqueued();
 		return taskQueue.offer(task);
 	}
 

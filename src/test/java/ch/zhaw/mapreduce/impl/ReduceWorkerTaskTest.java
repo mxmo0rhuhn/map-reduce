@@ -1,9 +1,9 @@
 package ch.zhaw.mapreduce.impl;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -11,14 +11,19 @@ import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jmock.Expectations;
+import org.jmock.Sequence;
+import org.jmock.auto.Auto;
 import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.jmock.lib.concurrent.ExactCommandExecutor;
+import org.jmock.lib.concurrent.Synchroniser;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -28,177 +33,203 @@ import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.ReduceEmitter;
 import ch.zhaw.mapreduce.ReduceInstruction;
+import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask.State;
 import ch.zhaw.mapreduce.plugins.thread.ThreadWorker;
 
 public class ReduceWorkerTaskTest {
 
 	@Rule
-	public JUnitRuleMockery mockery = new JUnitRuleMockery();
+	public JUnitRuleMockery mockery = new JUnitRuleMockery() {
+		{
+			setThreadingPolicy(new Synchroniser());
+		}
+	};
+
+	@Auto
+	private Sequence events;
 
 	@Mock
-	private ReduceInstruction redInstr;
-	
+	private ReduceInstruction reduceInstr;
+
 	@Mock
 	private Context ctx;
-	
+
 	@Mock
 	private ContextFactory ctxFactory;
+
+	@Mock
+	private Worker worker;
+
+	private final String taskUUID = "taskUUID";
 	
 	private final String key = "key";
-	
-	private final List<KeyValuePair> keyVals = Arrays.asList(new KeyValuePair[] { new KeyValuePair("hello", "1"), new KeyValuePair("foo", "1"),
-				new KeyValuePair("hello", "2") });
+
+	private final List<KeyValuePair> keyVals = Arrays.asList(new KeyValuePair[]{new KeyValuePair("key1", "val1"), new KeyValuePair("key2", "val2")});
 
 	@Test
-	public void shouldSetMrUuid() {
-		ReduceWorkerTask task = new ReduceWorkerTask("mruid", redInstr, "key", keyVals);
-		assertEquals("mruid", task.getMapReduceTaskUUID());
+	public void shouldSetMapReduceTaskUUID() {
+		ReduceWorkerTask task = new ReduceWorkerTask("uuid", reduceInstr, key, keyVals, taskUUID);
+		assertEquals("uuid", task.getMapReduceTaskUUID());
 	}
 
 	@Test
 	public void shouldSetReduceInstruction() {
-		ReduceWorkerTask task = new ReduceWorkerTask("mruid", redInstr, "key", keyVals);
-		assertSame(redInstr, task.getReduceTask());
+		ReduceWorkerTask task = new ReduceWorkerTask("uuid", reduceInstr, key, keyVals, taskUUID);
+		assertSame(reduceInstr, task.getReduceInstruction());
 	}
 
 	@Test
-	public void shouldBeInitiatedInitially() {
-		ReduceWorkerTask task = new ReduceWorkerTask("mruid", redInstr, "key", keyVals);
-		assertEquals(State.INITIATED, task.getCurrentState());
-	}
-
-	@Test
-	public void shouldBeEnqueuedAfterSubmissionToPool() {
-		final ReduceWorkerTask task = new ReduceWorkerTask("mruid", redInstr, key, keyVals);
+	public void shouldRunReduceInstruction() {
+		Executor poolExec = Executors.newSingleThreadExecutor();
+		Pool pool = new Pool(poolExec);
+		pool.init();
+		final ReduceWorkerTask task = new ReduceWorkerTask("uuid", reduceInstr, key, keyVals, taskUUID);
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(redInstr).reduce(with(ctx), with(key), with(aNonNull(Iterator.class)));
+				oneOf(reduceInstr).reduce(with(ctx), with(key), with(aNonNull(Iterator.class)));
 			}
 		});
 		task.runTask(ctx);
-		assertEquals(State.ENQUEUED, task.getCurrentState());
 	}
 
 	@Test
-	public void shouldBeCompletedAfterSuccessfulExecution() {
-		final ReduceWorkerTask task = new ReduceWorkerTask("mruid", redInstr, key, keyVals);
+	public void shouldSetInputUUID() {
+		ReduceWorkerTask task = new ReduceWorkerTask("uuid", reduceInstr, key, keyVals, taskUUID);
+		assertEquals(taskUUID, task.getUUID());
+	}
+
+	@Test
+	public void shouldSetStateToFailedOnException() {
+		ReduceWorkerTask task = new ReduceWorkerTask("uuid", reduceInstr, key, keyVals, taskUUID);
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(redInstr).reduce(with(ctx), with(key), with(aNonNull(Iterator.class)));
+				oneOf(reduceInstr).reduce(with(ctx), with(key), with(aNonNull(Iterator.class)));
+				will(throwException(new NullPointerException()));
+				oneOf(worker).cleanSpecificResult("uuid", taskUUID);
 			}
 		});
+		task.setWorker(worker);
+		task.runTask(ctx);
+		assertEquals(State.FAILED, task.getCurrentState());
+		assertSame(worker, task.getWorker());
+	}
+
+	@Test
+	public void shouldSetStateToCompletedOnSuccess() {
+		ReduceWorkerTask task = new ReduceWorkerTask("uuid", reduceInstr, key, keyVals, taskUUID);
+		this.mockery.checking(new Expectations() {
+			{
+				oneOf(reduceInstr).reduce(with(ctx), with(key), with(aNonNull(Iterator.class)));
+			}
+		});
+		task.setWorker(worker);
 		task.runTask(ctx);
 		assertEquals(State.COMPLETED, task.getCurrentState());
 	}
 
 	@Test
-	public void shouldBeInProgressWhileExecuting() throws InterruptedException, BrokenBarrierException {
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
-		pool.init();
-		Executor exec = Executors.newSingleThreadExecutor();
-		final CyclicBarrier barrier = new CyclicBarrier(2);
-		ThreadWorker worker = new ThreadWorker(pool, exec);
-		assertTrue(pool.donateWorker(worker));
-		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", new ReduceInstruction() {
+	public void shouldSetStateToInitiatedInitially() {
+		ReduceWorkerTask task = new ReduceWorkerTask("uuid", reduceInstr, key, keyVals, taskUUID);
+		assertEquals(State.INITIATED, task.getCurrentState());
+	}
 
+	@Test
+	public void shouldBeInProgressWhileRunning() throws InterruptedException, BrokenBarrierException {
+		ExecutorService poolExec = Executors.newSingleThreadExecutor();
+		final CyclicBarrier barrier = new CyclicBarrier(2);
+		ExecutorService taskExec = Executors.newSingleThreadExecutor();
+		final Pool pool = new Pool(poolExec);
+		pool.init();
+		ThreadWorker worker = new ThreadWorker(pool, taskExec, ctxFactory);
+		pool.donateWorker(worker);
+		final ReduceWorkerTask task = new ReduceWorkerTask("mrtUuid",  new ReduceInstruction() {
 			@Override
 			public void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair> values) {
 				try {
 					barrier.await();
 				} catch (Exception e) {
-					throw new RuntimeException();
+					throw new IllegalStateException(e);
 				}
 			}
-		}, keyVals);
-		task.runReduceTask();
+
+		}, key, keyVals, taskUUID);
+		this.mockery.checking(new Expectations() {
+			{
+				oneOf(ctxFactory).createContext("mrtUuid", taskUUID);
+				will(returnValue(ctx));
+			}
+		});
+		pool.enqueueWork(task);
 		Thread.yield();
 		Thread.sleep(200);
 		assertEquals(State.INPROGRESS, task.getCurrentState());
-	}
-	
-	@Test
-	public void shouldUseKeyAsUUID() {
-		ReduceWorkerTask task = new ReduceWorkerTask(p, "mrtuid", "key", redInstr, keyVals);
-		assertEquals("key", task.getUUID());
-	}
-
-	@Test
-	public void shouldBeFailedAfterException() throws InterruptedException {
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
-		pool.init();
-		Executor exec = Executors.newSingleThreadExecutor();
-		ThreadWorker worker = new ThreadWorker(pool, exec);
-		assertTrue(pool.donateWorker(worker));
-		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", new ReduceInstruction() {
-
-			@Override
-			public void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair> values) {
-				throw new NullPointerException();
-			}
-		}, keyVals);
-		task.runReduceTask();
-		Thread.yield();
-		Thread.sleep(200);
-		assertEquals(State.FAILED, task.getCurrentState());
+		try {
+			barrier.await(100, TimeUnit.MILLISECONDS);
+		} catch (TimeoutException te) {
+			fail("should return immediately");
+		}
 	}
 
 	@Test
-	public void shouldBeAbleToRerunFailed() {
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
-		pool.init();
-		ExactCommandExecutor exec1 = new ExactCommandExecutor(1);
-		ExactCommandExecutor exec2 = new ExactCommandExecutor(1);
-		ThreadWorker worker1 = new ThreadWorker(pool, exec1);
-		ThreadWorker worker2 = new ThreadWorker(pool, exec2);
-		assertTrue(pool.donateWorker(worker1));
-		assertTrue(pool.donateWorker(worker2));
+	public void shouldBeAbleToRerunTests() {
+		ExecutorService poolExec = Executors.newSingleThreadExecutor();
+		ExactCommandExecutor threadExec1 = new ExactCommandExecutor(1);
+		ExactCommandExecutor threadExec2 = new ExactCommandExecutor(1);
+		final Pool pool = new Pool(poolExec);
 		final AtomicInteger cnt = new AtomicInteger();
-		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", new ReduceInstruction() {
-
+		pool.init();
+		ThreadWorker worker1 = new ThreadWorker(pool, threadExec1, ctxFactory);
+		pool.donateWorker(worker1);
+		ThreadWorker worker2 = new ThreadWorker(pool, threadExec2, ctxFactory);
+		pool.donateWorker(worker2);
+		final ReduceWorkerTask task = new ReduceWorkerTask("mrtUuid", new ReduceInstruction() {
+			
 			@Override
 			public void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair> values) {
 				if (cnt.get() == 0) {
 					cnt.incrementAndGet();
 					throw new NullPointerException();
 				} else if (cnt.get() == 1) {
-					// all fine
+					// successful
 				} else {
-					throw new IllegalStateException("unexpected");
+					throw new NullPointerException();
 				}
 			}
-		}, keyVals);
-		task.runReduceTask();
-		assertTrue(exec1.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
+		}, key, keyVals, taskUUID);
+		this.mockery.checking(new Expectations() {
+			{
+				oneOf(ctxFactory).createContext("mrtUuid", taskUUID);
+				will(returnValue(ctx));
+				inSequence(events);
+				oneOf(ctx).destroy();
+				inSequence(events);
+				oneOf(ctxFactory).createContext("mrtUuid", taskUUID);
+				will(returnValue(ctx));
+			}
+		});
+		pool.enqueueWork(task);
+		assertTrue(threadExec1.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.FAILED, task.getCurrentState());
-		assertNull(task.getWorker());
-		
-		task.runReduceTask();
-		assertTrue(exec2.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
+		assertSame(worker1, task.getWorker());
+		pool.enqueueWork(task);
+		assertTrue(threadExec2.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.COMPLETED, task.getCurrentState());
 		assertSame(worker2, task.getWorker());
 	}
-	
+
 	@Test
-	public void shouldEmitToProcessingWorker() {
+	public void shouldBeEnqueuedAfterSubmissionToPool() {
 		Pool pool = new Pool(Executors.newSingleThreadExecutor());
 		pool.init();
-		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		ThreadWorker worker = new ThreadWorker(pool, exec);
-		assertTrue(pool.donateWorker(worker));
-		ReduceWorkerTask task = new ReduceWorkerTask("mruid", "key", new ReduceInstruction() {
-
-			@Override
-			public void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair> values) {
-				emitter.emit("value");
+		final ReduceWorkerTask task = new ReduceWorkerTask("mrtuid", reduceInstr, key, keyVals, taskUUID);
+		this.mockery.checking(new Expectations() {
+			{
+				never(reduceInstr);
 			}
-		}, keyVals);
-		assertTrue(task.runReduceTask());
-		assertTrue(exec.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
-		List<KeyValuePair> results = worker.getReduceResults("mruid");
-		assertEquals(1, results.size());
-		assertEquals(new KeyValuePair("key", "value"), results.get(0));
+		});
+		pool.enqueueWork(task);
+		assertEquals(State.ENQUEUED, task.getCurrentState());
 	}
-	
 
 }

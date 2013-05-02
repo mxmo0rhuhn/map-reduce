@@ -158,4 +158,9 @@ public class MapWorkerTask implements WorkerTask {
 	public void finished() {
 		this.currentState = State.COMPLETED;
 	}
+
+	@Override
+	public void enqueued() {
+		this.currentState = State.ENQUEUED;
+	}
 }

@@ -25,7 +25,7 @@ public class ThreadConfigTest {
 	
 	@Test
 	public void workerShouldBePrototype() {
-		Injector inj = Guice.createInjector(new ThreadConfig());
+		Injector inj = Guice.createInjector(new MapReduceConfig(), new ThreadConfig());
 		ThreadWorker w1 = (ThreadWorker) inj.getInstance(Worker.class);
 		ThreadWorker w2 = (ThreadWorker) inj.getInstance(Worker.class);
 		assertNotSame(w1, w2);
