@@ -18,8 +18,7 @@ import javax.inject.Named;
  */
 public final class Loader {
 
-	@Inject
-	private Logger logger;
+	private static final Logger LOG = Logger.getLogger(Loader.class.getName());
 
 	private final String propName;
 
@@ -31,7 +30,7 @@ public final class Loader {
 	public List<AgentPlugin> loadPlugins() {
 		String props = System.getProperty(propName);
 		if (props == null) {
-			logger.warning("No plugins found");
+			LOG.warning("No plugins found");
 			return Collections.emptyList();
 		}
 		String[] pluginNames = props.split(",");
@@ -44,7 +43,7 @@ public final class Loader {
 			AgentPlugin plugin = instantiate(pluginName);
 			if (plugin != null) {
 				instances.add(plugin);
-				logger.fine("Plugin " + pluginName + " found");
+				LOG.fine("Plugin " + pluginName + " found");
 			}
 		}
 		return instances;
@@ -64,7 +63,7 @@ public final class Loader {
 			Class<AgentPlugin> klass = (Class<AgentPlugin>) Class.forName(className);
 			return klass.newInstance();
 		} catch (Exception e) {
-			logger.log(Level.SEVERE, "Failed to load Plugin " + className, e);
+			LOG.log(Level.SEVERE, "Failed to load Plugin " + className, e);
 			return null;
 		}
 	}

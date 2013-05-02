@@ -12,7 +12,7 @@ import com.google.inject.name.Names;
 import de.root1.simon.Registry;
 import de.root1.simon.Simon;
 
-public class SocketPlugin implements AgentPlugin {
+public class SocketAgentPlugin implements AgentPlugin {
 
 	private Logger log;
 
