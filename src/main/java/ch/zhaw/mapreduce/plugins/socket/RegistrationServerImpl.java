@@ -11,8 +11,7 @@ import de.root1.simon.annotation.SimonRemote;
 @SimonRemote(RegistrationServer.class)
 public class RegistrationServerImpl implements RegistrationServer {
 	
-	@Inject
-	private Logger log;
+	private static final Logger LOG = Logger.getLogger(RegistrationServerImpl.class.getName());
 	
 	private final Pool pool;
 	
@@ -23,7 +22,7 @@ public class RegistrationServerImpl implements RegistrationServer {
 
 	@Override
 	public void register(String ip, int port, ClientCallback clientCallback) {
-		log.info("New Worker: " + ip + ":" + port);
+		LOG.info("New Worker: " + ip + ":" + port);
 		// TODO erstelle socket worker 
 		// adde zu pool
 		clientCallback.acknowledge();
