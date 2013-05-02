@@ -1,10 +1,10 @@
 package ch.zhaw.mapreduce.roundtriptest;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
-
-import junit.framework.Assert;
 
 import org.junit.Test;
 
@@ -16,7 +16,6 @@ import ch.zhaw.mapreduce.ReduceEmitter;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.plugins.AgentPlugin;
 import ch.zhaw.mapreduce.plugins.Loader;
-import ch.zhaw.mapreduce.plugins.thread.ThreadAgentPlugin;
 import ch.zhaw.mapreduce.registry.MapReduceConfig;
 
 import com.google.inject.Guice;
@@ -48,7 +47,7 @@ public class PerformanceTest {
 		for (Map.Entry<String, String> entry : results.entrySet()) {
 			sum += Integer.parseInt(entry.getValue());
 		}
-		Assert.assertEquals(inputs * chunkSize, sum);
+		assertEquals(inputs * chunkSize, sum);
 	}
 
 	private Iterator<String> generateIterator(final int length, final int chunkSize) {
@@ -99,7 +98,7 @@ public class PerformanceTest {
 		public void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair> values) {
 			long sum = 0;
 			while (values.hasNext()) {
-				sum += Long.parseLong(values.next().getValue());
+				sum += Long.parseLong((String) values.next().getValue());
 			}
 			emitter.emit(Long.toString(sum));
 		}

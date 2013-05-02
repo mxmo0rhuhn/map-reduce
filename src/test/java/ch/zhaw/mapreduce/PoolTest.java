@@ -20,7 +20,6 @@ import org.jmock.lib.concurrent.Synchroniser;
 import org.junit.Rule;
 import org.junit.Test;
 
-import ch.zhaw.mapreduce.WorkerTask.State;
 import ch.zhaw.mapreduce.plugins.thread.ThreadWorker;
 
 public class PoolTest {
@@ -95,7 +94,7 @@ public class PoolTest {
 		p.donateWorker(worker);
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(task).setState(State.ENQUEUED);
+				oneOf(task).enqueued();
 				inSequence(events);
 				oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrTaskUUID"));
 				oneOf(task).getUUID(); will(returnValue("taskUUID"));
@@ -120,7 +119,7 @@ public class PoolTest {
 		p.donateWorker(worker);
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(task).setState(State.ENQUEUED);
+				oneOf(task).enqueued();
 				inSequence(events);
 				oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrTaskUUID"));
 				oneOf(task).getUUID(); will(returnValue("taskUUID"));
