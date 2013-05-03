@@ -1,5 +1,6 @@
 package ch.zhaw.mapreduce;
 
+
 /**
  * Stellt die Befehle des Maps dar. Hier muss definiert werden was genau die Map-Aufgabe des MapReduce ist.
  * 

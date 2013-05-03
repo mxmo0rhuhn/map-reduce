@@ -2,9 +2,6 @@ package ch.zhaw.mapreduce;
 
 import java.util.List;
 
-import ch.zhaw.mapreduce.KeyValuePair;
-import ch.zhaw.mapreduce.WorkerTask;
-
 /**
  * Stellt einen generischen Worker der eine Aufgabe annehmen kann dar.
  * 

@@ -25,7 +25,6 @@ import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.plugins.thread.ThreadWorker;
 
 public class ThreadWorkerTest {
 

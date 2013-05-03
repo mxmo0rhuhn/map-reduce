@@ -15,7 +15,6 @@ import org.jmock.Expectations;
 import org.jmock.Sequence;
 import org.jmock.auto.Auto;
 import org.jmock.auto.Mock;
-import org.jmock.integration.junit4.JUnit4Mockery;
 import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.jmock.lib.concurrent.DeterministicExecutor;
 import org.junit.Rule;

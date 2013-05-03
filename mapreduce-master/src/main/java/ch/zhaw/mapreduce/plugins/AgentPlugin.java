@@ -1,5 +1,7 @@
 package ch.zhaw.mapreduce.plugins;
 
+import ch.zhaw.mapreduce.Worker;
+
 import com.google.inject.Injector;
 
 /**

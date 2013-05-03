@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import ch.zhaw.mapreduce.plugins.socket.SocketAgentPlugin;
 import ch.zhaw.mapreduce.plugins.thread.ThreadAgentPlugin;
 
 public class LoadedTest {

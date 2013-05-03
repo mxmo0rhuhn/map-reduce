@@ -8,7 +8,6 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import ch.zhaw.mapreduce.CombinerInstruction;
-import ch.zhaw.mapreduce.ComputationStoppedException;
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;

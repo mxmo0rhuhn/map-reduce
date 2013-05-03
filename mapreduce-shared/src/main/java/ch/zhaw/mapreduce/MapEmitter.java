@@ -1,5 +1,6 @@
 package ch.zhaw.mapreduce;
 
+
 /**
  * Bietet einer Map Task die Möglichkeit Zwischenergebnisse zu speichern 
  * 

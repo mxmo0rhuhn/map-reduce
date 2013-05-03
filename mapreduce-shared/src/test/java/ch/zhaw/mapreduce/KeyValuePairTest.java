@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+
 public class KeyValuePairTest {
 	
 	@Test(expected=IllegalArgumentException.class)
@@ -82,6 +83,6 @@ public class KeyValuePairTest {
 	@Test
 	public void shouldShowKeyAndValue() {
 		KeyValuePair<String, String> kvp = new KeyValuePair<String, String>("key", "value");
-		assertEquals("key=value", kvp.toString());
+		assertEquals("key = value", kvp.toString());
 	}
 }

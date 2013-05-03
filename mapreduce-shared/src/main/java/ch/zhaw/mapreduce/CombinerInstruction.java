@@ -1,6 +1,3 @@
-/**
- * 
- */
 package ch.zhaw.mapreduce;
 
 import java.util.Iterator;

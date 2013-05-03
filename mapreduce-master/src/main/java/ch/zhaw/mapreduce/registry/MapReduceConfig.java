@@ -5,11 +5,9 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import ch.zhaw.mapreduce.Master;
-import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Shuffler;
 import ch.zhaw.mapreduce.WorkerTaskFactory;
-import ch.zhaw.mapreduce.impl.FilePersistence;
 import ch.zhaw.mapreduce.impl.InMemoryShuffler;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
 import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
