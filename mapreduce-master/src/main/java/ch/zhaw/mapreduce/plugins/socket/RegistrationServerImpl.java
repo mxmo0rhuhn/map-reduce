@@ -25,10 +25,10 @@ public class RegistrationServerImpl implements RegistrationServer {
 	}
 
 	@Override
-	public void register(ClientCallback callback) {
-		LOG.info("New Worker: " + callback.getIp());
-		callback.helloslave();
-		Worker worker = this.factory.createSocketWorker(callback);
+	public void register(SocketAgent agent) {
+		LOG.info("New Worker: " + agent.getIp());
+		agent.helloslave();
+		Worker worker = this.factory.createSocketWorker(agent);
 		this.pool.donateWorker(worker);
 	}
 }

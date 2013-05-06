@@ -19,16 +19,16 @@ public class SocketConfigTest {
 	public JUnitRuleMockery mockery = new JUnitRuleMockery();
 	
 	@Mock
-	private ClientCallback callback;
+	private SocketAgent agent;
 	
 	@Test
 	public void shouldCreateSocketTask() {
 		Injector injector = Guice.createInjector(new SocketServerConfig(), new MapReduceConfig());
-		Worker worker = injector.getInstance(SocketWorkerFactory.class).createSocketWorker(callback);
+		Worker worker = injector.getInstance(SocketWorkerFactory.class).createSocketWorker(agent);
 		assertNotNull(worker);
 		assertTrue(worker instanceof SocketWorker);
 		SocketWorker sworker = (SocketWorker)worker;
-		assertSame(callback, sworker.getCallback());
+		assertSame(agent, sworker.getSocketAgent());
 	}
 
 }

@@ -37,7 +37,7 @@ public class SocketServerConfig extends AbstractModule {
 		bind(ServerPluginPartNameMeBetter.class);
 		bind(Persistence.class).to(FilePersistence.class);
 
-		bind(String.class).annotatedWith(Names.named("filepersistence.directory")).toInstance(System.getProperty("java.io.tmpdir") + "/mapred/filepers/");
+		bind(String.class).annotatedWith(Names.named("filepersistence.directory")).toInstance(System.getProperty("java.io.tmpdir") + "/socket/filepers/");
 		bind(String.class).annotatedWith(Names.named("filepersistence.ending")).toInstance(".ser");
 
 		install(new FactoryModuleBuilder().implement(Worker.class, SocketWorker.class).build(SocketWorkerFactory.class));

@@ -25,11 +25,18 @@ public class SocketClientStarter {
 	
 	public static void main(String[] args) throws Exception {
 		String clientIp = MapReduceUtil.getLocalIp();
-		Injector injector = Guice.createInjector(new SocketClientConfig(args[0], Integer.parseInt(args[1])));
+		String masterip = args[0];
+		int masterport = Integer.parseInt(args[1]);
+		int nworker = args.length == 3 ? Integer.parseInt(args[2]) : Runtime.getRuntime().availableProcessors() + 1;
+		
+		Injector injector = Guice.createInjector(new SocketClientConfig(masterip, masterport));
 		SocketAgentFactory saFactory = injector.getInstance(SocketAgentFactory.class);
 		binder = injector.getInstance(SocketClientBinder.class);
-		binder.donateWorker(saFactory.createSocketAgent(clientIp));
-		binder.donateWorker(saFactory.createSocketAgent(clientIp));
+		
+		for (int i = 0; i < nworker; i++) {
+			binder.registerAgent(saFactory.createSocketAgent(clientIp));
+		}
+		System.out.println("we're done");
 	}
 
 }

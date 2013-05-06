@@ -19,7 +19,11 @@ public class TestSocketServer {
 		server.bind();
 
 		Pool p = injector.getInstance(Pool.class);
-		p.enqueueWork(new MapWorkerTask("myMapReduceId", "myTaskId", new TestMapInstruction(), null, "value"));
+		
+		for (int i = 0; i < 1000; i++) {
+			MapWorkerTask mapTask = new MapWorkerTask("myMapReduceId", "myTaskId"+i, new TestMapInstruction(), null, "value"+i);
+			p.enqueueWork(mapTask);
+		}
 	}
 
 }
@@ -30,10 +34,8 @@ class TestMapInstruction implements MapInstruction {
 	private static final long serialVersionUID = -5951237460480827687L;
 
 	@Override
-	public void map(MapEmitter emitter, String toDo) {
-		System.out.println("Entering map method");
-		emitter.emitIntermediateMapResult("key", toDo);
-		System.out.println("Leaving map method");
+	public void map(MapEmitter emitter, String input) {
+		emitter.emitIntermediateMapResult("key", input);
 	}
 
 }

@@ -182,13 +182,30 @@ public class FilePersistence implements Persistence {
 			}
 		}
 	}
-
+	
 	/**
-	 * TODO warum fehlt das??
+	 * {@inheritDoc}
 	 */
 	@Override
-	public void replaceMap(String mrUuid, String inputUuid, List<KeyValuePair> afterCombining) {
-		throw new UnsupportedOperationException();
+	public void replaceMap(String mrUuid, String inputUuid, List<KeyValuePair> afterCombining)
+			throws IllegalArgumentException {
+		File f = createFile(mrUuid, inputUuid);
+
+		ObjectOutputStream oos = null;
+		try {
+			oos = new ObjectOutputStream(new FileOutputStream(f));
+			oos.writeObject(afterCombining);
+			logger.log(Level.FINEST, "Written to storage file " + f.getAbsolutePath());
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Failed to write to storage file " + f.getAbsolutePath(), e);
+		} finally {
+			if (oos != null) {
+				try {
+					oos.close();
+				} catch (Exception ignore) {
+				}
+			}
+		}
 	}
 
 	/**
@@ -203,4 +220,5 @@ public class FilePersistence implements Persistence {
 			logger.severe("Failed to delete " + file.getAbsolutePath());
 		}
 	}
+
 }

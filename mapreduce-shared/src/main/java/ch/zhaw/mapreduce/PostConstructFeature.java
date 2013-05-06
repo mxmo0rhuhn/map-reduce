@@ -43,7 +43,7 @@ public class PostConstructFeature implements TypeListener {
 					try {
 						m.invoke(injectee);
 					} catch (Exception e) {
-						throw newException(m, injectee);
+						throw newException(m, injectee, e);
 					}
 				}
 			}
@@ -67,9 +67,9 @@ public class PostConstructFeature implements TypeListener {
 	/**
 	 * Erstellt eine neue RuntimeExcetpiton für eine spezifizierte Methode.
 	 */
-	private static RuntimeException newException(Method m, Object o) {
+	private static RuntimeException newException(Method m, Object o, Exception cause) {
 		String msg = "Failed to invoke PostConstruct " + m.getName() + " on " + o.getClass().getName();
-		return new RuntimeException(msg);
+		return new RuntimeException(msg, cause);
 	}
 
 }

@@ -25,7 +25,7 @@ public class SocketRegistrationConnectionTest {
 	private RegistrationServer innerRegServer;
 
 	@Mock
-	private ClientCallback innerClientCallback;
+	private SocketAgent innerAgent;
 
 	private final String name = "regServerName";
 
@@ -40,10 +40,10 @@ public class SocketRegistrationConnectionTest {
 		client.bind();
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(innerRegServer).register(with(aNonNull(ClientCallback.class)));
+				oneOf(innerRegServer).register(with(aNonNull(SocketAgent.class)));
 			}
 		});
-		client.donateWorker(new TestClientCallback());
+		client.registerAgent(new TestSocketAgent());
 	}
 	
 }
@@ -58,8 +58,8 @@ class RegistrationServerMockWrapper implements RegistrationServer {
 	}
 
 	@Override
-	public void register(ClientCallback clientCallback) {
-		this.mock.register(clientCallback);
+	public void register(SocketAgent agent) {
+		this.mock.register(agent);
 	}
 
 }

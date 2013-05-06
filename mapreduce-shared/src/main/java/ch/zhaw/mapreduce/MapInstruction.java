@@ -18,8 +18,8 @@ public interface MapInstruction extends Serializable {
 	 * @param emitter
 	 *            das runtime Environment einer jede MapInstruction. Aus ihm können verschiedene Informationen bezogen werden
 	 *            und es können KeyValue-Pairs gespeichert werden.
-	 * @param toDo
+	 * @param input
 	 *            ein Input als String dieser muss in irgendeiner Art in Key Value Pairs umgewandelt werden.
 	 */
-	void map(MapEmitter emitter, String toDo);
+	void map(MapEmitter emitter, String input);
 }

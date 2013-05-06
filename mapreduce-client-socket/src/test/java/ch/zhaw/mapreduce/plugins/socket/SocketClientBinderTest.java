@@ -20,7 +20,7 @@ public class SocketClientBinderTest {
 	private RegistrationServer boundObject;
 	
 	@Mock
-	private ClientCallback callback;
+	private SocketAgent agent;
 	
 	private final String mastername = "mastername";
 
@@ -49,10 +49,10 @@ public class SocketClientBinderTest {
 		SocketClientBinder binder = new SocketClientBinder(lookup, mastername);
 		this.mockery.checking(new Expectations() {{ 
 			oneOf(lookup).lookup(mastername); will(returnValue(boundObject));
-			oneOf(boundObject).register(callback);
+			oneOf(boundObject).register(agent);
 		}});
 		binder.bind();
-		binder.donateWorker(callback);
+		binder.registerAgent(agent);
 	}
 	
 }

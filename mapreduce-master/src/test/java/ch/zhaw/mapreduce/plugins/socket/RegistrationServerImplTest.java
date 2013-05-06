@@ -19,7 +19,7 @@ public class RegistrationServerImplTest {
 	private SocketWorkerFactory swFactory;
 	
 	@Mock
-	private ClientCallback callback;
+	private SocketAgent agent;
 	
 	@Test
 	public void shouldAcknowledgeAndCreateNewWorker() {
@@ -27,11 +27,11 @@ public class RegistrationServerImplTest {
 		p.init();
 		RegistrationServerImpl reg = new RegistrationServerImpl(p, swFactory);
 		this.mockery.checking(new Expectations() {{ 
-			oneOf(callback).getIp();
-			oneOf(callback).helloslave();
-			oneOf(swFactory).createSocketWorker(callback);
+			oneOf(agent).getIp();
+			oneOf(agent).helloslave();
+			oneOf(swFactory).createSocketWorker(agent);
 		}});
-		reg.register(callback);
+		reg.register(agent);
 	}
 
 }

@@ -34,7 +34,7 @@ public class SocketWorker implements Worker {
 	private final Map<String, Future<Void>> runningTasks = Collections
 			.synchronizedMap(new WeakHashMap<String, Future<Void>>());
 
-	private final ClientCallback callback;
+	private final SocketAgent agent;
 
 	private final ExecutorService exec;
 
@@ -43,9 +43,9 @@ public class SocketWorker implements Worker {
 	private final Pool pool;
 
 	@Inject
-	SocketWorker(@Assisted ClientCallback callback, @Named("socket.workerexecutorservice") ExecutorService exec,
+	SocketWorker(@Assisted SocketAgent agent, @Named("socket.workerexecutorservice") ExecutorService exec,
 			Persistence persistence, Pool pool) {
-		this.callback = callback;
+		this.agent = agent;
 		this.exec = exec;
 		this.persistence = persistence;
 		this.pool = pool;
@@ -71,7 +71,7 @@ public class SocketWorker implements Worker {
 
 			@Override
 			public Void call() throws Exception {
-				Object result = callback.runTask(task);
+				Object result = agent.runTask(task);
 				if (result == null) {
 					LOG.severe("Got no result from Client");
 					task.failed();
@@ -98,6 +98,7 @@ public class SocketWorker implements Worker {
 				else {
 					throw new IllegalStateException("Task muss entweder Map oder Reduce sein");
 				}
+				pool.workerIsFinished(SocketWorker.this);
 				return null;
 			}
 		});
@@ -154,8 +155,8 @@ public class SocketWorker implements Worker {
 		}
 	}
 
-	ClientCallback getCallback() {
-		return this.callback;
+	SocketAgent getSocketAgent() {
+		return this.agent;
 	}
 
 }
