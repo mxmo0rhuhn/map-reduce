@@ -55,10 +55,6 @@
                         <artifactId>jmock-junit4</artifactId>
                         <scope>test</scope>
                 </dependency>
-                <dependency>
-                        <groupId>commons-validator</groupId>
-                        <artifactId>commons-validator</artifactId>
-                </dependency>
         </dependencies>
         <repositories>
                 <repository>
