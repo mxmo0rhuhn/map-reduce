@@ -45,7 +45,7 @@ public class SocketRegistrationConnectionTest {
 		});
 		client.invoke(new TestClientCallback());
 	}
-
+	
 }
 
 @SimonRemote(RegistrationServer.class)
