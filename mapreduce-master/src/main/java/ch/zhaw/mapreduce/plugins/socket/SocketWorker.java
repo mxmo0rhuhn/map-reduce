@@ -2,15 +2,32 @@ package ch.zhaw.mapreduce.plugins.socket;
 
 import java.util.List;
 
+import javax.inject.Inject;
+
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
+
+import com.google.inject.assistedinject.Assisted;
 
 /**
  * @author Max
  *
  */
 public class SocketWorker implements Worker {
+	
+	private final String ip;
+	
+	private final int port;
+	
+	private final ClientCallback callbak;
+	
+	@Inject
+	SocketWorker(@Assisted String ip, @Assisted int port, @Assisted ClientCallback callback) {
+		this.ip = ip;
+		this.port = port;
+		this.callbak = callback;
+	}
 
 	/** 
 	 * Verbindet sich über IP & Port mit Agent, sendet Instruktionen und Input. 
@@ -67,6 +84,18 @@ public class SocketWorker implements Worker {
 	public void stopCurrentTask(String mapReduceUUID, String taskUUID) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	String getIp() {
+		return this.ip;
+	}
+	
+	int getPort() {
+		return this.port;
+	}
+	
+	ClientCallback getCallback() {
+		return this.callbak;
 	}
 
 }

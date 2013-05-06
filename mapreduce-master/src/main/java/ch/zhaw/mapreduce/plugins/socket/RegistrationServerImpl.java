@@ -5,6 +5,7 @@ import java.util.logging.Logger;
 import javax.inject.Inject;
 
 import ch.zhaw.mapreduce.Pool;
+import ch.zhaw.mapreduce.Worker;
 import de.root1.simon.annotation.SimonRemote;
 
 
@@ -15,17 +16,20 @@ public class RegistrationServerImpl implements RegistrationServer {
 	
 	private final Pool pool;
 	
+	private final SocketWorkerFactory factory;
+	
 	@Inject
-	public RegistrationServerImpl(Pool pool) {
+	public RegistrationServerImpl(Pool pool, SocketWorkerFactory factory) {
 		this.pool = pool;
+		this.factory = factory;
 	}
 
 	@Override
-	public void register(String ip, int port, ClientCallback clientCallback) {
+	public void register(String ip, int port, ClientCallback callback) {
 		LOG.info("New Worker: " + ip + ":" + port);
-		// TODO erstelle socket worker 
-		// adde zu pool
-		clientCallback.acknowledge();
+		callback.acknowledge();
+		Worker worker = this.factory.createSocketWorker(ip, port, callback);
+		this.pool.donateWorker(worker);
 	}
 
 
