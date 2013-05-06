@@ -1,15 +1,11 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
-import java.io.Serializable;
-
 import org.jmock.Expectations;
 import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.jmock.lib.concurrent.Synchroniser;
 import org.junit.Rule;
 import org.junit.Test;
-
-import ch.zhaw.mapreduce.WorkerTask;
 
 import de.root1.simon.Lookup;
 import de.root1.simon.Registry;
@@ -47,7 +43,7 @@ public class SocketRegistrationConnectionTest {
 				oneOf(innerRegServer).register(with(aNonNull(ClientCallback.class)));
 			}
 		});
-		client.invoke(new ClientCallbackTest());
+		client.invoke(new TestClientCallback());
 	}
 
 }
@@ -66,26 +62,4 @@ class RegistrationServerMockWrapper implements RegistrationServer {
 		this.mock.register(clientCallback);
 	}
 
-}
-
-class ClientCallbackTest implements ClientCallback, Serializable {
-
-	private static final long serialVersionUID = 1700918334639412558L;
-
-	@Override
-	public void helloslave() {
-		System.out.println("hello, master");
-	}
-
-	@Override
-	public Object runTask(WorkerTask arg0) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public String getIp() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }
