@@ -18,5 +18,12 @@ public class SocketClientConfigTest {
 		assertEquals(7402, l.getServerPort());
 		assertEquals("123.234.123.234", l.getServerAddress().getHostAddress().toString());
 	}
+	
+	@Test
+	public void shouldCreateSocketAgentsWithSpecifiedIp() {
+		Injector injector = Guice.createInjector(new SocketClientConfig());
+		SocketAgent sa = injector.getInstance(SocketAgentFactory.class).createSocketAgent("123.123.234.12");
+		assertEquals("123.123.234.12", sa.getIp());
+	}
 
 }

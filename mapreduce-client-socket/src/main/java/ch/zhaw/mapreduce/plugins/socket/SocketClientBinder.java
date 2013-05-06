@@ -1,5 +1,6 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -19,11 +20,12 @@ public class SocketClientBinder {
 		this.masterRegistratorName = masterRegistratorName;
 	}
 
+	@PostConstruct
 	public void bind() throws Exception {
 		this.regServer = (RegistrationServer) this.lookup.lookup(masterRegistratorName);
 	}
 	
-	public void invoke(ClientCallback cb) {
+	public void donateWorker(ClientCallback cb) {
 		this.regServer.register(cb);
 	}
 

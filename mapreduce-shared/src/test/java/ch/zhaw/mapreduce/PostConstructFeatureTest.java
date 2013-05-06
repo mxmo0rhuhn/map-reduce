@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce.registry;
+package ch.zhaw.mapreduce;
 
 import static org.junit.Assert.assertTrue;
 

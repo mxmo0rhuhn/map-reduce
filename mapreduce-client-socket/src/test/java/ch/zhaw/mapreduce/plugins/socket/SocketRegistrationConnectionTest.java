@@ -43,7 +43,7 @@ public class SocketRegistrationConnectionTest {
 				oneOf(innerRegServer).register(with(aNonNull(ClientCallback.class)));
 			}
 		});
-		client.invoke(new TestClientCallback());
+		client.donateWorker(new TestClientCallback());
 	}
 	
 }

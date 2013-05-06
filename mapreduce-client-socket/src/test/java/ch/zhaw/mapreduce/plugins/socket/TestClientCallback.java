@@ -2,7 +2,9 @@ package ch.zhaw.mapreduce.plugins.socket;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 
+import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.WorkerTask;
 import de.root1.simon.annotation.SimonRemote;
 
@@ -19,7 +21,7 @@ public class TestClientCallback implements ClientCallback {
 	@Override
 	public Object runTask(WorkerTask task) {
 		System.out.println("Run Task: " + task.getMapReduceTaskUUID() + " - " + task.getUUID());
-		return null;
+		return Arrays.asList(new KeyValuePair[]{new KeyValuePair("key1", "val1")});
 	}
 
 	@Override
@@ -27,7 +29,6 @@ public class TestClientCallback implements ClientCallback {
 		try {
 			return InetAddress.getLocalHost().toString();
 		} catch (UnknownHostException e) {
-			e.printStackTrace();
 			return "NOIP";
 		}
 	}

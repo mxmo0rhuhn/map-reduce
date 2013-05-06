@@ -52,7 +52,7 @@ public class SocketClientBinderTest {
 			oneOf(boundObject).register(callback);
 		}});
 		binder.bind();
-		binder.invoke(callback);
+		binder.donateWorker(callback);
 	}
 	
 }

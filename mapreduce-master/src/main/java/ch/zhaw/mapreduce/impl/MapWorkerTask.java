@@ -12,7 +12,6 @@ import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.Worker;
-import ch.zhaw.mapreduce.WorkerTask;
 import ch.zhaw.mapreduce.registry.WorkerTaskUUID;
 
 import com.google.inject.assistedinject.Assisted;
@@ -24,9 +23,12 @@ import com.google.inject.assistedinject.Assisted;
  */
 public class MapWorkerTask extends AbstractWorkerTask {
 
-	private Logger logger = Logger.getLogger(MapWorkerTask.class.getName());
+	private static final long serialVersionUID = -6784218417643187180L;
 
-	private volatile Worker myWorker;
+	private static final Logger LOG = Logger.getLogger(MapWorkerTask.class.getName());
+
+	/** transient weil wir ihn nicht auf den client propagieren wollen */
+	private transient volatile Worker worker;
 
 	/** Aufgabe, die der Task derzeit ausführt */
 	private final MapInstruction mapInstruction;
@@ -35,25 +37,25 @@ public class MapWorkerTask extends AbstractWorkerTask {
 	private final CombinerInstruction combinerInstruction;
 
 	/** Eine eindeutige ID die jeder Map Reduce Task besitzt */
-	private final String mapReduceTaskUID;
+	private final String mapReduceTaskUuid;
 
 	/** Die derzeit zu bearbeitenden Daten */
-	private final String toDo;
+	private final String input;
 
 	/** Die eindeutihe ID die jeder input besitzt */
-	private final String workerTaskUuid;
+	private final String taskUuid;
 
 	@Inject
 	public MapWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUUID,
-			@WorkerTaskUUID String taskUUID, 
+			@WorkerTaskUUID String taskUuid, 
 			@Assisted MapInstruction mapInstruction,
 			@Assisted @Nullable CombinerInstruction combinerInstruction,
 			@Assisted("input") String input) {
-		this.mapReduceTaskUID = mapReduceTaskUUID;
+		this.mapReduceTaskUuid = mapReduceTaskUUID;
 		this.mapInstruction = mapInstruction;
 		this.combinerInstruction = combinerInstruction;
-		this.workerTaskUuid = taskUUID;
-		this.toDo = input;
+		this.taskUuid = taskUuid;
+		this.input = input;
 	}
 
 	/** {@inheritDoc} */
@@ -62,7 +64,7 @@ public class MapWorkerTask extends AbstractWorkerTask {
 		started();
 		try {
 			// Mappen
-			this.mapInstruction.map(ctx, toDo);
+			this.mapInstruction.map(ctx, input);
 
 			// Alle Ergebnisse verdichten. Die Ergebnisse aus der derzeitigen Worker sollen
 			// einbezogen werden.
@@ -74,9 +76,9 @@ public class MapWorkerTask extends AbstractWorkerTask {
 			}
 			completed();
 		} catch (Exception e) {
-			logger.log(Level.WARNING, "State: FAILED", e);
+			LOG.log(Level.WARNING, "Instruction threw Exception", e);
 			failed();
-			this.myWorker.cleanSpecificResult(mapReduceTaskUID, workerTaskUuid);
+			this.worker.cleanSpecificResult(mapReduceTaskUuid, taskUuid);
 		}
 	}
 
@@ -85,7 +87,7 @@ public class MapWorkerTask extends AbstractWorkerTask {
 	 */
 	@Override
 	public String getUUID() {
-		return workerTaskUuid;
+		return taskUuid;
 	}
 
 	/**
@@ -111,32 +113,32 @@ public class MapWorkerTask extends AbstractWorkerTask {
 	 */
 	@Override
 	public String getMapReduceTaskUUID() {
-		return this.mapReduceTaskUID;
+		return this.mapReduceTaskUuid;
 	}
 
 	@Override
 	public void setWorker(Worker worker) {
-		this.myWorker = worker;
+		this.worker = worker;
 	}
 
 	@Override
 	public Worker getWorker() {
-		return myWorker;
+		return worker;
 	}
 
 	public List<KeyValuePair> getResults() {
-		return myWorker.getMapResult(mapReduceTaskUID, workerTaskUuid);
+		return worker.getMapResult(mapReduceTaskUuid, taskUuid);
 	}
 
 	@Override
 	public String getInput() {
-		return this.toDo;
+		return this.input;
 	}
 
 	@Override
 	public void abort() {
 		aborted();
-		this.myWorker.stopCurrentTask(mapReduceTaskUID, workerTaskUuid);
+		this.worker.stopCurrentTask(mapReduceTaskUuid, taskUuid);
 	}
 
 }
