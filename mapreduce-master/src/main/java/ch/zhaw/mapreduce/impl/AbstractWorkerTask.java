@@ -10,7 +10,7 @@ import ch.zhaw.mapreduce.WorkerTask;
  * @author Reto Hablützel (rethab)
  * 
  */
-public abstract class AbstractWorkerTask implements WorkerTask {
+abstract class AbstractWorkerTask implements WorkerTask {
 
 	private static final Logger LOG = Logger.getLogger(AbstractWorkerTask.class.getName());
 
