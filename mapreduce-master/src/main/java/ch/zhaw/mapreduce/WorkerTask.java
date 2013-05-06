@@ -80,4 +80,12 @@ public interface WorkerTask {
 	 * Task wurde dem Pool uebergeben
 	 */
 	void enqueued();
+
+	void failed();
+
+	void started();
+
+	void completed();
+
+	void aborted();
 }

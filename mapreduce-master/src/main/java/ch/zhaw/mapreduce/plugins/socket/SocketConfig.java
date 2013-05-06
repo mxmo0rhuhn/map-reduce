@@ -1,5 +1,8 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import ch.zhaw.mapreduce.Worker;
 
 import com.google.inject.AbstractModule;
@@ -16,6 +19,7 @@ public class SocketConfig extends AbstractModule {
 		bind(RegistrationServer.class).to(RegistrationServerImpl.class);
 		bind(Integer.class).annotatedWith(Names.named("socket.masterpoolsize")).toInstance(1); // offizieller SIMON IANA
 		bind(String.class).annotatedWith(Names.named("socket.mastername")).toInstance("MapReduceSocketMaster");
+		bind(ExecutorService.class).annotatedWith(Names.named("socket.workerexecutorservice")).toInstance(Executors.newSingleThreadExecutor());
 		
 		bind(ServerPluginPartNameMeBetter.class);
 		

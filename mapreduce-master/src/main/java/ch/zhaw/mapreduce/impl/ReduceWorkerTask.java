@@ -10,7 +10,6 @@ import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.Worker;
-import ch.zhaw.mapreduce.WorkerTask;
 import ch.zhaw.mapreduce.registry.WorkerTaskUUID;
 
 import com.google.inject.assistedinject.Assisted;
@@ -21,7 +20,7 @@ import com.google.inject.assistedinject.Assisted;
  * @author Reto
  * 
  */
-public class ReduceWorkerTask implements WorkerTask {
+public class ReduceWorkerTask extends AbstractWorkerTask {
 
 	private static final Logger LOG = Logger.getLogger(ReduceWorkerTask.class.getName());
 
@@ -48,11 +47,6 @@ public class ReduceWorkerTask implements WorkerTask {
 
 	private final String workerTaskUuid;
 
-	/**
-	 * Der momentane Status
-	 */
-	private volatile State curState = State.INITIATED;
-
 	@Inject
 	public ReduceWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUUID,
 			@Assisted ReduceInstruction reduceInstruction, @Assisted("key") String key,
@@ -67,24 +61,16 @@ public class ReduceWorkerTask implements WorkerTask {
 	/** {@inheritDoc} */
 	@Override
 	public void runTask(Context ctx) {
-		this.curState = State.INPROGRESS;
-		LOG.finest("State: INPROGRESS");
+		started();
 
 		try {
 			this.reduceInstruction.reduce(ctx, key, input.iterator());
-			this.curState = State.COMPLETED;
-			LOG.finest("State: COMPLETED");
+			completed();
 		} catch (Exception e) {
-			LOG.log(Level.WARNING, "State: FAILED", e);
-			this.curState = State.FAILED;
+			LOG.log(Level.WARNING, "Instruction threw Exception", e);
+			failed();
 			this.myWorker.cleanSpecificResult(mapReduceTaskUUID, workerTaskUuid);
 		}
-	}
-
-	/** {@inheritDoc} */
-	@Override
-	public State getCurrentState() {
-		return this.curState;
 	}
 
 	/** {@inheritDoc} */
@@ -132,16 +118,7 @@ public class ReduceWorkerTask implements WorkerTask {
 	@Override
 	public void abort() {
 		this.myWorker.stopCurrentTask(mapReduceTaskUUID, workerTaskUuid);
-		this.curState = State.ABORTED;
+		aborted();
 	}
 
-	@Override
-	public void finished() {
-		this.curState = State.COMPLETED;
-	}
-
-	@Override
-	public void enqueued() {
-		this.curState = State.ENQUEUED;
-	}
 }

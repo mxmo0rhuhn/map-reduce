@@ -22,7 +22,7 @@ import com.google.inject.assistedinject.Assisted;
  * 
  * @author Max
  */
-public class MapWorkerTask implements WorkerTask {
+public class MapWorkerTask extends AbstractWorkerTask {
 
 	private Logger logger = Logger.getLogger(MapWorkerTask.class.getName());
 
@@ -43,9 +43,6 @@ public class MapWorkerTask implements WorkerTask {
 	/** Die eindeutihe ID die jeder input besitzt */
 	private final String workerTaskUuid;
 
-	/** Der Zustand in dem sich der Worker befindet */
-	private volatile State currentState = State.INITIATED;
-
 	@Inject
 	public MapWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUUID,
 			@WorkerTaskUUID String taskUUID, 
@@ -59,19 +56,10 @@ public class MapWorkerTask implements WorkerTask {
 		this.toDo = input;
 	}
 
-	/**
-	 * {@inheritDoc} Diese Angabe ist optimistisch. Sie kann veraltet sein.
-	 */
-	@Override
-	public State getCurrentState() {
-		return this.currentState;
-	}
-
 	/** {@inheritDoc} */
 	@Override
 	public void runTask(Context ctx) {
-		this.currentState = State.INPROGRESS;
-		logger.finest("State: INPROGRESS");
+		started();
 		try {
 			// Mappen
 			this.mapInstruction.map(ctx, toDo);
@@ -84,12 +72,10 @@ public class MapWorkerTask implements WorkerTask {
 						.combine(beforeCombining.iterator());
 				ctx.replaceMapResult(afterCombining);
 			}
-			this.currentState = State.COMPLETED;
-			logger.finest("State: COMPLETED");
-			
+			completed();
 		} catch (Exception e) {
 			logger.log(Level.WARNING, "State: FAILED", e);
-			this.currentState = State.FAILED;
+			failed();
 			this.myWorker.cleanSpecificResult(mapReduceTaskUID, workerTaskUuid);
 		}
 	}
@@ -149,17 +135,8 @@ public class MapWorkerTask implements WorkerTask {
 
 	@Override
 	public void abort() {
+		aborted();
 		this.myWorker.stopCurrentTask(mapReduceTaskUID, workerTaskUuid);
-		this.currentState = State.ABORTED;
 	}
 
-	@Override
-	public void finished() {
-		this.currentState = State.COMPLETED;
-	}
-
-	@Override
-	public void enqueued() {
-		this.currentState = State.ENQUEUED;
-	}
 }
