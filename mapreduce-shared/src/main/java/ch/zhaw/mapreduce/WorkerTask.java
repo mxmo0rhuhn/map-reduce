@@ -72,11 +72,6 @@ public interface WorkerTask {
 	void abort();
 	
 	/**
-	 * Task ist fertiggestellt. Resultate sind zur Abholung bereit.
-	 */
-	void finished();
-
-	/**
 	 * Task wurde dem Pool uebergeben
 	 */
 	void enqueued();

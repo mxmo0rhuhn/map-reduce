@@ -1,8 +1,12 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
@@ -10,6 +14,7 @@ import javax.inject.Named;
 
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Persistence;
+import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
@@ -26,9 +31,8 @@ public class SocketWorker implements Worker {
 
 	private static final Logger LOG = Logger.getLogger(SocketWorker.class.getName());
 
-	private final String ip;
-
-	private final int port;
+	private final Map<String, Future<Void>> runningTasks = Collections
+			.synchronizedMap(new WeakHashMap<String, Future<Void>>());
 
 	private final ClientCallback callback;
 
@@ -36,14 +40,15 @@ public class SocketWorker implements Worker {
 
 	private final Persistence persistence;
 
+	private final Pool pool;
+
 	@Inject
-	SocketWorker(@Assisted String ip, @Assisted int port, @Assisted ClientCallback callback,
-			@Named("socket.workerexecutorservice") ExecutorService exec, Persistence persistence) {
-		this.ip = ip;
-		this.port = port;
+	SocketWorker(@Assisted ClientCallback callback, @Named("socket.workerexecutorservice") ExecutorService exec,
+			Persistence persistence, Pool pool) {
 		this.callback = callback;
 		this.exec = exec;
 		this.persistence = persistence;
+		this.pool = pool;
 	}
 
 	/**
@@ -62,13 +67,14 @@ public class SocketWorker implements Worker {
 	 */
 	@Override
 	public void executeTask(final WorkerTask task) {
-		this.exec.submit(new Callable<Void>() {
+		Future<Void> runningTask = this.exec.submit(new Callable<Void>() {
 
 			@Override
 			public Void call() throws Exception {
 				Object result = callback.runTask(task);
 				if (result == null) {
 					LOG.severe("Got no result from Client");
+					task.failed();
 				}
 				// TODO grusig
 				else if (task instanceof MapWorkerTask) {
@@ -78,7 +84,7 @@ public class SocketWorker implements Worker {
 						persistence.storeMap(task.getMapReduceTaskUUID(), task.getUUID(), (String) pair.getKey(),
 								(String) pair.getValue());
 					}
-					task.finished();
+					task.completed();
 				}
 
 				else if (task instanceof ReduceWorkerTask) {
@@ -86,69 +92,66 @@ public class SocketWorker implements Worker {
 					for (String res : redres) {
 						persistence.storeReduce(task.getMapReduceTaskUUID(), task.getUUID(), res);
 					}
-					task.finished();
+					task.completed();
 				}
-				
+
 				else {
-					LOG.severe("task muss entweder reduce oder worker sein..");
+					throw new IllegalStateException("Task muss entweder Map oder Reduce sein");
 				}
-				task.failed();
 				return null;
 			}
 		});
+		String combinedId = task.getMapReduceTaskUUID() + task.getUUID();
+		this.runningTasks.put(combinedId, runningTask);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see ch.zhaw.mapreduce.workers.Worker#getReduceResult(java.lang.String, java.lang.String)
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
-	public List<String> getReduceResult(String mapReduceTaskUID, String inputUID) {
-		// TODO Auto-generated method stub
-		return null;
+	public List<String> getReduceResult(String mapReduceTaskUuid, String inputUuid) {
+		return this.persistence.getReduce(mapReduceTaskUuid, inputUuid);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see ch.zhaw.mapreduce.workers.Worker#getMapResult(java.lang.String, java.lang.String)
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
-	public List<KeyValuePair> getMapResult(String mapReduceTaskUID, String inputUID) {
-		// TODO Auto-generated method stub
-		return null;
+	public List<KeyValuePair> getMapResult(String mapReduceTaskUuid, String inputUuid) {
+		return this.persistence.getMap(mapReduceTaskUuid, inputUuid);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see ch.zhaw.mapreduce.workers.Worker#cleanAllResults(java.lang.String)
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
 	public void cleanAllResults(String mapReduceTaskUUID) {
-		// TODO Auto-generated method stub
-
+		throw new UnsupportedOperationException("missing feature in persistence");
 	}
 
 	@Override
-	public void cleanSpecificResult(String mapReduceTaskUID, String inputUID) {
-		// TODO Auto-generated method stub
-
+	public void cleanSpecificResult(String mapReduceTaskUuid, String inputUuid) {
+		this.persistence.destroy(mapReduceTaskUuid, inputUuid);
 	}
 
 	@Override
-	public void stopCurrentTask(String mapReduceUUID, String taskUUID) {
-		// TODO Auto-generated method stub
-
-	}
-
-	String getIp() {
-		return this.ip;
-	}
-
-	int getPort() {
-		return this.port;
+	public void stopCurrentTask(String mapReduceUuid, String taskUuid) {
+		String combinedId = mapReduceUuid + taskUuid;
+		Future<Void> runningTask = this.runningTasks.get(combinedId);
+		if (runningTask != null) {
+			if (runningTask.cancel(true)) {
+				// task wurde gestoppt. worker muss zurueck in pool
+				LOG.fine("Task gestoppt");
+				this.pool.workerIsFinished(this);
+			} else {
+				// task konnte nicht gestoppt werden (typischerweise war er halt schon fertig). worker ist bereits
+				// zurueck im pool
+				LOG.fine("Task konnte nicht gestoppt werden. War schon fertig?");
+				this.persistence.destroy(mapReduceUuid, taskUuid);
+			}
+		} else {
+			LOG.info("Task nicht gefunden");
+		}
 	}
 
 	ClientCallback getCallback() {

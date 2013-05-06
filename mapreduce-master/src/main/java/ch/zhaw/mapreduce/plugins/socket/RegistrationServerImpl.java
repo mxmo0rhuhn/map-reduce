@@ -31,6 +31,4 @@ public class RegistrationServerImpl implements RegistrationServer {
 		Worker worker = this.factory.createSocketWorker(ip, port, callback);
 		this.pool.donateWorker(worker);
 	}
-
-
 }

@@ -46,12 +46,13 @@
                 </dependency>
                 <dependency>
                         <groupId>org.jmock</groupId>
-                        <artifactId>jmock-junit4</artifactId>
+                        <artifactId>jmock-legacy</artifactId>
                         <scope>test</scope>
                 </dependency>
                 <dependency>
-                        <groupId>commons-validator</groupId>
-                        <artifactId>commons-validator</artifactId>
+                        <groupId>org.jmock</groupId>
+                        <artifactId>jmock-junit4</artifactId>
+                        <scope>test</scope>
                 </dependency>
         </dependencies>
         <repositories>

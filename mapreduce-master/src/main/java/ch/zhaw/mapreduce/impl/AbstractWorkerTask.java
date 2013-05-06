@@ -26,11 +26,6 @@ abstract class AbstractWorkerTask implements WorkerTask {
 	}
 
 	@Override
-	public final void finished() {
-		setState(State.COMPLETED);
-	}
-
-	@Override
 	public final void enqueued() {
 		setState(State.ENQUEUED);
 	}

@@ -28,8 +28,6 @@ public class SocketConfigTest {
 		assertNotNull(worker);
 		assertTrue(worker instanceof SocketWorker);
 		SocketWorker sworker = (SocketWorker)worker;
-		assertEquals("123.234.123.234", sworker.getIp());
-		assertEquals(7567, sworker.getPort());
 		assertSame(callback, sworker.getCallback());
 	}
 
