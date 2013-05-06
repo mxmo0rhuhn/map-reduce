@@ -14,13 +14,23 @@ import com.google.inject.name.Names;
 import de.root1.simon.Registry;
 import de.root1.simon.Simon;
 
-public class SocketConfig extends AbstractModule {
+public class SocketServerConfig extends AbstractModule {
+	
+	private final int port;
+	
+	SocketServerConfig(int port) {
+		this.port = port;
+	}
+	
+	SocketServerConfig() {
+		this(4753); // IANA Simon port
+	}
 
 	@Override
 	protected void configure() {
+		install(new SharedSocketConfig());
 		bind(RegistrationServer.class).to(RegistrationServerImpl.class);
-		bind(Integer.class).annotatedWith(Names.named("socket.masterpoolsize")).toInstance(1); // offizieller SIMON IANA
-		bind(String.class).annotatedWith(Names.named("socket.mastername")).toInstance("MapReduceSocketMaster");
+		bind(Integer.class).annotatedWith(Names.named("socket.masterpoolsize")).toInstance(1); 
 		bind(ExecutorService.class).annotatedWith(Names.named("socket.workerexecutorservice")).toInstance(
 				Executors.newSingleThreadExecutor());
 
@@ -33,7 +43,7 @@ public class SocketConfig extends AbstractModule {
 		install(new FactoryModuleBuilder().implement(Worker.class, SocketWorker.class).build(SocketWorkerFactory.class));
 
 		try {
-			bind(Registry.class).toInstance(Simon.createRegistry(4753));
+			bind(Registry.class).toInstance(Simon.createRegistry(this.port));
 		} catch (Exception e) {
 			addError(e);
 		}

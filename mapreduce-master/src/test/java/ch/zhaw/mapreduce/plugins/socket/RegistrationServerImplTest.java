@@ -27,10 +27,11 @@ public class RegistrationServerImplTest {
 		p.init();
 		RegistrationServerImpl reg = new RegistrationServerImpl(p, swFactory);
 		this.mockery.checking(new Expectations() {{ 
-			oneOf(callback).acknowledge();
-			oneOf(swFactory).createSocketWorker("123.123.234.234", 6756, callback);
+			oneOf(callback).getIp();
+			oneOf(callback).helloslave();
+			oneOf(swFactory).createSocketWorker(callback);
 		}});
-		reg.register("123.123.234.234", 6756, callback);
+		reg.register(callback);
 	}
 
 }

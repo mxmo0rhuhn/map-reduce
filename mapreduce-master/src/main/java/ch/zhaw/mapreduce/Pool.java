@@ -121,7 +121,7 @@ public final class Pool {
 		public void run() {
 			try {
 				while (true) {
-					LOG.finest("Take Task and Worker");
+					LOG.finest("Waiting for Task and Worker");
 					WorkerTask task = taskQueue.take(); // blockiert bis ein Task da ist
 					Worker worker = availableWorkerBlockingQueue.take(); // blockiert, bis ein Worker frei ist
 					workingWorker.add(worker);
@@ -139,7 +139,7 @@ public final class Pool {
 	}
 	
 	public void computationStopped(String mapReduceTaskUUID) {
-		// TODO
+		throw new UnsupportedOperationException("implement me");
 	}
 
 	/** {@inheritDoc} */

@@ -1,5 +1,7 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
@@ -29,7 +31,7 @@ public final class ServerPluginPartNameMeBetter {
 	public void bind() throws PluginException {
 		try {
 			this.registrationRegistry.bind(this.name, registrationServer);
-			LOG.info("Registration Server started on with name " + this.name);
+			LOG.info("Registration Server started on " + localIp() + " with name " + this.name);
 		} catch (Exception e) {
 			throw new PluginException(e);
 		}
@@ -40,5 +42,15 @@ public final class ServerPluginPartNameMeBetter {
 		this.registrationRegistry.unbind(this.name);
 		this.registrationRegistry.stop();
 		LOG.info("Registration Server stopped");
+	}
+	
+	private static String localIp() {
+		// Risky: http://stackoverflow.com/questions/9481865/how-to-get-ip-address-of-our-own-system-using-java
+		try {
+			return InetAddress.getLocalHost().toString();
+		} catch (UnknownHostException e) {
+			LOG.warning("Failed to read IP: " + e.getMessage());
+			return "NOIP";
+		}
 	}
 }

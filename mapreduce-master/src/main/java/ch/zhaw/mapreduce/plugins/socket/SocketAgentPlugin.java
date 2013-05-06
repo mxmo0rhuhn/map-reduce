@@ -11,7 +11,7 @@ public class SocketAgentPlugin implements AgentPlugin {
 
 	@Override
 	public void start(Injector injector) throws PluginException {
-		Injector child = injector.createChildInjector(new SocketConfig());
+		Injector child = injector.createChildInjector(new SocketServerConfig());
 		this.binder = child.getInstance(ServerPluginPartNameMeBetter.class);
 		try {
 			this.binder.bind();

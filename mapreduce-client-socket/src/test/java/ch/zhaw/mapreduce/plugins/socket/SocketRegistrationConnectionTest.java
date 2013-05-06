@@ -9,6 +9,8 @@ import org.jmock.lib.concurrent.Synchroniser;
 import org.junit.Rule;
 import org.junit.Test;
 
+import ch.zhaw.mapreduce.WorkerTask;
+
 import de.root1.simon.Lookup;
 import de.root1.simon.Registry;
 import de.root1.simon.Simon;
@@ -42,10 +44,10 @@ public class SocketRegistrationConnectionTest {
 		client.bind();
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(innerRegServer).register(with("127.0.0.1"), with(666), with(aNonNull(ClientCallback.class)));
+				oneOf(innerRegServer).register(with(aNonNull(ClientCallback.class)));
 			}
 		});
-		client.invoke("127.0.0.1", 666, new ClientCallbackTest());
+		client.invoke(new ClientCallbackTest());
 	}
 
 }
@@ -60,8 +62,8 @@ class RegistrationServerMockWrapper implements RegistrationServer {
 	}
 
 	@Override
-	public void register(String ip, int port, ClientCallback clientCallback) {
-		this.mock.register(ip, port, clientCallback);
+	public void register(ClientCallback clientCallback) {
+		this.mock.register(clientCallback);
 	}
 
 }
@@ -71,7 +73,19 @@ class ClientCallbackTest implements ClientCallback, Serializable {
 	private static final long serialVersionUID = 1700918334639412558L;
 
 	@Override
-	public void acknowledge() {
+	public void helloslave() {
 		System.out.println("hello, master");
+	}
+
+	@Override
+	public Object runTask(WorkerTask arg0) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String getIp() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }

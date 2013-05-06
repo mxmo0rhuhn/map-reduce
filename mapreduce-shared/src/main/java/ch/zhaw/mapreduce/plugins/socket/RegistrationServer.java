@@ -7,6 +7,6 @@ package ch.zhaw.mapreduce.plugins.socket;
  */
 public interface RegistrationServer {
 	
-	public void register(String ip, int port, ClientCallback clientCallback);
+	public void register(ClientCallback clientCallback);
 
 }

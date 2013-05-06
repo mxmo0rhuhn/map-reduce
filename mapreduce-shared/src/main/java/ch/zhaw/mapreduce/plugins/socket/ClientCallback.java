@@ -1,11 +1,15 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
+import java.io.Serializable;
+
 import ch.zhaw.mapreduce.WorkerTask;
 
-public interface ClientCallback {
+public interface ClientCallback extends Serializable {
 
-	void acknowledge();
+	void helloslave();
 
 	Object runTask(WorkerTask task);
+	
+	String getIp();
 
 }

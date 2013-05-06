@@ -14,7 +14,7 @@ public class SocketClientBinder {
 	private RegistrationServer regServer;
 
 	@Inject
-	public SocketClientBinder(Lookup lookup, @Named("masterRegistratorName") String masterRegistratorName) {
+	SocketClientBinder(Lookup lookup, @Named("socket.mastername") String masterRegistratorName) {
 		this.lookup = lookup;
 		this.masterRegistratorName = masterRegistratorName;
 	}
@@ -23,8 +23,8 @@ public class SocketClientBinder {
 		this.regServer = (RegistrationServer) this.lookup.lookup(masterRegistratorName);
 	}
 	
-	public void invoke(String addr, int port, ClientCallback cb) {
-		this.regServer.register(addr, port, cb);
+	public void invoke(ClientCallback cb) {
+		this.regServer.register(cb);
 	}
 
 	public void release() {

@@ -22,7 +22,7 @@ public class SocketClientStarter {
 	}
 	
 	public static void main(String[] args) throws Exception {
-		Injector injector = Guice.createInjector(new SocketClientConfig());
+		Injector injector = Guice.createInjector(new SocketClientConfig(args[0], Integer.parseInt(args[1])));
 		binder = injector.getInstance(SocketClientBinder.class);
 	}
 

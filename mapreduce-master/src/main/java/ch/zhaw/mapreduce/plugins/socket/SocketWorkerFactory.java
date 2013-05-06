@@ -4,6 +4,6 @@ import ch.zhaw.mapreduce.Worker;
 
 public interface SocketWorkerFactory {
 
-	Worker createSocketWorker(String ip, int port, ClientCallback callback);
+	Worker createSocketWorker(ClientCallback callback);
 
 }

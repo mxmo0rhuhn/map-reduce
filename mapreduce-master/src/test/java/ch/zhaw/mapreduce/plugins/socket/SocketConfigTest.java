@@ -23,8 +23,8 @@ public class SocketConfigTest {
 	
 	@Test
 	public void shouldCreateSocketTask() {
-		Injector injector = Guice.createInjector(new SocketConfig(), new MapReduceConfig());
-		Worker worker = injector.getInstance(SocketWorkerFactory.class).createSocketWorker("123.234.123.234", 7567, callback);
+		Injector injector = Guice.createInjector(new SocketServerConfig(), new MapReduceConfig());
+		Worker worker = injector.getInstance(SocketWorkerFactory.class).createSocketWorker(callback);
 		assertNotNull(worker);
 		assertTrue(worker instanceof SocketWorker);
 		SocketWorker sworker = (SocketWorker)worker;
