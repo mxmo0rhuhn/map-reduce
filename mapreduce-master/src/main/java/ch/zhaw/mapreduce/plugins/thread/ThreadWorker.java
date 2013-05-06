@@ -72,8 +72,8 @@ public class ThreadWorker implements Worker {
 	 */
 	@Override
 	public void executeTask(final WorkerTask task) {
-		String mrUuid = task.getMapReduceTaskUUID();
-		String taskUuid = task.getUUID();
+		String mrUuid = task.getMapReduceTaskUuid();
+		String taskUuid = task.getTaskUuid();
 		final Context ctx = this.ctxFactory.createContext(mrUuid, taskUuid);
 		this.contexts.putIfAbsent(mrUuid, new ConcurrentHashMap<String, Context>());
 		ConcurrentMap<String, Context> inputs = this.contexts.get(mrUuid);

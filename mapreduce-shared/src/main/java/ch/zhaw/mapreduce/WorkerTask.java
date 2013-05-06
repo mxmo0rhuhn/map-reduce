@@ -41,14 +41,14 @@ public interface WorkerTask extends Serializable {
 	 * Die ID dieses Worker Tasks.
 	 * @return
 	 */
-	String getUUID();
+	String getTaskUuid();
 
 	/**
 	 * Liefert die MapReduceTask ID zu der dieser Task gehoert
 	 * 
 	 * @return die MapReduceTask ID zu der dieser Task gehoert
 	 */
-	String getMapReduceTaskUUID();
+	String getMapReduceTaskUuid();
 
 	/**
 	 * Weist der Aufgabe einen verarbeitenden Worker zu

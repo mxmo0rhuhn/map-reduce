@@ -11,12 +11,12 @@ import org.junit.Test;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapEmitter;
 import ch.zhaw.mapreduce.MapInstruction;
+import ch.zhaw.mapreduce.MapReduceConfig;
 import ch.zhaw.mapreduce.Master;
 import ch.zhaw.mapreduce.ReduceEmitter;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.plugins.AgentPlugin;
 import ch.zhaw.mapreduce.plugins.Loader;
-import ch.zhaw.mapreduce.registry.MapReduceConfig;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;

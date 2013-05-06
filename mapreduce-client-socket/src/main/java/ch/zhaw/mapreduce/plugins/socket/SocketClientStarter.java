@@ -36,7 +36,6 @@ public class SocketClientStarter {
 		for (int i = 0; i < nworker; i++) {
 			binder.registerAgent(saFactory.createSocketAgent(clientIp));
 		}
-		System.out.println("we're done");
 	}
 
 }

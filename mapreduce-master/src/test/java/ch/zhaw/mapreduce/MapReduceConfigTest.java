@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce.registry;
+package ch.zhaw.mapreduce;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -12,18 +12,13 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
+import javax.inject.Named;
+
 import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.junit.Rule;
 import org.junit.Test;
 
-import ch.zhaw.mapreduce.CombinerInstruction;
-import ch.zhaw.mapreduce.KeyValuePair;
-import ch.zhaw.mapreduce.MapInstruction;
-import ch.zhaw.mapreduce.Master;
-import ch.zhaw.mapreduce.Pool;
-import ch.zhaw.mapreduce.ReduceInstruction;
-import ch.zhaw.mapreduce.WorkerTaskFactory;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
 import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 
@@ -33,7 +28,7 @@ import com.google.inject.Injector;
 import com.google.inject.Provides;
 import com.google.inject.matcher.Matchers;
 
-public class RegistryTest {
+public class MapReduceConfigTest {
 
 	@Rule 
 	public JUnitRuleMockery mockery = new JUnitRuleMockery();
@@ -104,7 +99,7 @@ public class RegistryTest {
 			}
 
 			@Provides
-			@PoolExecutor
+			@Named("poolExecutor")
 			public Executor poolExec() {
 				return Executors.newSingleThreadExecutor();
 			}
@@ -153,14 +148,14 @@ public class RegistryTest {
 	public void shouldSetMapReduceUUIDToMapTask() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
 		MapWorkerTask mwt = factory.createMapWorkerTask("uuid", mapInstr, null, input);
-		assertEquals("uuid", mwt.getMapReduceTaskUUID());
+		assertEquals("uuid", mwt.getMapReduceTaskUuid());
 	}
 
 	@Test
 	public void shouldSetWorkerTaskUUIDToMapTask() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
 		MapWorkerTask mwt = factory.createMapWorkerTask("uuid", mapInstr, null, input);
-		assertNotNull(mwt.getUUID());
+		assertNotNull(mwt.getTaskUuid());
 	}
 
 	@Test
@@ -168,8 +163,8 @@ public class RegistryTest {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
 		MapWorkerTask mwt1 = factory.createMapWorkerTask("uuid", mapInstr, null, input);
 		MapWorkerTask mwt2 = factory.createMapWorkerTask("uuid", mapInstr, null, input);
-		String uuid1 = mwt1.getUUID();
-		String uuid2 = mwt2.getUUID();
+		String uuid1 = mwt1.getTaskUuid();
+		String uuid2 = mwt2.getTaskUuid();
 		assertNotNull(uuid1);
 		assertNotNull(uuid2);
 		assertFalse(uuid1.equals(uuid2));
@@ -180,7 +175,7 @@ public class RegistryTest {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
 		ReduceWorkerTask mwt = factory.createReduceWorkerTask("uuid", "key",
 				reduceInstr, toDo);
-		assertEquals("uuid", mwt.getMapReduceTaskUUID());
+		assertEquals("uuid", mwt.getMapReduceTaskUuid());
 	}
 
 	@Test
@@ -188,6 +183,6 @@ public class RegistryTest {
 		Injector injector = Guice.createInjector(new MapReduceConfig());
 		Master m1 = injector.getInstance(Master.class);
 		Master m2 = injector.getInstance(Master.class);
-		assertFalse(m1.getMapReduceTaskUUID().equals(m2.getMapReduceTaskUUID()));
+		assertFalse(m1.getMapReduceTaskUuid().equals(m2.getMapReduceTaskUuid()));
 	}
 }

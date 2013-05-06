@@ -63,9 +63,9 @@ public class SocketWorkerTest {
 		SocketWorker worker = new SocketWorker(agent, exec, persistence, p);
 		this.mockery.checking(new Expectations() {
 			{
-				atLeast(1).of(mapTask).getMapReduceTaskUUID();
+				atLeast(1).of(mapTask).getMapReduceTaskUuid();
 				will(returnValue(mrUuid));
-				atLeast(1).of(mapTask).getUUID();
+				atLeast(1).of(mapTask).getTaskUuid();
 				will(returnValue(taskUuid));
 				oneOf(agent).runTask(mapTask);
 				will(returnValue(mapResult));
@@ -84,9 +84,9 @@ public class SocketWorkerTest {
 		SocketWorker worker = new SocketWorker(agent, exec, persistence, p);
 		this.mockery.checking(new Expectations() {
 			{
-				atLeast(1).of(reduceTask).getMapReduceTaskUUID();
+				atLeast(1).of(reduceTask).getMapReduceTaskUuid();
 				will(returnValue(mrUuid));
-				atLeast(1).of(reduceTask).getUUID();
+				atLeast(1).of(reduceTask).getTaskUuid();
 				will(returnValue(taskUuid));
 				oneOf(agent).runTask(reduceTask);
 				will(returnValue(reduceResult));
@@ -108,9 +108,9 @@ public class SocketWorkerTest {
 		this.mockery.checking(new Expectations() {
 			{
 				oneOf(mapTask).setWorker(worker);
-				atLeast(1).of(mapTask).getMapReduceTaskUUID();
+				atLeast(1).of(mapTask).getMapReduceTaskUuid();
 				will(returnValue(mrUuid));
-				atLeast(1).of(mapTask).getUUID();
+				atLeast(1).of(mapTask).getTaskUuid();
 				will(returnValue(taskUuid));
 				oneOf(agent).runTask(mapTask);
 				will(returnValue(mapResult));

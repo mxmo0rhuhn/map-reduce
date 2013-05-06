@@ -1,13 +1,11 @@
-package ch.zhaw.mapreduce.registry;
+package ch.zhaw.mapreduce;
 
 import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import ch.zhaw.mapreduce.Master;
-import ch.zhaw.mapreduce.Pool;
-import ch.zhaw.mapreduce.Shuffler;
-import ch.zhaw.mapreduce.WorkerTaskFactory;
+import javax.inject.Named;
+
 import ch.zhaw.mapreduce.impl.InMemoryShuffler;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
 import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
@@ -51,20 +49,20 @@ public class MapReduceConfig extends AbstractModule {
 	}
 
 	@Provides
-	@PoolExecutor
+	@Named("poolExecutor")
 	public Executor createPoolExec() {
 		return Executors.newSingleThreadExecutor();
 	}
 	
 	@Provides
-	@MapReduceTaskUUID
-	public String getMapReduceTaskUUID() {
+	@Named("mapReduceTaskUuid")
+	public String getMapReduceTaskUuid() {
 		return UUID.randomUUID().toString();
 	}
 	
 	@Provides
-	@WorkerTaskUUID
-	public String getWorkerTaskUUID() {
+	@Named("taskUuid")
+	public String getWorkerTaskUuid() {
 		return UUID.randomUUID().toString();
 	}
 	

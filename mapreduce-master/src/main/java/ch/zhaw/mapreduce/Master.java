@@ -13,10 +13,10 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
 import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
-import ch.zhaw.mapreduce.registry.MapReduceTaskUUID;
 
 import com.google.inject.Provider;
 
@@ -44,15 +44,15 @@ public final class Master {
 	private final Provider<Shuffler> shufflerProvider;
 	
 	private final Pool pool;
-	private final String mapReduceTaskUUID;
+	private final String mapReduceTaskUuid;
 	private final WorkerTaskFactory workerTaskFactory;
 
 	@Inject
 	public Master(Pool pool, WorkerTaskFactory workerTaskFactory,
-			@MapReduceTaskUUID String mapReduceTaskUUID, Provider<Shuffler> shufflerProvider) {
+			@Named("mapReduceTaskUuid") String mapReduceTaskUuid, Provider<Shuffler> shufflerProvider) {
 		this.pool = pool;
 		this.workerTaskFactory = workerTaskFactory;
-		this.mapReduceTaskUUID = mapReduceTaskUUID;
+		this.mapReduceTaskUuid = mapReduceTaskUuid;
 		this.shufflerProvider = shufflerProvider;
 	}
 
@@ -100,7 +100,7 @@ public final class Master {
 
 		// Cleaning results from workers
 		logger.info("Cleaning results started");
-		this.pool.cleanResults(mapReduceTaskUUID);
+		this.pool.cleanResults(mapReduceTaskUuid);
 		logger.info("Cleaning results done");
 		return results;
 	}
@@ -133,7 +133,7 @@ public final class Master {
 			String todo = input.next();
 			uuidToInputMapping.put(mapTaskUuid, new KeyValuePair<String, String>(mapTaskUuid, todo));
 
-			MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapReduceTaskUUID,
+			MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapReduceTaskUuid,
 					mapInstruction, combinerInstruction, todo);
 
 			activeTasks.add(new KeyValuePair<String, WorkerTask>(mapTaskUuid, mapTask));
@@ -175,7 +175,7 @@ public final class Master {
 
 			String reduceTaskUuid = UUID.randomUUID().toString();
 			ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(
-					mapReduceTaskUUID, curInput.getKey(), reduceInstruction,
+					mapReduceTaskUuid, curInput.getKey(), reduceInstruction,
 					curInput.getValue());
 
 			activeTasks.add(new KeyValuePair<String, WorkerTask>(curInput.getKey(), reduceTask));
@@ -194,7 +194,7 @@ public final class Master {
 		Map<String, String> resultStructure = new HashMap<String, String>();
 		for (WorkerTask task : reduceResults) {
 			ReduceWorkerTask reduceTask = (ReduceWorkerTask) task;
-			for (String value : reduceTask.getResults(mapReduceTaskUUID)) {
+			for (String value : reduceTask.getResults()) {
 				resultStructure.put(reduceTask.getInput(), value);
 			}
 		}
@@ -205,8 +205,8 @@ public final class Master {
 	 * Gibt die UUID der MapReduce Aufgabe zurück
 	 * @return die UUID
 	 */
-	public String getMapReduceTaskUUID() {
-		return this.mapReduceTaskUUID;
+	public String getMapReduceTaskUuid() {
+		return this.mapReduceTaskUuid;
 	}
 
 	/**
@@ -295,7 +295,7 @@ public final class Master {
 		case MAP:
 			for (KeyValuePair<String, String> rescheduleTodo : rescheduleInput) {
 
-				MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapReduceTaskUUID,
+				MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapReduceTaskUuid,
 						mapInstruction, combinerInstruction,
 						rescheduleTodo.getValue());
 
@@ -309,7 +309,7 @@ public final class Master {
 				String reduceTaskUuid = UUID.randomUUID().toString();
 
 				ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(
-						mapReduceTaskUUID, rescheduleTodo.getKey(),
+						mapReduceTaskUuid, rescheduleTodo.getKey(),
 						reduceInstruction, rescheduleTodo.getValue());
 
 				activeWorkerTasks.add(new KeyValuePair<String, WorkerTask>(rescheduleTodo.getKey(),

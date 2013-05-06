@@ -57,7 +57,10 @@ public class SocketAgentImpl implements SocketAgent {
 	 */
 	@Override
 	public Object runTask(WorkerTask task) {
-		Context ctx = this.ctxFactory.createContext(task.getMapReduceTaskUUID(), task.getUUID());
+		String mrUuid = task.getMapReduceTaskUuid();
+		String taskUuid = task.getTaskUuid();
+		LOG.info("New Task to be Run: " + mrUuid + " " + taskUuid);
+		Context ctx = this.ctxFactory.createContext(mrUuid, taskUuid);
 		// TODO how to tell the master we've failed?
 		task.runTask(ctx);
 		List<KeyValuePair> res = ctx.getMapResult();

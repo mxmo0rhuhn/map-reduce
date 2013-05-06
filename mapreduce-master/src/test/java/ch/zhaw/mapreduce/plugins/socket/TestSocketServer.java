@@ -1,15 +1,11 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
-import ch.zhaw.mapreduce.MapEmitter;
-import ch.zhaw.mapreduce.MapInstruction;
+import ch.zhaw.mapreduce.MapReduceConfig;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
-import ch.zhaw.mapreduce.registry.MapReduceConfig;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-
-import de.root1.simon.annotation.SimonRemote;
 
 public class TestSocketServer {
 
@@ -20,22 +16,10 @@ public class TestSocketServer {
 
 		Pool p = injector.getInstance(Pool.class);
 		
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < 10; i++) {
 			MapWorkerTask mapTask = new MapWorkerTask("myMapReduceId", "myTaskId"+i, new TestMapInstruction(), null, "value"+i);
 			p.enqueueWork(mapTask);
 		}
-	}
-
-}
-
-@SimonRemote
-class TestMapInstruction implements MapInstruction {
-
-	private static final long serialVersionUID = -5951237460480827687L;
-
-	@Override
-	public void map(MapEmitter emitter, String input) {
-		emitter.emitIntermediateMapResult("key", input);
 	}
 
 }

@@ -12,9 +12,8 @@ import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
-
-import ch.zhaw.mapreduce.registry.PoolExecutor;
 
 /**
  * Implementation des Pools mit lokalen Threads auf dem jeweiligen PC
@@ -46,7 +45,7 @@ public final class Pool {
 	 * Erstellt einen neuen Pool der Aufgaben und Worker entgegen nimmt.
 	 */
 	@Inject
-	public Pool(@PoolExecutor Executor exec) {
+	public Pool(@Named("poolExecutor") Executor exec) {
 		this.workTaskAdministrator = exec;
 	}
 

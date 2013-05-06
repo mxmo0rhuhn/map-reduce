@@ -7,8 +7,8 @@ import org.junit.Test;
 
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.ContextFactory;
+import ch.zhaw.mapreduce.MapReduceConfig;
 import ch.zhaw.mapreduce.Worker;
-import ch.zhaw.mapreduce.registry.MapReduceConfig;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;

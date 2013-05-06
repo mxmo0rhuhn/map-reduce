@@ -3,7 +3,7 @@ package ch.zhaw.mapreduce;
 import java.util.Iterator;
 import java.util.Map;
 
-import ch.zhaw.mapreduce.registry.Registry;
+import com.google.inject.Guice;
 
 /**
  * Dies ist ein neuer MapReduce Task. Er ist für seine Worker der Master.
@@ -33,7 +33,7 @@ public final class MapReduceTask {
 		this.reduceInstruction = reduceInstruction;
 		this.combinerInstruction = combinerInstruction;
 
-		this.master = Registry.getComponent(Master.class);
+		this.master = Guice.createInjector(new MapReduceConfig()).getInstance(Master.class); // FIXME
 	}
 
 	public MapReduceTask(MapInstruction mapInstruction, ReduceInstruction reduceInstruction) {

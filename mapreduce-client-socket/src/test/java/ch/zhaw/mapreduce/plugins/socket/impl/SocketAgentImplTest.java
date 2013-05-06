@@ -49,8 +49,8 @@ public class SocketAgentImplTest {
 	public void shouldRunTaskWithContext() {
 		SocketAgentImpl sa = new SocketAgentImpl("123.123.234.124", ctxFactory);
 		this.mockery.checking(new Expectations() {{ 
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue(mrUuid));
-			oneOf(task).getUUID(); will(returnValue(taskUuid));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue(mrUuid));
+			oneOf(task).getTaskUuid(); will(returnValue(taskUuid));
 			oneOf(ctxFactory).createContext(mrUuid, taskUuid); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 			oneOf(ctx).getMapResult(); will(returnValue(mapResult));
@@ -62,8 +62,8 @@ public class SocketAgentImplTest {
 	public void shouldReturnMapValueIfComputed() {
 		SocketAgentImpl sa = new SocketAgentImpl("123.123.234.124", ctxFactory);
 		this.mockery.checking(new Expectations() {{ 
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue(mrUuid));
-			oneOf(task).getUUID(); will(returnValue(taskUuid));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue(mrUuid));
+			oneOf(task).getTaskUuid(); will(returnValue(taskUuid));
 			oneOf(ctxFactory).createContext(mrUuid, taskUuid); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 			oneOf(ctx).getMapResult(); will(returnValue(mapResult));
@@ -75,13 +75,19 @@ public class SocketAgentImplTest {
 	public void shouldReturnReduceValueIfComputed() {
 		SocketAgentImpl sa = new SocketAgentImpl("123.123.234.124", ctxFactory);
 		this.mockery.checking(new Expectations() {{ 
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue(mrUuid));
-			oneOf(task).getUUID(); will(returnValue(taskUuid));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue(mrUuid));
+			oneOf(task).getTaskUuid(); will(returnValue(taskUuid));
 			oneOf(ctxFactory).createContext(mrUuid, taskUuid); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 			oneOf(ctx).getMapResult(); will(returnValue(null));
 			oneOf(ctx).getReduceResult(); will(returnValue(reduceResult));
 		}});
 		assertSame(reduceResult, sa.runTask(task));
+	}
+	
+	@Test
+	public void shouldRunSmoothly() {
+		SocketAgentImpl sa = new SocketAgentImpl("123.123.234.124", ctxFactory);
+		sa.helloslave();
 	}
 }

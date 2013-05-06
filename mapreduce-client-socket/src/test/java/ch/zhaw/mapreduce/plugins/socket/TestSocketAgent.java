@@ -19,7 +19,7 @@ public class TestSocketAgent implements SocketAgent {
 
 	@Override
 	public Object runTask(WorkerTask task) {
-		System.out.println("Run Task: " + task.getMapReduceTaskUUID() + " - " + task.getUUID());
+		System.out.println("Run Task: " + task.getMapReduceTaskUuid() + " - " + task.getTaskUuid());
 		return Arrays.asList(new KeyValuePair[]{new KeyValuePair("key1", "val1")});
 	}
 

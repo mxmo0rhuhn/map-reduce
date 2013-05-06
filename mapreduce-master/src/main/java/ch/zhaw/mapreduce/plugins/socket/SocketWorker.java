@@ -81,7 +81,7 @@ public class SocketWorker implements Worker {
 					List<KeyValuePair> mapres = (List<KeyValuePair>) result;
 					// TODO grad nochmal grusig
 					for (KeyValuePair pair : mapres) {
-						persistence.storeMap(task.getMapReduceTaskUUID(), task.getUUID(), (String) pair.getKey(),
+						persistence.storeMap(task.getMapReduceTaskUuid(), task.getTaskUuid(), (String) pair.getKey(),
 								(String) pair.getValue());
 					}
 					task.completed();
@@ -90,7 +90,7 @@ public class SocketWorker implements Worker {
 				else if (task instanceof ReduceWorkerTask) {
 					List<String> redres = (List<String>) result;
 					for (String res : redres) {
-						persistence.storeReduce(task.getMapReduceTaskUUID(), task.getUUID(), res);
+						persistence.storeReduce(task.getMapReduceTaskUuid(), task.getTaskUuid(), res);
 					}
 					task.completed();
 				}
@@ -102,7 +102,7 @@ public class SocketWorker implements Worker {
 				return null;
 			}
 		});
-		String combinedId = task.getMapReduceTaskUUID() + task.getUUID();
+		String combinedId = task.getMapReduceTaskUuid() + task.getTaskUuid();
 		this.runningTasks.put(combinedId, runningTask);
 	}
 

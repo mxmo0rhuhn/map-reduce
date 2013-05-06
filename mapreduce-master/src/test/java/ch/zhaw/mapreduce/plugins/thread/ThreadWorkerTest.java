@@ -50,8 +50,8 @@ public class ThreadWorkerTest {
 		pool.init();
 		final ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		this.mockery.checking(new Expectations() {{
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("taskUuid"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("taskUuid"));
 			oneOf(ctxFactory).createContext("mrtUuid", "taskUuid"); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 			}});
@@ -69,8 +69,8 @@ public class ThreadWorkerTest {
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "1")});
 		this.mockery.checking(new Expectations() {{ 
 			// running task in order to make another context available
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("anotherMrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("unknownTaskUuid"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("anotherMrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("unknownTaskUuid"));
 			oneOf(ctxFactory).createContext("anotherMrtUuid", "unknownTaskUuid"); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 		}});
@@ -90,8 +90,8 @@ public class ThreadWorkerTest {
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "1")});
 		this.mockery.checking(new Expectations() {{ 
 			// running task in order to make another context available
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("unknownTaskUuid"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("unknownTaskUuid"));
 			oneOf(ctxFactory).createContext("mrtUuid", "unknownTaskUuid"); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 		}});
@@ -111,8 +111,8 @@ public class ThreadWorkerTest {
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "1")});
 		this.mockery.checking(new Expectations() {{ 
 			// running task in order to make another context available
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("anotherMrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("unknownTaskUuid"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("anotherMrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("unknownTaskUuid"));
 			oneOf(ctxFactory).createContext("anotherMrtUuid", "unknownTaskUuid"); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 		}});
@@ -132,8 +132,8 @@ public class ThreadWorkerTest {
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "1")});
 		this.mockery.checking(new Expectations() {{ 
 			// running task in order to make another context available
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("unknownTaskUuid"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("unknownTaskUuid"));
 			oneOf(ctxFactory).createContext("mrtUuid", "unknownTaskUuid"); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 		}});
@@ -153,8 +153,8 @@ public class ThreadWorkerTest {
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "1")});
 		this.mockery.checking(new Expectations() {{ 
 			// running task in order to make context available
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("taskUuid"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("taskUuid"));
 			oneOf(ctxFactory).createContext("mrtUuid", "taskUuid"); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 			
@@ -175,8 +175,8 @@ public class ThreadWorkerTest {
 		final List<String> result = Arrays.asList(new String[]{"hello", "world"});
 		this.mockery.checking(new Expectations() {{ 
 			// running task in order to make context available
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("taskUuid"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("taskUuid"));
 			oneOf(ctxFactory).createContext("mrtUuid", "taskUuid"); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 			
@@ -200,13 +200,13 @@ public class ThreadWorkerTest {
 		final List<KeyValuePair> result2 = Arrays.asList(new KeyValuePair[]{new KeyValuePair("key2", "val2")});
 		this.mockery.checking(new Expectations() {{ 
 			// running task in order to make context available
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("taskUuid1"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("taskUuid1"));
 			oneOf(ctxFactory).createContext("mrtUuid", "taskUuid1"); will(returnValue(ctx1));
 			oneOf(task).runTask(ctx1);
 			inSequence(events);
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("taskUuid2"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("taskUuid2"));
 			oneOf(ctxFactory).createContext("mrtUuid", "taskUuid2"); will(returnValue(ctx2));
 			oneOf(task).runTask(ctx2);
 			inSequence(events);
@@ -235,13 +235,13 @@ public class ThreadWorkerTest {
 		final List<String> result2 = Arrays.asList(new String[]{"world"});
 		this.mockery.checking(new Expectations() {{ 
 			// running task in order to make context available
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("taskUuid1"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("taskUuid1"));
 			oneOf(ctxFactory).createContext("mrtUuid", "taskUuid1"); will(returnValue(ctx1));
 			oneOf(task).runTask(ctx1);
 			inSequence(events);
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("taskUuid2"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("taskUuid2"));
 			oneOf(ctxFactory).createContext("mrtUuid", "taskUuid2"); will(returnValue(ctx2));
 			oneOf(task).runTask(ctx2);
 			inSequence(events);
@@ -267,8 +267,8 @@ public class ThreadWorkerTest {
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("key", "val")});
 		this.mockery.checking(new Expectations() {{ 
 			// running task in order to make context available
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("taskUuid"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("taskUuid"));
 			oneOf(ctxFactory).createContext("mrtUuid", "taskUuid"); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 			inSequence(events);
@@ -292,8 +292,8 @@ public class ThreadWorkerTest {
 		final List<String> result = Arrays.asList(new String[]{"hello"});
 		this.mockery.checking(new Expectations() {{ 
 			// running task in order to make context available
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("taskUuid"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("taskUuid"));
 			oneOf(ctxFactory).createContext("mrtUuid", "taskUuid"); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 			inSequence(events);
@@ -317,8 +317,8 @@ public class ThreadWorkerTest {
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("key", "val")});
 		this.mockery.checking(new Expectations() {{ 
 			// running task in order to make context available
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("taskUuid"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("taskUuid"));
 			oneOf(ctxFactory).createContext("mrtUuid", "taskUuid"); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 			inSequence(events);
@@ -344,8 +344,8 @@ public class ThreadWorkerTest {
 		final List<String> result = Arrays.asList(new String[]{"hello"});
 		this.mockery.checking(new Expectations() {{ 
 			// running task in order to make context available
-			oneOf(task).getMapReduceTaskUUID(); will(returnValue("mrtUuid"));
-			oneOf(task).getUUID(); will(returnValue("taskUuid"));
+			oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrtUuid"));
+			oneOf(task).getTaskUuid(); will(returnValue("taskUuid"));
 			oneOf(ctxFactory).createContext("mrtUuid", "taskUuid"); will(returnValue(ctx));
 			oneOf(task).runTask(ctx);
 			inSequence(events);

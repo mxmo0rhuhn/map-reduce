@@ -28,10 +28,10 @@ public class WordFrequencyCombinerInstruction implements CombinerInstruction {
 				KeyValuePair formerKeyValuePair = combinedKeyValuePairs.get(currentKeyValuePair.getKey());
 				combinedKeyValuePairs.remove(currentKeyValuePair.getKey());
 				
-				combinedKeyValuePairs.put(currentKeyValuePair.getKey(), new KeyValuePair(currentKeyValuePair.getKey(), "" + 1 + Integer.parseInt(formerKeyValuePair.getValue())));
+				combinedKeyValuePairs.put((String) currentKeyValuePair.getKey(), new KeyValuePair(currentKeyValuePair.getKey(), "" + 1 + Integer.parseInt((String) formerKeyValuePair.getValue())));
 				
 			} else {
-				combinedKeyValuePairs.put(currentKeyValuePair.getKey(), currentKeyValuePair);
+				combinedKeyValuePairs.put((String) currentKeyValuePair.getKey(), currentKeyValuePair);
 			}
 		}
 		
