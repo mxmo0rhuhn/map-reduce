@@ -34,7 +34,7 @@ public class SocketServerConfig extends AbstractModule {
 		bind(ExecutorService.class).annotatedWith(Names.named("socket.workerexecutorservice")).toInstance(
 				Executors.newSingleThreadExecutor());
 
-		bind(ServerPluginPartNameMeBetter.class);
+		//bind(ServerPluginPartNameMeBetter.class);
 		bind(Persistence.class).to(FilePersistence.class);
 
 		bind(String.class).annotatedWith(Names.named("filepersistence.directory")).toInstance(System.getProperty("java.io.tmpdir") + "/socket/filepers/");
@@ -43,7 +43,7 @@ public class SocketServerConfig extends AbstractModule {
 		install(new FactoryModuleBuilder().implement(Worker.class, SocketWorker.class).build(SocketWorkerFactory.class));
 
 		try {
-			bind(Registry.class).toInstance(Simon.createRegistry(this.port));
+			//bind(Registry.class).toInstance(Simon.createRegistry(this.port));
 		} catch (Exception e) {
 			addError(e);
 		}

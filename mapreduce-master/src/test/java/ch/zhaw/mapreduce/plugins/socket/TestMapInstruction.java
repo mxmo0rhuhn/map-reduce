@@ -1,13 +1,9 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
-import java.io.Serializable;
-
 import ch.zhaw.mapreduce.MapEmitter;
 import ch.zhaw.mapreduce.MapInstruction;
-import de.root1.simon.annotation.SimonRemote;
 
-@SimonRemote(MapInstruction.class)
-public class TestMapInstruction implements MapInstruction, Serializable {
+public class TestMapInstruction implements MapInstruction {
 
 	private static final long serialVersionUID = -5951237460480827687L;
 

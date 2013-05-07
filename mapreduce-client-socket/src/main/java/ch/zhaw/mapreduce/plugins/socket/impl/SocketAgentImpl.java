@@ -25,10 +25,8 @@ import de.root1.simon.annotation.SimonRemote;
  * @author Reto Hablützel (rethab)
  * 
  */
-@SimonRemote
+@SimonRemote(SocketAgent.class)
 public class SocketAgentImpl implements SocketAgent {
-
-	private static final long serialVersionUID = -3533183459662782689L;
 
 	private static final Logger LOG = Logger.getLogger(SocketAgentImpl.class.getName());
 

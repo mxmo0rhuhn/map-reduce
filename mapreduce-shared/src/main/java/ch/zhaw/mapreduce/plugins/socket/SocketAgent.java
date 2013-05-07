@@ -12,7 +12,7 @@ import ch.zhaw.mapreduce.WorkerTask;
  * @author Reto Hablützel (rethab)
  * 
  */
-public interface SocketAgent extends Serializable {
+public interface SocketAgent {
 
 	/**
 	 * Wird vom Master aufgerufen, sobald er den Worker akzeptiert hat.

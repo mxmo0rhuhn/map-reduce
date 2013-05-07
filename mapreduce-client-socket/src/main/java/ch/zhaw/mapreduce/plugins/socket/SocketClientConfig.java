@@ -1,7 +1,5 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
-import java.net.UnknownHostException;
-
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.Persistence;
@@ -11,9 +9,6 @@ import ch.zhaw.mapreduce.plugins.socket.impl.SocketAgentImpl;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
-
-import de.root1.simon.Lookup;
-import de.root1.simon.Simon;
 
 public final class SocketClientConfig extends AbstractModule {
 	
@@ -33,17 +28,13 @@ public final class SocketClientConfig extends AbstractModule {
 	@Override
 	protected void configure() {
 		install(new SharedSocketConfig());
-		bind(SocketClientBinder.class);
+		// bind(SocketClientBinder.class);
 		install(new FactoryModuleBuilder().implement(SocketAgent.class, SocketAgentImpl.class).build(SocketAgentFactory.class));
 		install(new FactoryModuleBuilder().implement(Context.class, LocalContext.class).build(ContextFactory.class));
 		bind(Persistence.class).to(InMemoryPersistence.class);
 		
-		try {
 			// TODO remove logic from guice config
-			bind(Lookup.class).toInstance(Simon.createNameLookup(this.masterip, this.masterport));
-		} catch (UnknownHostException e) {
-			addError(e);
-		}
+			// bind(Lookup.class).toInstance(Simon.createNameLookup(this.masterip, this.masterport));
 	}
 
 }

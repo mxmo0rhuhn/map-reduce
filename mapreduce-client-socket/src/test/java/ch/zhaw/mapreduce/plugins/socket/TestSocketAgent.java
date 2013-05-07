@@ -7,10 +7,8 @@ import ch.zhaw.mapreduce.MapReduceUtil;
 import ch.zhaw.mapreduce.WorkerTask;
 import de.root1.simon.annotation.SimonRemote;
 
-@SimonRemote
+@SimonRemote(SocketAgent.class)
 public class TestSocketAgent implements SocketAgent {
-
-	private static final long serialVersionUID = 5878055592823945127L;
 
 	@Override
 	public void helloslave() {
