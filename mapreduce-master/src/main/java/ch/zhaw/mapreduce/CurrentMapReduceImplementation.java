@@ -24,6 +24,7 @@ public class CurrentMapReduceImplementation implements MapReduce {
 	private Master master;
 	private static Injector currentMRConfig;
 	private static ServerStarter server;
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -54,13 +55,28 @@ public class CurrentMapReduceImplementation implements MapReduce {
 	 */
 	@Override
 	public MapReduce newMRTask(MapInstruction mapInstruction, ReduceInstruction reduceInstruction,
-			CombinerInstruction combinerInstruction, Map<String, String> Config) {
+			CombinerInstruction combinerInstruction, Map<String, String> config) {
 
 		this.mapInstruction = mapInstruction;
 		this.reduceInstruction = reduceInstruction;
 		this.combinerInstruction = combinerInstruction;
 
-		this.master = currentMRConfig.getInstance(Master.class); 
+		int rescheduleStartPercentage = 90;
+		int rescheduleEvery = 10;
+		int waitTime = 1000;
+		if (config.containsKey("rescheduleStartPercentage")) {
+			rescheduleStartPercentage = Integer.parseInt(config.get("rescheduleStartPercentage"));
+		}
+
+		if (config.containsKey("rescheduleEvery")) {
+			rescheduleEvery = Integer.parseInt(config.get("rescheduleEvery"));
+		}
+
+		if (config.containsKey("waitTime")) {
+			waitTime = Integer.parseInt(config.get("waitTime"));
+		}
+
+		this.master = currentMRConfig.getInstance(Master.class); //FIXME
 		return this;
 	}
 
