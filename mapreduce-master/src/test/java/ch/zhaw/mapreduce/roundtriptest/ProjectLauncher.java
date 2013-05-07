@@ -1,14 +1,6 @@
 package ch.zhaw.mapreduce.roundtriptest;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.junit.Assert;
-
-import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.MapReduceConfig;
-import ch.zhaw.mapreduce.MapReduceTask;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.plugins.thread.ThreadConfig;

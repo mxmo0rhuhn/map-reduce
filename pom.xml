@@ -11,6 +11,7 @@
 
         <modules>
                 <module>mapreduce-shared</module>
+                <module>mapreduce-api</module>
                 <module>mapreduce-master</module>
                 <module>mapreduce-client-socket</module>
         </modules>
