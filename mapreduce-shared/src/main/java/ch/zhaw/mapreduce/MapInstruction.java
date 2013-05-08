@@ -1,6 +1,5 @@
 package ch.zhaw.mapreduce;
 
-import java.io.Serializable;
 
 
 /**
@@ -9,7 +8,7 @@ import java.io.Serializable;
  * @author Max
  * 
  */
-public interface MapInstruction extends Serializable {
+public interface MapInstruction {
 
 	/**
 	 * Diese Methode muss überschrieben werden um die Aufgabe eines MAP Tasks zu beschreiben. Es muss eine gewisse Logik vorhanden sein mit

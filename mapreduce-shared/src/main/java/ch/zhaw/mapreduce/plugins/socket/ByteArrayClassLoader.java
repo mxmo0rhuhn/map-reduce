@@ -9,7 +9,7 @@ package ch.zhaw.mapreduce.plugins.socket;
  * @author Reto Hablützel (rethab)
  * 
  */
-class ByteArrayClassLoader extends ClassLoader {
+public class ByteArrayClassLoader extends ClassLoader {
 
 	/**
 	 * Lädt die Klasse mit dem Standard-Java Cloassloader.

@@ -6,7 +6,7 @@ import java.util.concurrent.Executors;
 import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.impl.FilePersistence;
-import ch.zhaw.mapreduce.plugins.socket.impl.MapAgentTask;
+import ch.zhaw.mapreduce.plugins.socket.impl.AgentTaskFactoryImpl;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
@@ -21,6 +21,7 @@ public class SocketServerConfig extends AbstractModule {
 		bind(Integer.class).annotatedWith(Names.named("socket.masterpoolsize")).toInstance(1); 
 		bind(ExecutorService.class).annotatedWith(Names.named("socket.workerexecutorservice")).toInstance(
 				Executors.newSingleThreadExecutor());
+		bind(AgentTaskFactory.class).to(AgentTaskFactoryImpl.class);
 
 		//bind(ServerPluginPartNameMeBetter.class);
 		bind(Persistence.class).to(FilePersistence.class);
@@ -29,7 +30,6 @@ public class SocketServerConfig extends AbstractModule {
 		bind(String.class).annotatedWith(Names.named("filepersistence.ending")).toInstance(".ser");
 
 		install(new FactoryModuleBuilder().implement(Worker.class, SocketWorker.class).build(SocketWorkerFactory.class));
-		install(new FactoryModuleBuilder().implement(AgentTask.class, MapAgentTask.class).build(AgentTaskFactory.class));
 
 		try {
 			//bind(Registry.class).toInstance(Simon.createRegistry(this.port));

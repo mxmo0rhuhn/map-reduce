@@ -3,7 +3,7 @@ package ch.zhaw.mapreduce.plugins.socket;
 import ch.zhaw.mapreduce.WorkerTask;
 
 /**
- * Diese Factory wird mit Guice/AssistedInject verwaltet.
+ * Diese Factory zum erstellen voon AgentTasks
  * 
  * @author Reto Hablützel (rethab)
  * 
@@ -11,12 +11,8 @@ import ch.zhaw.mapreduce.WorkerTask;
 public interface AgentTaskFactory {
 
 	/**
-	 * Erstellt einen neuen AgentTask, welcher auf dem Client ausführt werden kann, basierend auf dem serverseitigen
-	 * WorkerTask.
-	 * 
-	 * @param workerTask
-	 *            Task auf dem Server
-	 * @return task für den client
+	 * Erstellt basierend auf einem Serverseitigen WorkerTask einen AgentTask, welcher auf einem SocketAgent ausgeführt
+	 * werden kann.
 	 */
 	AgentTask createAgentTask(WorkerTask workerTask);
 

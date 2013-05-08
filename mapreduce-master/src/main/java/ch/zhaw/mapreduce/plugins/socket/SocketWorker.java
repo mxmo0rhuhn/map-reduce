@@ -1,5 +1,8 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +44,7 @@ public class SocketWorker implements Worker {
 	private final Persistence persistence;
 
 	private final Pool pool;
-	
+
 	private final AgentTaskFactory atFactory;
 
 	@Inject
@@ -75,20 +78,21 @@ public class SocketWorker implements Worker {
 			@Override
 			public Void call() throws Exception {
 				AgentTask agentTask = atFactory.createAgentTask(workerTask);
+				workerTask.started();
 				Object result = agent.runTask(agentTask);
-				// TODO besseres resultat
+			// TODO besseres resultat
 				if (result == null) {
 					LOG.severe("Got no result from Client");
 					workerTask.failed();
-				}
+				} 
 				// TODO grusig der koennte ja irgenwas liefern und einfach sich merken und je nach dem welche methode
 				// dann im task aufgerufen wird, das wir dann zurueckgegeben.
 				else if (workerTask instanceof MapWorkerTask) {
 					List<KeyValuePair> mapres = (List<KeyValuePair>) result;
 					// TODO grad nochmal grusig
 					for (KeyValuePair pair : mapres) {
-						persistence.storeMap(workerTask.getMapReduceTaskUuid(), workerTask.getTaskUuid(), (String) pair.getKey(),
-								(String) pair.getValue());
+						persistence.storeMap(workerTask.getMapReduceTaskUuid(), workerTask.getTaskUuid(),
+								(String) pair.getKey(), (String) pair.getValue());
 					}
 					workerTask.completed();
 				}

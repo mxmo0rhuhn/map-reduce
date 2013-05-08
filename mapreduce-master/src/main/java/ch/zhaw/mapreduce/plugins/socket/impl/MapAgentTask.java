@@ -1,28 +1,63 @@
 package ch.zhaw.mapreduce.plugins.socket.impl;
 
-import java.io.ByteArrayOutputStream;
+import javax.annotation.Nullable;
 
-import javax.inject.Inject;
-
-import ch.zhaw.mapreduce.impl.MapWorkerTask;
 import ch.zhaw.mapreduce.plugins.socket.AgentTask;
 
-import com.google.inject.assistedinject.Assisted;
+public final class MapAgentTask implements AgentTask {
 
-public class MapAgentTask implements AgentTask {
-	
 	private final String mapReduceTaskUuid;
-	
+
 	private final String taskUuid;
-	
-	private final ByteArrayOutputStream bos;
-	
-	@Inject
-	MapAgentTask(@Assisted MapWorkerTask workerTask) {
-		this.mapReduceTaskUuid = workerTask.getMapReduceTaskUuid();
-		this.taskUuid = workerTask.getTaskUuid();
-		workerTask.getMapInstruction()
-		
+
+	private final String mapInstructionName;
+
+	private final byte[] mapInstruction;
+
+	private final String combinerInstructionName;
+
+	private final byte[] combinerInstruction;
+
+	private final String input;
+
+	MapAgentTask(String mapReduceTaskUuid, String taskUuid, String mapInstructionName, byte[] mapInstruction,
+			@Nullable String combinerInstructionName, @Nullable byte[] combinerInstruction, String input) {
+		this.mapReduceTaskUuid = mapReduceTaskUuid;
+		this.taskUuid = taskUuid;
+		this.mapInstructionName = mapInstructionName;
+		this.mapInstruction = mapInstruction;
+		this.combinerInstructionName = combinerInstructionName;
+		this.combinerInstruction = combinerInstruction;
+		this.input = input;
 	}
 
+	@Override
+	public String getMapReduceTaskUuid() {
+		return mapReduceTaskUuid;
+	}
+
+	@Override
+	public String getTaskUuid() {
+		return taskUuid;
+	}
+
+	public String getMapInstructionName() {
+		return mapInstructionName;
+	}
+
+	public byte[] getMapInstruction() {
+		return mapInstruction;
+	}
+
+	public String getCombinerInstructionName() {
+		return combinerInstructionName;
+	}
+
+	public byte[] getCombinerInstruction() {
+		return combinerInstruction;
+	}
+
+	public String getInput() {
+		return input;
+	}
 }
