@@ -36,8 +36,8 @@ public class MapReduceConfig extends AbstractModule {
 		// dass wir eine tatsächliche Implementation bereitstellen.
 		install(new FactoryModuleBuilder().implement(MapWorkerTask.class, MapWorkerTask.class)
 				.implement(ReduceWorkerTask.class, ReduceWorkerTask.class).build(WorkerTaskFactory.class));
+		install(new FactoryModuleBuilder().implement(Master.class, Master.class).build(MasterFactory.class));
 
-		bind(Master.class);
 		bind(Pool.class);
 		bind(Loader.class);
 		bind(Shuffler.class).to(InMemoryShuffler.class);

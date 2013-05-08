@@ -19,6 +19,7 @@ import ch.zhaw.mapreduce.impl.MapWorkerTask;
 import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 
 import com.google.inject.Provider;
+import com.google.inject.assistedinject.Assisted;
 
 public final class Master {
 
@@ -51,8 +52,8 @@ public final class Master {
 	public Master(Pool pool, WorkerTaskFactory workerTaskFactory,
 			@Named("mapReduceTaskUuid") String mapReduceTaskUuid,
 			Provider<Shuffler> shufflerProvider,
-			@Named("rescheduleStartPercentage") Integer rescheduleStartPercentage,
-			@Named("rescheduleEvery") Integer rescheduleEvery, @Named("waitTime") Integer waitTime) {
+			@Assisted("rescheduleStartPercentage") int rescheduleStartPercentage,
+			@Assisted("rescheduleEvery") int rescheduleEvery, @Assisted("waitTime") int waitTime) {
 		this.pool = pool;
 		this.workerTaskFactory = workerTaskFactory;
 		this.mapReduceTaskUuid = mapReduceTaskUuid;
@@ -346,5 +347,17 @@ public final class Master {
 			curKV.getValue().abort();
 		}
 		activeWorkerTasks.clear();
+	}
+
+	public int getRescheduleStartPercentage() {
+		return rescheduleStartPercentage;
+	}
+
+	public int getRescheduleEvery() {
+		return rescheduleEvery;
+	}
+
+	public int getWaitTime() {
+		return waitTime;
 	}
 }

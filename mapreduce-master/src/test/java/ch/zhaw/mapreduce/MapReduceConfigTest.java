@@ -185,4 +185,12 @@ public class MapReduceConfigTest {
 		Master m2 = injector.getInstance(Master.class);
 		assertFalse(m1.getMapReduceTaskUuid().equals(m2.getMapReduceTaskUuid()));
 	}
+	
+	@Test
+	public void shouldCreateMasterWithParameters() {
+		Master m = Guice.createInjector(new MapReduceConfig()).getInstance(MasterFactory.class).createMaster(1, 2, 3);
+		assertEquals(1, m.getRescheduleStartPercentage());
+		assertEquals(2, m.getRescheduleEvery());
+		assertEquals(3, m.getWaitTime());
+	}
 }

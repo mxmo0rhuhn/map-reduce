@@ -8,6 +8,7 @@ import java.util.Map;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.assistedinject.Assisted;
 
 /**
  * Stellt die Serverseitige Implementation des MapReduce Frameworks dar.
@@ -76,7 +77,7 @@ public class CurrentMapReduceImplementation implements MapReduce {
 			waitTime = Integer.parseInt(config.get("waitTime"));
 		}
 
-		this.master = currentMRConfig.getInstance(Master.class); //FIXME
+		this.master = currentMRConfig.getInstance(MasterFactory.class).createMaster(rescheduleStartPercentage, rescheduleEvery, waitTime);
 		return this;
 	}
 
