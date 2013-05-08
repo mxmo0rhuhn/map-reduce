@@ -27,7 +27,7 @@ public interface SocketAgent {
 	 *            der auszuführende Task
 	 * @return das Resultat der Berechnung
 	 */
-	Object runTask(WorkerTask task);
+	Object runTask(AgentTask task);
 
 	/**
 	 * Liefer die IP vom Client/Worker

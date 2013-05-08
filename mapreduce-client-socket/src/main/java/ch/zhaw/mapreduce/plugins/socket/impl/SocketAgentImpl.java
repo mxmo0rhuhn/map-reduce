@@ -8,7 +8,7 @@ import javax.inject.Inject;
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
-import ch.zhaw.mapreduce.WorkerTask;
+import ch.zhaw.mapreduce.plugins.socket.AgentTask;
 import ch.zhaw.mapreduce.plugins.socket.SocketAgent;
 
 import com.google.inject.assistedinject.Assisted;
@@ -54,7 +54,7 @@ public class SocketAgentImpl implements SocketAgent {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Object runTask(WorkerTask task) {
+	public Object runTask(AgentTask task) {
 		String mrUuid = task.getMapReduceTaskUuid();
 		String taskUuid = task.getTaskUuid();
 		LOG.info("New Task to be Run: " + mrUuid + " " + taskUuid);

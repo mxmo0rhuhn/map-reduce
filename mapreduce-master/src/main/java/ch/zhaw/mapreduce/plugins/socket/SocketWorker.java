@@ -41,14 +41,17 @@ public class SocketWorker implements Worker {
 	private final Persistence persistence;
 
 	private final Pool pool;
+	
+	private final AgentTaskFactory atFactory;
 
 	@Inject
 	SocketWorker(@Assisted SocketAgent agent, @Named("socket.workerexecutorservice") ExecutorService exec,
-			Persistence persistence, Pool pool) {
+			Persistence persistence, Pool pool, AgentTaskFactory atFactory) {
 		this.agent = agent;
 		this.exec = exec;
 		this.persistence = persistence;
 		this.pool = pool;
+		this.atFactory = atFactory;
 	}
 
 	/**
@@ -66,33 +69,36 @@ public class SocketWorker implements Worker {
 	 * @see ch.zhaw.mapreduce.workers.Worker#executeTask(ch.zhaw.mapreduce.WorkerTask)
 	 */
 	@Override
-	public void executeTask(final WorkerTask task) {
+	public void executeTask(final WorkerTask workerTask) {
 		Future<Void> runningTask = this.exec.submit(new Callable<Void>() {
 
 			@Override
 			public Void call() throws Exception {
-				Object result = agent.runTask(task);
+				AgentTask agentTask = atFactory.createAgentTask(workerTask);
+				Object result = agent.runTask(agentTask);
+				// TODO besseres resultat
 				if (result == null) {
 					LOG.severe("Got no result from Client");
-					task.failed();
+					workerTask.failed();
 				}
-				// TODO grusig
-				else if (task instanceof MapWorkerTask) {
+				// TODO grusig der koennte ja irgenwas liefern und einfach sich merken und je nach dem welche methode
+				// dann im task aufgerufen wird, das wir dann zurueckgegeben.
+				else if (workerTask instanceof MapWorkerTask) {
 					List<KeyValuePair> mapres = (List<KeyValuePair>) result;
 					// TODO grad nochmal grusig
 					for (KeyValuePair pair : mapres) {
-						persistence.storeMap(task.getMapReduceTaskUuid(), task.getTaskUuid(), (String) pair.getKey(),
+						persistence.storeMap(workerTask.getMapReduceTaskUuid(), workerTask.getTaskUuid(), (String) pair.getKey(),
 								(String) pair.getValue());
 					}
-					task.completed();
+					workerTask.completed();
 				}
 
-				else if (task instanceof ReduceWorkerTask) {
+				else if (workerTask instanceof ReduceWorkerTask) {
 					List<String> redres = (List<String>) result;
 					for (String res : redres) {
-						persistence.storeReduce(task.getMapReduceTaskUuid(), task.getTaskUuid(), res);
+						persistence.storeReduce(workerTask.getMapReduceTaskUuid(), workerTask.getTaskUuid(), res);
 					}
-					task.completed();
+					workerTask.completed();
 				}
 
 				else {
@@ -102,7 +108,7 @@ public class SocketWorker implements Worker {
 				return null;
 			}
 		});
-		String combinedId = task.getMapReduceTaskUuid() + task.getTaskUuid();
+		String combinedId = workerTask.getMapReduceTaskUuid() + workerTask.getTaskUuid();
 		this.runningTasks.put(combinedId, runningTask);
 	}
 

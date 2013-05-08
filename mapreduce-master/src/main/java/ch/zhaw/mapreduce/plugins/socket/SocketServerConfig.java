@@ -6,26 +6,14 @@ import java.util.concurrent.Executors;
 import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.impl.FilePersistence;
+import ch.zhaw.mapreduce.plugins.socket.impl.MapAgentTask;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Names;
 
-import de.root1.simon.Registry;
-import de.root1.simon.Simon;
-
 public class SocketServerConfig extends AbstractModule {
 	
-	private final int port;
-	
-	SocketServerConfig(int port) {
-		this.port = port;
-	}
-	
-	SocketServerConfig() {
-		this(4753); // IANA Simon port
-	}
-
 	@Override
 	protected void configure() {
 		install(new SharedSocketConfig());
@@ -41,6 +29,7 @@ public class SocketServerConfig extends AbstractModule {
 		bind(String.class).annotatedWith(Names.named("filepersistence.ending")).toInstance(".ser");
 
 		install(new FactoryModuleBuilder().implement(Worker.class, SocketWorker.class).build(SocketWorkerFactory.class));
+		install(new FactoryModuleBuilder().implement(AgentTask.class, MapAgentTask.class).build(AgentTaskFactory.class));
 
 		try {
 			//bind(Registry.class).toInstance(Simon.createRegistry(this.port));
