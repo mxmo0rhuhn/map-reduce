@@ -17,8 +17,14 @@ import ch.zhaw.mapreduce.plugins.socket.TaskRunner;
 
 import com.google.inject.assistedinject.Assisted;
 
+/**
+ * Führt eine MapInstruction mit deren Input aus.
+ * 
+ * @author Reto Hablützel (rethab)
+ * 
+ */
 public final class MapTaskRunner implements TaskRunner {
-	
+
 	private static final Logger LOG = Logger.getLogger(MapTaskRunner.class.getName());
 
 	private final String mapReduceTaskUuid;
@@ -27,12 +33,13 @@ public final class MapTaskRunner implements TaskRunner {
 
 	private final MapInstruction mapInstr;
 
+	// optional. null wenn nicht vorhanden
 	private final CombinerInstruction combInstr;
 
 	private final String input;
-	
+
 	private final ContextFactory ctxFactory;
-	
+
 	private final SocketTaskResultFactory strFactory;
 
 	@Inject
@@ -48,6 +55,9 @@ public final class MapTaskRunner implements TaskRunner {
 		this.strFactory = strFactory;
 	}
 
+	/**
+	 * Führt den Task aus und kombiniert die Resultate wenn eine Combiner-Instruction existiert.
+	 */
 	@Override
 	public SocketTaskResult runTask() {
 		LOG.entering(MapTaskRunner.class.getName(), "runTask");
@@ -56,14 +66,12 @@ public final class MapTaskRunner implements TaskRunner {
 			// Mappen
 			this.mapInstr.map(ctx, input);
 
-			// Alle Ergebnisse verdichten. Die Ergebnisse aus der derzeitigen Worker sollen
-			// einbezogen werden.
+			// Alle Ergebnisse verdichten.
+			List<KeyValuePair> mapResult = ctx.getMapResult();
 			if (this.combInstr != null) {
-				List<KeyValuePair> beforeCombining = ctx.getMapResult();
-				List<KeyValuePair> afterCombining = this.combInstr.combine(beforeCombining.iterator());
-				ctx.replaceMapResult(afterCombining);
+				mapResult = this.combInstr.combine(mapResult.iterator());
 			}
-			return this.strFactory.createSuccessResult(ctx.getMapResult());
+			return this.strFactory.createSuccessResult(mapResult);
 		} catch (Exception e) {
 			return this.strFactory.createFailureResult(e);
 		} finally {

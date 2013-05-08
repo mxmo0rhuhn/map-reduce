@@ -8,6 +8,7 @@ import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.impl.InMemoryPersistence;
 import ch.zhaw.mapreduce.impl.LocalContext;
 import ch.zhaw.mapreduce.plugins.socket.impl.MapTaskRunner;
+import ch.zhaw.mapreduce.plugins.socket.impl.ReduceTaskRunner;
 import ch.zhaw.mapreduce.plugins.socket.impl.SocketAgentImpl;
 import ch.zhaw.mapreduce.plugins.socket.impl.SocketTaskResultImpl;
 import ch.zhaw.mapreduce.plugins.socket.impl.TaskRunnerFactoryImpl;
@@ -37,10 +38,12 @@ public final class SocketClientConfig extends AbstractModule {
 	protected void configure() {
 		install(new SharedSocketConfig());
 		// bind(SocketClientBinder.class);
-		install(new FactoryModuleBuilder().implement(SocketAgent.class, SocketAgentImpl.class).build( SocketAgentFactory.class));
+		install(new FactoryModuleBuilder().implement(SocketAgent.class, SocketAgentImpl.class).build(SocketAgentFactory.class));
 		install(new FactoryModuleBuilder().implement(Context.class, LocalContext.class).build(ContextFactory.class));
-		install(new FactoryModuleBuilder().implement(SocketTaskResult.class, SocketTaskResultImpl.class).build( SocketTaskResultFactory.class));
-		install(new FactoryModuleBuilder().implement(TaskRunner.class, MapTaskRunner.class).build( MapTaskRunnerFactory.class));
+		install(new FactoryModuleBuilder().implement(SocketTaskResult.class, SocketTaskResultImpl.class).build(SocketTaskResultFactory.class));
+		install(new FactoryModuleBuilder().implement(TaskRunner.class, MapTaskRunner.class).build(MapTaskRunnerFactory.class));
+		install(new FactoryModuleBuilder().implement(TaskRunner.class, ReduceTaskRunner.class).build(ReduceTaskRunnerFactory.class));
+		
 		bind(Persistence.class).to(InMemoryPersistence.class);
 
 		bind(TaskRunnerFactory.class).to(TaskRunnerFactoryImpl.class);

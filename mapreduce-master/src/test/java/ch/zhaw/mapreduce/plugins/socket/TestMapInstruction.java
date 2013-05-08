@@ -7,9 +7,13 @@ public class TestMapInstruction implements MapInstruction {
 
 	@Override
 	public void map(MapEmitter emitter, String input) {
-		System.out.println("sleeping");
-		// Thread.sleep(500);
-		System.out.println("done sleeping");
+		try {
+			System.out.println("sleeping");
+			Thread.sleep(50);
+			System.out.println("done sleeping");
+		} catch (Exception e) {
+			System.err.println(e);
+		}
 		emitter.emitIntermediateMapResult("key", input);
 	}
 

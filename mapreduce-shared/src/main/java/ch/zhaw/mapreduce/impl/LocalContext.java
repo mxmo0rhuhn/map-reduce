@@ -32,7 +32,7 @@ public class LocalContext implements Context {
 	private volatile boolean stopped = false;
 
 	@Inject
-	LocalContext(Persistence persistence, @Assisted("mapReduceTaskUUID") String mrUuid, @Assisted("taskUUID") String taskUuid) {
+	LocalContext(Persistence persistence, @Assisted("mapReduceTaskUuid") String mrUuid, @Assisted("taskUuid") String taskUuid) {
 		this.mrUuid = mrUuid;
 		this.taskUuid = taskUuid;
 		this.persistence = persistence;

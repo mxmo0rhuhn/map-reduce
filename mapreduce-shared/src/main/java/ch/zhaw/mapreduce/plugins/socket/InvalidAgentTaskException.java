@@ -7,5 +7,9 @@ public class InvalidAgentTaskException extends Exception {
 	public InvalidAgentTaskException(Throwable cause) {
 		super(cause);
 	}
+	
+	public InvalidAgentTaskException(String msg) {
+		super(msg);
+	}
 
 }

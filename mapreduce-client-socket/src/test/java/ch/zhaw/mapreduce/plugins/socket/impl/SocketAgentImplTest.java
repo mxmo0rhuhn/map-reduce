@@ -3,51 +3,35 @@ package ch.zhaw.mapreduce.plugins.socket.impl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jmock.Expectations;
-import org.jmock.auto.Mock;
-import org.jmock.integration.junit4.JUnitRuleMockery;
-import org.junit.Rule;
 import org.junit.Test;
 
-import ch.zhaw.mapreduce.Context;
-import ch.zhaw.mapreduce.KeyValuePair;
-import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.plugins.socket.TaskRunnerFactory;
+import ch.zhaw.mapreduce.plugins.socket.AbstractClientSocketMapReduceTest;
+import ch.zhaw.mapreduce.plugins.socket.InvalidAgentTaskException;
 
-public class SocketAgentImplTest {
-	
-	@Rule
-	public JUnitRuleMockery mockery = new JUnitRuleMockery();
-	
-	@Mock
-	private WorkerTask task;
-	
-	@Mock
-	private Context ctx;
-	
-	@Mock
-	private TaskRunnerFactory trFactory;
-	
-	private final String mrUuid = "mapreducetaskuuuid";
-	
-	private final String taskUuid = "taskUuuid";
-	
-	private final List<KeyValuePair> mapResult = Arrays.asList(new KeyValuePair[]{new KeyValuePair("key", "value")});
-	
-	private final List<String> reduceResult = Arrays.asList(new String[]{"redRes"});
+public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 	
 	@Test
 	public void shouldSetClientIp() {
-		SocketAgentImpl sa = new SocketAgentImpl("123.123.234.124", trFactory);
-		assertEquals("123.123.234.124", sa.getIp());
+		SocketAgentImpl sa = new SocketAgentImpl(clientIp, trFactory);
+		assertEquals(clientIp, sa.getIp());
 	}
 	
 	@Test
 	public void shouldRunSmoothly() {
-		SocketAgentImpl sa = new SocketAgentImpl("123.123.234.124", trFactory);
+		SocketAgentImpl sa = new SocketAgentImpl(clientIp, trFactory);
 		sa.helloslave();
+	}
+	
+	@Test
+	public void shouldRunTask() throws InvalidAgentTaskException {
+		SocketAgentImpl sa = new SocketAgentImpl(clientIp, trFactory);
+		this.mockery.checking(new Expectations() {{ 
+			allowing(aTask).getMapReduceTaskUuid();
+			allowing(aTask).getTaskUuid();
+			oneOf(trFactory).createTaskRunner(aTask); will(returnValue(taskRunner));
+			oneOf(taskRunner).runTask(); will(returnValue(result));
+		}});
+		assertSame(result, sa.runTask(aTask));
 	}
 }

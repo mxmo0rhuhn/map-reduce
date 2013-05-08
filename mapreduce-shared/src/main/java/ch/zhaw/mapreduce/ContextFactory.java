@@ -29,6 +29,6 @@ public interface ContextFactory {
 	 *            taskUUID
 	 * @return Instanz von Context
 	 */
-	Context createContext(@Assisted("mapReduceTaskUUID") String mapReduceUUID, @Assisted("taskUUID") String taskUUID);
+	Context createContext(@Assisted("mapReduceTaskUuid") String mapReduceUuid, @Assisted("taskUuid") String taskUuid);
 
 }
