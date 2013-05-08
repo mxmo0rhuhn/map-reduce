@@ -57,12 +57,12 @@ public class SocketAgentImpl implements SocketAgent {
 		String mrUuid = task.getMapReduceTaskUuid();
 		String taskUuid = task.getTaskUuid();
 
-		LOG.info("ENTER: SocketAgentImpl.runTask: " + mrUuid + " " + taskUuid);
+		LOG.info("ENTRY: SocketAgentImpl.runTask: " + mrUuid + " " + taskUuid);
 		TaskRunner runner = this.trFactory.createTaskRunner(task);
 		try {
 			return runner.runTask();
 		} finally {
-			LOG.info("EXIT: SocketAgentImpl.runTask: " + mrUuid + " " + taskUuid);
+			LOG.info("RETURN: SocketAgentImpl.runTask: " + mrUuid + " " + taskUuid);
 		}
 	}
 

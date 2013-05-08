@@ -34,7 +34,7 @@ public class TestSocketServer {
 		LOG.info("I, " + MapReduceUtil.getLocalIp() + ", am thee Master and thou shalt be my Slaves!");
 		Registry reg = Simon.createRegistry(4753);
 		reg.bind("MapReduceSocketMaster", new RegistrationServerImpl(p, swFactory));
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < 10; i++) {
 			p.enqueueWork(new MapWorkerTask("mrtUuid", "tUuid" + i, new TestMapInstruction(), null, "input"));
 		}
 	}

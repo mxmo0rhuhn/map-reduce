@@ -14,9 +14,9 @@ import ch.zhaw.mapreduce.plugins.socket.TaskRunnerFactory;
 public final class TaskRunnerFactoryImpl implements TaskRunnerFactory {
 
 	private static final ByteArrayClassLoader CLASSlOADER = new ByteArrayClassLoader();
-	
+
 	private final MapTaskRunnerFactory mtrFactory;
-	
+
 	@Inject
 	TaskRunnerFactoryImpl(MapTaskRunnerFactory mtrFactory) {
 		this.mtrFactory = mtrFactory;
@@ -33,17 +33,19 @@ public final class TaskRunnerFactoryImpl implements TaskRunnerFactory {
 				combInstr = loadClass(mt.getCombinerInstructionName(), mt.getCombinerInstruction(),
 						CombinerInstruction.class);
 			}
-			return this.mtrFactory.createMapTaskRunner(mt.getMapReduceTaskUuid(), mt.getTaskUuid(), mapInstr, combInstr, mt.getInput());
+			return this.mtrFactory.createMapTaskRunner(mt.getMapReduceTaskUuid(), mt.getTaskUuid(), mapInstr,
+					combInstr, mt.getInput());
 		} else {
 			throw new UnsupportedOperationException("implement me");
 		}
 	}
 
-	<T> T loadClass(String className, byte[] bytes, Class<T> type) throws InvalidAgentTaskException {
+	<T> T loadClass(String mapReduceTaskUuid, String className, byte[] bytes, Class<T> type) throws InvalidAgentTaskException {
 		try {
-			Class<?> klass = CLASSlOADER.defineClass(className, bytes);
+			Class<?> klass = CLASSlOADER.defineClass(mapReduceTaskUuid, className, bytes);
 			return (T) klass.newInstance();
-		} catch (Exception e) {
+		} catch (Throwable e) {
+			// throwable weil classloading auch errors schmeisst. wir muessen alles fangen, sonst verstrickt sich SIMON
 			throw new InvalidAgentTaskException(e);
 		}
 	}
