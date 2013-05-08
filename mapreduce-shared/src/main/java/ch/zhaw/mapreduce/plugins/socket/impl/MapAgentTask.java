@@ -4,7 +4,10 @@ import javax.annotation.Nullable;
 
 import ch.zhaw.mapreduce.plugins.socket.AgentTask;
 
+
 public final class MapAgentTask implements AgentTask {
+
+	private static final long serialVersionUID = -4656085734200620211L;
 
 	private final String mapReduceTaskUuid;
 

@@ -27,7 +27,7 @@ public class TestSocketServer {
 		
 		
 		Registry reg = Simon.createRegistry(4753);
-		reg.bind("MapReduceMasterName", new RegistrationServerImpl(p, swFactory));
+		reg.bind("MapReduceSocketMaster", new RegistrationServerImpl(p, swFactory));
 		p.enqueueWork(new MapWorkerTask("mrtUuid", "tUuid", new TestMapInstruction(), null, "input"));
 	}
 

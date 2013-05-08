@@ -1,9 +1,5 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
-import java.io.Serializable;
-
-import ch.zhaw.mapreduce.WorkerTask;
-
 /**
  * Der Socket Agent ist quasi der Client-Seitige Worker. Er führt Tasks aus und gibt das Resultat zurück an den Master.
  * Der SocketAdapter ist somit der verbindende Teil zwischen dem Server und Client von der Client-Seite. Er wird bei der
@@ -26,8 +22,10 @@ public interface SocketAgent {
 	 * @param task
 	 *            der auszuführende Task
 	 * @return das Resultat der Berechnung
+	 * @throws InvalidAgentTaskException
+	 *             wenn der Agent den Task nicht ausführen kann
 	 */
-	Object runTask(AgentTask task);
+	SocketTaskResult runTask(AgentTask task) throws InvalidAgentTaskException;
 
 	/**
 	 * Liefer die IP vom Client/Worker

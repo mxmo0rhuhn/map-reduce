@@ -21,7 +21,6 @@ public class AgentTaskFactoryImpl implements AgentTaskFactory {
 		if (workerTask instanceof MapWorkerTask) {
 			return createMapAgentTask((MapWorkerTask) workerTask);
 		} else {
-			// TODO reduce
 			throw new UnsupportedOperationException("reduce");
 		}
 	}

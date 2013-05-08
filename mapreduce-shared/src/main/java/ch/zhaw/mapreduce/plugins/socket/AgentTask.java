@@ -1,6 +1,8 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
-public interface AgentTask {
+import java.io.Serializable;
+
+public interface AgentTask extends Serializable {
 
 	public abstract String getTaskUuid();
 

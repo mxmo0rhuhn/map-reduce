@@ -10,6 +10,7 @@ import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
@@ -78,35 +79,43 @@ public class SocketWorker implements Worker {
 			@Override
 			public Void call() throws Exception {
 				AgentTask agentTask = atFactory.createAgentTask(workerTask);
+				SocketTaskResult result = null;
 				workerTask.started();
-				Object result = agent.runTask(agentTask);
-			// TODO besseres resultat
-				if (result == null) {
-					LOG.severe("Got no result from Client");
+				try {
+					result = agent.runTask(agentTask);
+				} catch (InvalidAgentTaskException iate) {
+					LOG.log(Level.SEVERE, "Failed to run Task on SocketAgent", iate);
 					workerTask.failed();
-				} 
-				// TODO grusig der koennte ja irgenwas liefern und einfach sich merken und je nach dem welche methode
-				// dann im task aufgerufen wird, das wir dann zurueckgegeben.
-				else if (workerTask instanceof MapWorkerTask) {
-					List<KeyValuePair> mapres = (List<KeyValuePair>) result;
-					// TODO grad nochmal grusig
-					for (KeyValuePair pair : mapres) {
-						persistence.storeMap(workerTask.getMapReduceTaskUuid(), workerTask.getTaskUuid(),
-								(String) pair.getKey(), (String) pair.getValue());
-					}
-					workerTask.completed();
+					pool.workerIsFinished(SocketWorker.this);
+					return null;
 				}
-
-				else if (workerTask instanceof ReduceWorkerTask) {
-					List<String> redres = (List<String>) result;
-					for (String res : redres) {
-						persistence.storeReduce(workerTask.getMapReduceTaskUuid(), workerTask.getTaskUuid(), res);
+				
+				if (result == null) {
+					LOG.severe("SocketAgent should never return null");
+					workerTask.failed();
+				} else if (!result.wasSuccessful()) {
+					LOG.log(Level.WARNING, "Task failed on SocketAgent", result.getException());
+					workerTask.failed();
+				} else {
+					LOG.fine("Task ran fine on SocketAgent");
+					
+					// TODO besser loesen
+					if (workerTask instanceof MapWorkerTask) {
+						List<KeyValuePair> mapres = (List<KeyValuePair>) result.getResult();
+						for (KeyValuePair pair : mapres) {
+							persistence.storeMap(workerTask.getMapReduceTaskUuid(), workerTask.getTaskUuid(),
+									(String) pair.getKey(), (String) pair.getValue());
+						}
 					}
-					workerTask.completed();
-				}
 
-				else {
-					throw new IllegalStateException("Task muss entweder Map oder Reduce sein");
+					else if (workerTask instanceof ReduceWorkerTask) {
+						List<String> redres = (List<String>) result.getResult();
+						for (String res : redres) {
+							persistence.storeReduce(workerTask.getMapReduceTaskUuid(), workerTask.getTaskUuid(), res);
+						}
+					}
+					
+					workerTask.completed();
 				}
 				pool.workerIsFinished(SocketWorker.this);
 				return null;

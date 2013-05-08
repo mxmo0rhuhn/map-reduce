@@ -1,15 +1,15 @@
 package ch.zhaw.mapreduce.plugins.socket.impl;
 
-import java.util.List;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
-import ch.zhaw.mapreduce.Context;
-import ch.zhaw.mapreduce.ContextFactory;
-import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.plugins.socket.AgentTask;
+import ch.zhaw.mapreduce.plugins.socket.InvalidAgentTaskException;
 import ch.zhaw.mapreduce.plugins.socket.SocketAgent;
+import ch.zhaw.mapreduce.plugins.socket.SocketTaskResult;
+import ch.zhaw.mapreduce.plugins.socket.TaskRunner;
+import ch.zhaw.mapreduce.plugins.socket.TaskRunnerFactory;
 
 import com.google.inject.assistedinject.Assisted;
 
@@ -30,16 +30,15 @@ public class SocketAgentImpl implements SocketAgent {
 
 	private static final Logger LOG = Logger.getLogger(SocketAgentImpl.class.getName());
 
-	/** Transient, weil die factory nur auf dem client benötigt wird. */
-	private transient final ContextFactory ctxFactory;
-
 	/** IP - Adresse von diesem Client/Worker */
 	private final String clientIp;
+	
+	private final TaskRunnerFactory trFactory;
 
 	@Inject
-	SocketAgentImpl(@Assisted String clientIp, ContextFactory ctxFactory) {
+	SocketAgentImpl(@Assisted String clientIp, TaskRunnerFactory trFactory) {
 		this.clientIp = clientIp;
-		this.ctxFactory = ctxFactory;
+		this.trFactory = trFactory;
 	}
 
 	/**
@@ -54,19 +53,12 @@ public class SocketAgentImpl implements SocketAgent {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Object runTask(AgentTask task) {
+	public SocketTaskResult runTask(AgentTask task) throws InvalidAgentTaskException {
 		String mrUuid = task.getMapReduceTaskUuid();
 		String taskUuid = task.getTaskUuid();
 		LOG.info("New Task to be Run: " + mrUuid + " " + taskUuid);
-		Context ctx = this.ctxFactory.createContext(mrUuid, taskUuid);
-		// TODO how to tell the master we've failed?
-		task.runTask(ctx);
-		List<KeyValuePair> res = ctx.getMapResult();
-		if (res != null) {
-			return res;
-		} else {
-			return ctx.getReduceResult();
-		}
+		TaskRunner runner = this.trFactory.createTaskRunner(task);
+		return runner.runTask();
 	}
 
 	/**
