@@ -18,8 +18,7 @@ public final class MapReduceFactory {
 		try {
 			return (MapReduce) Class.forName("ch.zhaw.mapreduce.CurrentMapReduceImplementation").newInstance();
 		} catch (Exception e) {
-			e.printStackTrace();
-			throw new IllegalStateException("Missing implementation of the MapReduce Framework");
+			throw new IllegalStateException("Missing implementation of the MapReduce Framework", e);
 		}
 	}
 

@@ -49,7 +49,7 @@ public final class Master {
 	private final WorkerTaskFactory workerTaskFactory;
 
 	@Inject
-	public Master(Pool pool, WorkerTaskFactory workerTaskFactory,
+	Master(Pool pool, WorkerTaskFactory workerTaskFactory,
 			@Named("mapReduceTaskUuid") String mapReduceTaskUuid,
 			Provider<Shuffler> shufflerProvider,
 			@Assisted("rescheduleStartPercentage") int rescheduleStartPercentage,
