@@ -5,6 +5,12 @@ import javax.annotation.Nullable;
 import ch.zhaw.mapreduce.plugins.socket.AgentTask;
 
 
+/**
+ * Task mit MapInstruction, optinaler CombinerInstruction und Input, der über das Netz zu einem Client/Worker gesandt wird.
+ * 
+ * @author Reto Hablützel (rethab)
+ *
+ */
 public final class MapAgentTask implements AgentTask {
 
 	private static final long serialVersionUID = -4656085734200620211L;
@@ -17,8 +23,14 @@ public final class MapAgentTask implements AgentTask {
 
 	private final byte[] mapInstruction;
 
+	/**
+	 * Optional. Kann null sein
+	 */
 	private final String combinerInstructionName;
 
+	/**
+	 * Optional. Kann null sein
+	 */
 	private final byte[] combinerInstruction;
 
 	private final String input;
@@ -34,32 +46,53 @@ public final class MapAgentTask implements AgentTask {
 		this.input = input;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String getMapReduceTaskUuid() {
 		return mapReduceTaskUuid;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String getTaskUuid() {
 		return taskUuid;
 	}
 
+	/**
+	 * Name der Klasse, die die MapInstruction implementiert
+	 */
 	public String getMapInstructionName() {
 		return mapInstructionName;
 	}
 
+	/**
+	 * Byte Code der Klasse, die die MapInstruction implementiert
+	 */
 	public byte[] getMapInstruction() {
 		return mapInstruction;
 	}
 
+	/**
+	 * Name der Klasse, die die CombinerInstruction implementiert
+	 */
 	public String getCombinerInstructionName() {
 		return combinerInstructionName;
 	}
 
+	/**
+	 * Byte Code der Klasse, die die CombinerInstruction implementiert
+	 */
 	public byte[] getCombinerInstruction() {
 		return combinerInstruction;
 	}
 
+	/**
+	 * Input für die MapInstruction
+	 */
 	public String getInput() {
 		return input;
 	}

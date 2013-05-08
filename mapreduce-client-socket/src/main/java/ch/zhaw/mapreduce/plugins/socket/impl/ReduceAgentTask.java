@@ -7,6 +7,12 @@ import javax.inject.Inject;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.plugins.socket.AgentTask;
 
+/**
+ * Task mit ReduceInstruction und Inputs, der über das Netz zu einem Client/Worker gesandt wird.
+ * 
+ * @author Reto Hablützel (rethab)
+ *
+ */
 public final class ReduceAgentTask implements AgentTask {
 
 	private static final long serialVersionUID = -1795450051047132175L;
@@ -34,28 +40,46 @@ public final class ReduceAgentTask implements AgentTask {
 		this.values = values;
 	}
 
-	@Override
-	public String getTaskUuid() {
-		return this.taskUuid;
-	}
-
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String getMapReduceTaskUuid() {
 		return this.mapReduceTaskUuid;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public String getTaskUuid() {
+		return this.taskUuid;
+	}
+
+	/**
+	 * Name der Klasse, die die ReduceInstruction implementiert
+	 */
 	public String getReduceInstructionName() {
 		return this.riName;
 	}
 
+	/**
+	 * Byte Code der ReduceInstruction Implementation
+	 */
 	public byte[] getReduceInstruction() {
 		return this.ri;
 	}
 
+	/**
+	 * Schlüssel zum Reduzieren
+	 */
 	public String getKey() {
 		return this.key;
 	}
 
+	/**
+	 * Werte zum Reduzieren
+	 */
 	public List<KeyValuePair> getValues() {
 		return this.values;
 	}

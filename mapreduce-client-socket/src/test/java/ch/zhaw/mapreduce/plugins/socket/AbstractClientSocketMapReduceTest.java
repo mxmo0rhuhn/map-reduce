@@ -17,6 +17,7 @@ import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.WorkerTask;
+import ch.zhaw.mapreduce.plugins.socket.impl.ReduceTaskRunner;
 import ch.zhaw.mapreduce.plugins.socket.impl.TestCombinerInstruction;
 import ch.zhaw.mapreduce.plugins.socket.impl.TestMapInstruction;
 import ch.zhaw.mapreduce.plugins.socket.impl.TestReduceInstruction;
@@ -100,6 +101,8 @@ public abstract class AbstractClientSocketMapReduceTest {
 	protected final String reduceKey = "redKey";
 	
 	protected final List<KeyValuePair> reduceValues = Arrays.asList(new KeyValuePair("key1", "val1"));
+	
+	protected final List<String> reduceResult = Arrays.asList(new String[] {"reduceRes1", "reduceRes2"});
 	
 	/** Kopiert fuer tests von: SocketTaskFactoryImpl */
 	private static byte[] bytes(Object instance) {
