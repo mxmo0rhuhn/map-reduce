@@ -16,7 +16,7 @@ public final class MapReduceUtil {
 					Enumeration<InetAddress> adds = iface.getInetAddresses();
 					while (adds.hasMoreElements()) {
 						InetAddress addr = adds.nextElement();
-						if (!isIpV6(addr) && !addr.isAnyLocalAddress()) {
+						if (!isIpV6(addr) && !addr.isAnyLocalAddress() && !addr.isLoopbackAddress()) {
 							return addr.getHostAddress();
 						}
 					}
