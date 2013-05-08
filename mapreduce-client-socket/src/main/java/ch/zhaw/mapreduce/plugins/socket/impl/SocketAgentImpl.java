@@ -32,7 +32,7 @@ public class SocketAgentImpl implements SocketAgent {
 
 	/** IP - Adresse von diesem Client/Worker */
 	private final String clientIp;
-	
+
 	private final TaskRunnerFactory trFactory;
 
 	@Inject
@@ -56,9 +56,14 @@ public class SocketAgentImpl implements SocketAgent {
 	public SocketTaskResult runTask(AgentTask task) throws InvalidAgentTaskException {
 		String mrUuid = task.getMapReduceTaskUuid();
 		String taskUuid = task.getTaskUuid();
-		LOG.info("New Task to be Run: " + mrUuid + " " + taskUuid);
+
+		LOG.info("ENTER: SocketAgentImpl.runTask: " + mrUuid + " " + taskUuid);
 		TaskRunner runner = this.trFactory.createTaskRunner(task);
-		return runner.runTask();
+		try {
+			return runner.runTask();
+		} finally {
+			LOG.info("EXIT: SocketAgentImpl.runTask: " + mrUuid + " " + taskUuid);
+		}
 	}
 
 	/**

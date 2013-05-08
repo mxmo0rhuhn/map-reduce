@@ -1,6 +1,9 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
+import java.util.logging.Logger;
+
 import ch.zhaw.mapreduce.MapReduceConfig;
+import ch.zhaw.mapreduce.MapReduceUtil;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
 
@@ -11,6 +14,8 @@ import de.root1.simon.Registry;
 import de.root1.simon.Simon;
 
 public class TestSocketServer {
+	
+	private static final Logger LOG = Logger.getLogger(TestSocketServer.class.getName());
 
 	public static void main(String[] args) throws Exception {
 		Injector injector = Guice.createInjector(new MapReduceConfig()).createChildInjector(new SocketServerConfig());
@@ -25,7 +30,7 @@ public class TestSocketServer {
 //			p.enqueueWork(mapTask);
 //		}
 		
-		
+		LOG.info("I, " + MapReduceUtil.getLocalIp() + ", am thee Master and thou shalt be my Slaves!");
 		Registry reg = Simon.createRegistry(4753);
 		reg.bind("MapReduceSocketMaster", new RegistrationServerImpl(p, swFactory));
 		p.enqueueWork(new MapWorkerTask("mrtUuid", "tUuid", new TestMapInstruction(), null, "input"));
