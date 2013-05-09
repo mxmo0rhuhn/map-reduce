@@ -7,12 +7,12 @@ import com.google.inject.Injector;
 
 public class SocketAgentPlugin implements AgentPlugin {
 
-	private ServerPluginPartNameMeBetter binder;
+	private ServersideSimonBinder binder;
 
 	@Override
 	public void start(Injector injector) throws PluginException {
 		Injector child = injector.createChildInjector(new SocketServerConfig());
-		this.binder = child.getInstance(ServerPluginPartNameMeBetter.class);
+		this.binder = child.getInstance(ServersideSimonBinder.class);
 		try {
 			this.binder.bind();
 		} catch (Exception e) {

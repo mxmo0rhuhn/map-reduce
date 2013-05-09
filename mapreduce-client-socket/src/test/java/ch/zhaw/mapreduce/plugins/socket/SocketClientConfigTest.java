@@ -1,29 +1,51 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import org.junit.Test;
 
+import ch.zhaw.mapreduce.plugins.socket.impl.MapTaskRunner;
+import ch.zhaw.mapreduce.plugins.socket.impl.ReduceTaskRunner;
+
 import com.google.inject.Guice;
-import com.google.inject.Injector;
 
-import de.root1.simon.Lookup;
-
-public class SocketClientConfigTest {
-
+public class SocketClientConfigTest extends AbstractClientSocketMapReduceTest {
+	
+	
 	@Test
-	public void shouldUseIpAndPortIfProvided() {
-		Injector injector = Guice.createInjector(new SocketClientConfig("123.234.123.234", 7402));
-		Lookup l = injector.getInstance(Lookup.class);
-		assertEquals(7402, l.getServerPort());
-		assertEquals("123.234.123.234", l.getServerAddress().getHostAddress().toString());
+	public void shouldCreateMapTaskRunner() {
+		MapTaskRunnerFactory fac = Guice.createInjector(new SocketClientConfig(resCollector)).getInstance(MapTaskRunnerFactory.class);
+		MapTaskRunner run = fac.createMapTaskRunner(mrtUuid, taskUuid, mapInstr, combInstr, mapInput);
+		assertNotNull(run);
 	}
 	
 	@Test
-	public void shouldCreateSocketAgentsWithSpecifiedIp() {
-		Injector injector = Guice.createInjector(new SocketClientConfig());
-		SocketAgent sa = injector.getInstance(SocketAgentFactory.class).createSocketAgent("123.123.234.12");
-		assertEquals("123.123.234.12", sa.getIp());
+	public void shouldCreateReduceTaskRunner() {
+		ReduceTaskRunnerFactory fac = Guice.createInjector(new SocketClientConfig(resCollector)).getInstance(ReduceTaskRunnerFactory.class);
+		ReduceTaskRunner run = fac.createReduceTaskRunner(mrtUuid, taskUuid, redInstr, reduceKey, reduceValues);
+		assertNotNull(run);
 	}
+	
+	@Test
+	public void shouldCreateSocketAgent() {
+		SocketAgentFactory fac = Guice.createInjector(new SocketClientConfig(resCollector)).getInstance(SocketAgentFactory.class);
+		SocketAgent sa = fac.createSocketAgent(clientIp);
+		assertNotNull(sa);
+	}
+	
+	@Test
+	public void shouldCreateSuccessResult() {
+		SocketAgentResultFactory fac = Guice.createInjector(new SocketClientConfig(resCollector)).getInstance(SocketAgentResultFactory.class);
+		SocketAgentResult sar = fac.createFromTaskResult(taskResult);
+		assertNotNull(sar);
+	}
+	
+	@Test
+	public void shouldCreateFailureResult() {
+		SocketAgentResultFactory fac = Guice.createInjector(new SocketClientConfig(resCollector)).getInstance(SocketAgentResultFactory.class);
+		SocketAgentResult sar = fac.createFromException(new Exception());
+		assertNotNull(sar);
+	}
+	
 
 }

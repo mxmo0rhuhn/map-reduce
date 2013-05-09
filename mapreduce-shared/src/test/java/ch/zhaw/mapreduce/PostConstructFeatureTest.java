@@ -51,6 +51,7 @@ class SuccessfulPostConstructImpl implements SuccessfulPostConstruct {
 		postConstructInvoked = true;
 	}
 
+	@Override
 	public boolean isPostConstructInvoked() {
 		return this.postConstructInvoked;
 	}

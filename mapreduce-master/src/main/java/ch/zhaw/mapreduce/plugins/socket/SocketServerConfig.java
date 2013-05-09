@@ -7,6 +7,7 @@ import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.impl.FilePersistence;
 import ch.zhaw.mapreduce.plugins.socket.impl.AgentTaskFactoryImpl;
+import ch.zhaw.mapreduce.plugins.socket.impl.AgentRegistratorImpl;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
@@ -17,7 +18,7 @@ public class SocketServerConfig extends AbstractModule {
 	@Override
 	protected void configure() {
 		install(new SharedSocketConfig());
-		bind(RegistrationServer.class).to(RegistrationServerImpl.class);
+		bind(AgentRegistrator.class).to(AgentRegistratorImpl.class);
 		bind(Integer.class).annotatedWith(Names.named("socket.masterpoolsize")).toInstance(1); 
 		bind(ExecutorService.class).annotatedWith(Names.named("socket.workerexecutorservice")).toInstance(
 				Executors.newSingleThreadExecutor());

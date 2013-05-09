@@ -9,8 +9,7 @@ import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.ReduceInstruction;
-import ch.zhaw.mapreduce.plugins.socket.SocketTaskResult;
-import ch.zhaw.mapreduce.plugins.socket.SocketTaskResultFactory;
+import ch.zhaw.mapreduce.plugins.socket.TaskResult;
 import ch.zhaw.mapreduce.plugins.socket.TaskRunner;
 
 import com.google.inject.assistedinject.Assisted;
@@ -37,33 +36,30 @@ public final class ReduceTaskRunner implements TaskRunner {
 
 	private final ContextFactory ctxFactory;
 
-	private final SocketTaskResultFactory strFactory;
-
 	@Inject
 	ReduceTaskRunner(@Assisted("mapReduceTaskUuid") String mapReduceTaskUuid, @Assisted("taskUuid") String taskUuid,
 			@Assisted ReduceInstruction redInstr, @Assisted("key") String key, @Assisted List<KeyValuePair> values,
-			ContextFactory ctxFactory, SocketTaskResultFactory strFactory) {
+			ContextFactory ctxFactory) {
 		this.mapReduceTaskUuid = mapReduceTaskUuid;
 		this.taskUuid = taskUuid;
 		this.redInstr = redInstr;
 		this.key = key;
 		this.values = values;
 		this.ctxFactory = ctxFactory;
-		this.strFactory = strFactory;
 	}
 
 	/**
 	 * Führt die ReduceInstruction aus und gibt die Resultate in der korrekten Struktur zurück.
 	 */
 	@Override
-	public SocketTaskResult runTask() {
+	public TaskResult runTask() {
 		LOG.entering(getClass().getName(), "runTask");
 		Context ctx = this.ctxFactory.createContext(this.mapReduceTaskUuid, this.taskUuid);
 		try {
 			this.redInstr.reduce(ctx, this.key, this.values.iterator());
-			return this.strFactory.createSuccessResult(ctx.getReduceResult());
+			return new ReduceTaskResult(this.mapReduceTaskUuid, this.taskUuid, ctx.getReduceResult());
 		} catch (Exception e) {
-			return this.strFactory.createFailureResult(e);
+			return new ReduceTaskResult(this.mapReduceTaskUuid, this.taskUuid, e);
 		} finally {
 			LOG.exiting(getClass().getName(), "runTask");
 		}

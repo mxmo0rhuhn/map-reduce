@@ -17,7 +17,7 @@ public class SocketClientBinderTest {
 	private Lookup lookup;
 	
 	@Mock
-	private RegistrationServer boundObject;
+	private AgentRegistrator boundObject;
 	
 	@Mock
 	private SocketAgent agent;

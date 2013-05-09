@@ -11,8 +11,7 @@ import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;
-import ch.zhaw.mapreduce.plugins.socket.SocketTaskResult;
-import ch.zhaw.mapreduce.plugins.socket.SocketTaskResultFactory;
+import ch.zhaw.mapreduce.plugins.socket.TaskResult;
 import ch.zhaw.mapreduce.plugins.socket.TaskRunner;
 
 import com.google.inject.assistedinject.Assisted;
@@ -40,26 +39,23 @@ public final class MapTaskRunner implements TaskRunner {
 
 	private final ContextFactory ctxFactory;
 
-	private final SocketTaskResultFactory strFactory;
-
 	@Inject
 	MapTaskRunner(@Assisted("mapReduceTaskUuid") String mapReduceTaskUuid, @Assisted("taskUuid") String taskUuid,
 			@Assisted MapInstruction mapInstr, @Assisted @Nullable CombinerInstruction combInstr,
-			@Assisted("input") String input, ContextFactory ctxFactory, SocketTaskResultFactory strFactory) {
+			@Assisted("input") String input, ContextFactory ctxFactory) {
 		this.mapReduceTaskUuid = mapReduceTaskUuid;
 		this.taskUuid = taskUuid;
 		this.mapInstr = mapInstr;
 		this.combInstr = combInstr;
 		this.input = input;
 		this.ctxFactory = ctxFactory;
-		this.strFactory = strFactory;
 	}
 
 	/**
 	 * Führt den Task aus und kombiniert die Resultate wenn eine Combiner-Instruction existiert.
 	 */
 	@Override
-	public SocketTaskResult runTask() {
+	public TaskResult runTask() {
 		LOG.entering(MapTaskRunner.class.getName(), "runTask");
 		Context ctx = this.ctxFactory.createContext(this.mapReduceTaskUuid, this.taskUuid);
 		try {
@@ -71,9 +67,9 @@ public final class MapTaskRunner implements TaskRunner {
 			if (this.combInstr != null) {
 				mapResult = this.combInstr.combine(mapResult.iterator());
 			}
-			return this.strFactory.createSuccessResult(mapResult);
+			return new MapTaskResult(this.mapReduceTaskUuid, this.taskUuid, mapResult);
 		} catch (Exception e) {
-			return this.strFactory.createFailureResult(e);
+			return new MapTaskResult(this.mapReduceTaskUuid, this.taskUuid, e);
 		} finally {
 			LOG.exiting(MapTaskRunner.class.getName(), "runTask");
 		}

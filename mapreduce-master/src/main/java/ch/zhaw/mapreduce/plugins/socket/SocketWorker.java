@@ -1,15 +1,10 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,45 +12,74 @@ import javax.inject.Inject;
 import javax.inject.Named;
 
 import ch.zhaw.mapreduce.KeyValuePair;
-import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.impl.MapWorkerTask;
-import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 
 import com.google.inject.assistedinject.Assisted;
 
 /**
+ * SocketWorker ist der serverseitige Worker, der die WorkerTasks zu AgentTasks konvertieren lässt und sie dann auf dem
+ * SocketAgent ausführt.
  * 
  * @author Reto Hablützel (rethab)
  * 
  */
-public class SocketWorker implements Worker {
+public class SocketWorker implements Worker, ResultCollectorObserver {
 
 	private static final Logger LOG = Logger.getLogger(SocketWorker.class.getName());
 
-	private final Map<String, Future<Void>> runningTasks = Collections
-			.synchronizedMap(new WeakHashMap<String, Future<Void>>());
-
+	/** RPC */
 	private final SocketAgent agent;
 
 	private final ExecutorService exec;
-
-	private final Persistence persistence;
 
 	private final Pool pool;
 
 	private final AgentTaskFactory atFactory;
 
+	private final SocketResultCollector resCollector;
+
+	private volatile Future<WorkerTask> currentTask;
+
 	@Inject
-	SocketWorker(@Assisted SocketAgent agent, @Named("socket.workerexecutorservice") ExecutorService exec,
-			Persistence persistence, Pool pool, AgentTaskFactory atFactory) {
+	public SocketWorker(@Assisted SocketAgent agent, @Named("socket.workerexecutorservice") ExecutorService exec,
+			Pool pool, AgentTaskFactory atFactory, @Assisted SocketResultCollector resCollector) {
 		this.agent = agent;
 		this.exec = exec;
-		this.persistence = persistence;
 		this.pool = pool;
 		this.atFactory = atFactory;
+		this.resCollector = resCollector;
+	}
+
+	@Override
+	public void resultAvailable(String mapReduceTaskUuid, String taskUuid, boolean success) {
+		Future<WorkerTask> future = this.currentTask;
+		if (future == null) {
+			// this should actually never happen :(
+			LOG.log(Level.SEVERE, "Result is Available for MissingTask {0} {1}", new Object[] { mapReduceTaskUuid,
+					taskUuid });
+		}
+		try {
+			// sollte nie blockieren, aber wir geben ihm ein bisschen zeit
+			WorkerTask task = future.get(100, TimeUnit.MILLISECONDS);
+			if (mapReduceTaskUuid.equals(task.getMapReduceTaskUuid()) && taskUuid.equals(task.getTaskUuid())) {
+				if (success) {
+					task.completed();
+				} else {
+					task.failed();
+				}
+			} else {
+				LOG.log(Level.SEVERE,
+						"Got notification for wrong WorkerTask MapReduceTaskUuid [{0} vs {1}] TaskUuid [{2} vs {3}]",
+						new Object[] { mapReduceTaskUuid, task.getMapReduceTaskUuid(), taskUuid, task.getTaskUuid() });
+			}
+			this.currentTask = null;
+			pool.workerIsFinished(SocketWorker.this);
+		} catch (Exception e) {
+			LOG.log(Level.SEVERE, "Failed to retrieve WorkerTask from Future {0} {1}", new Object[] {
+					mapReduceTaskUuid, taskUuid });
+		}
 	}
 
 	/**
@@ -74,108 +98,73 @@ public class SocketWorker implements Worker {
 	 */
 	@Override
 	public void executeTask(final WorkerTask workerTask) {
-		Future<Void> runningTask = this.exec.submit(new Callable<Void>() {
+		LOG.entering(getClass().getName(), "executeTask", workerTask);
+		if (this.currentTask != null) {
+			throw new IllegalStateException("Cannot accept Work!");
+		}
+		this.currentTask = this.exec.submit(new Callable<WorkerTask>() {
 
 			@Override
-			public Void call() throws Exception {
+			public WorkerTask call() throws Exception {
 				AgentTask agentTask = atFactory.createAgentTask(workerTask);
-				SocketTaskResult result = null;
 				workerTask.started();
-				try {
-					result = agent.runTask(agentTask);
-				} catch (InvalidAgentTaskException iate) {
-					LOG.log(Level.SEVERE, "Failed to run Task on SocketAgent", iate);
+				AgentTaskState state = agent.runTask(agentTask); // RPC
+				switch (state.state()) {
+				case ACCEPTED:
+					LOG.fine("Task Accepted by SocketAgent");
+					resCollector.registerObserver(workerTask.getMapReduceTaskUuid(), workerTask.getTaskUuid(),
+							SocketWorker.this);
+					break;
+				case REJECTED:
+					LOG.warning("Task Rejected by SocketAgent: " + state.msg());
 					workerTask.failed();
 					pool.workerIsFinished(SocketWorker.this);
-					return null;
+					break;
+				default:
+					throw new IllegalStateException("Unhandle: " + state.state());
 				}
-				
-				if (result == null) {
-					LOG.severe("SocketAgent should never return null");
-					workerTask.failed();
-				} else if (!result.wasSuccessful()) {
-					LOG.log(Level.WARNING, "Task failed on SocketAgent", result.getException());
-					workerTask.failed();
-				} else {
-					LOG.fine("Task ran fine on SocketAgent");
-					
-					// TODO besser loesen
-					if (workerTask instanceof MapWorkerTask) {
-						List<KeyValuePair> mapres = (List<KeyValuePair>) result.getResult();
-						for (KeyValuePair pair : mapres) {
-							persistence.storeMap(workerTask.getMapReduceTaskUuid(), workerTask.getTaskUuid(),
-									(String) pair.getKey(), (String) pair.getValue());
-						}
-					}
-
-					else if (workerTask instanceof ReduceWorkerTask) {
-						List<String> redres = (List<String>) result.getResult();
-						for (String res : redres) {
-							persistence.storeReduce(workerTask.getMapReduceTaskUuid(), workerTask.getTaskUuid(), res);
-						}
-					}
-					
-					workerTask.completed();
-				}
-				pool.workerIsFinished(SocketWorker.this);
-				return null;
+				return workerTask;
 			}
 		});
-		String combinedId = workerTask.getMapReduceTaskUuid() + workerTask.getTaskUuid();
-		this.runningTasks.put(combinedId, runningTask);
+		LOG.exiting(getClass().getName(), "executeTask");
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<String> getReduceResult(String mapReduceTaskUuid, String inputUuid) {
-		return this.persistence.getReduce(mapReduceTaskUuid, inputUuid);
+	public List<String> getReduceResult(String mapReduceTaskUuid, String taskUuid) {
+		return this.resCollector.getReduceResult(mapReduceTaskUuid, taskUuid);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public List<KeyValuePair> getMapResult(String mapReduceTaskUuid, String inputUuid) {
-		return this.persistence.getMap(mapReduceTaskUuid, inputUuid);
+	public List<KeyValuePair> getMapResult(String mapReduceTaskUuid, String taskUuid) {
+		return this.resCollector.getMapResult(mapReduceTaskUuid, taskUuid);
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	@Override
-	public void cleanAllResults(String mapReduceTaskUUID) {
-		throw new UnsupportedOperationException("missing feature in persistence");
+	public void cleanAllResults(String mapReduceTaskUuid) {
+		this.resCollector.cleanAllResults(mapReduceTaskUuid);
 	}
 
 	@Override
-	public void cleanSpecificResult(String mapReduceTaskUuid, String inputUuid) {
-		this.persistence.destroy(mapReduceTaskUuid, inputUuid);
+	public void cleanSpecificResult(String mapReduceTaskUuid, String taskUuid) {
+		this.resCollector.cleanResult(mapReduceTaskUuid, taskUuid);
 	}
 
+	/**
+	 * Stop den Task, der momentan grad ausgeführt wird, sodass der SocketWorker wieder für neues verfügbar ist.
+	 */
 	@Override
 	public void stopCurrentTask(String mapReduceUuid, String taskUuid) {
-		String combinedId = mapReduceUuid + taskUuid;
-		Future<Void> runningTask = this.runningTasks.get(combinedId);
-		if (runningTask != null) {
-			if (runningTask.cancel(true)) {
-				// task wurde gestoppt. worker muss zurueck in pool
-				LOG.fine("Task gestoppt");
-				this.pool.workerIsFinished(this);
-			} else {
-				// task konnte nicht gestoppt werden (typischerweise war er halt schon fertig). worker ist bereits
-				// zurueck im pool
-				LOG.fine("Task konnte nicht gestoppt werden. War schon fertig?");
-				this.persistence.destroy(mapReduceUuid, taskUuid);
-			}
-		} else {
-			LOG.info("Task nicht gefunden");
-		}
-	}
-
-	SocketAgent getSocketAgent() {
-		return this.agent;
+		// TODO FIXME
+		throw new UnsupportedOperationException("Missing feature for SocketAgents. Implement Me!");
 	}
 
 }

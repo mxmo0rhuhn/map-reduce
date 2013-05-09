@@ -34,6 +34,7 @@ abstract class AbstractWorkerTask implements WorkerTask {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final Worker getWorker() {
 		return this.worker;
 	}
@@ -41,6 +42,7 @@ abstract class AbstractWorkerTask implements WorkerTask {
 	/**
 	 * {@inheritDoc}
 	 */
+	@Override
 	public final void setWorker(Worker worker) {
 		this.worker = worker;
 	}

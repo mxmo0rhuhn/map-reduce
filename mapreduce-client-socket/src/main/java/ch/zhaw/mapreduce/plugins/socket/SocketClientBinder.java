@@ -2,10 +2,6 @@ package ch.zhaw.mapreduce.plugins.socket;
 
 import java.util.logging.Logger;
 
-import javax.annotation.PostConstruct;
-import javax.inject.Inject;
-import javax.inject.Named;
-
 import de.root1.simon.Lookup;
 
 public class SocketClientBinder {
@@ -14,24 +10,23 @@ public class SocketClientBinder {
 
 	private final Lookup lookup;
 
-	private final String masterRegistratorName;
+	private final String agentRegistratorSimonBinding;
 
-	private RegistrationServer regServer;
+	private AgentRegistrator regServer;
 
-	@Inject
-	SocketClientBinder(Lookup lookup, @Named("socket.mastername") String masterRegistratorName) {
+	SocketClientBinder(Lookup lookup, String agentRegistratorSimonBinding) {
 		this.lookup = lookup;
-		this.masterRegistratorName = masterRegistratorName;
+		this.agentRegistratorSimonBinding = agentRegistratorSimonBinding;
 	}
 
-	@PostConstruct
 	public void bind() throws Exception {
-		this.regServer = (RegistrationServer) this.lookup.lookup(masterRegistratorName);
+		this.regServer = (AgentRegistrator) this.lookup.lookup(agentRegistratorSimonBinding);
 	}
 	
 	public void registerAgent(SocketAgent agent) {
-		LOG.info("Donating Worker to Master");
+		LOG.entering(getClass().getName(), "registerAgent", agent);
 		this.regServer.register(agent);
+		LOG.exiting(getClass().getName(), "registerAgent", agent);
 	}
 
 	public void release() {

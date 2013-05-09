@@ -38,16 +38,16 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 	/**
 	 * Der zu reduzierende Input
 	 */
-	private final List<KeyValuePair> input;
+	private final List<KeyValuePair> values;
 
 	@Inject
 	public ReduceWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUuid,
-			@Assisted ReduceInstruction reduceInstruction, @Assisted("key") String key,
-			@Assisted List<KeyValuePair> inputs, @Named("taskUuid") String taskUuid) {
+			@Named("taskUuid") String taskUuid, @Assisted ReduceInstruction reduceInstruction,
+			@Assisted("key") String key, @Assisted List<KeyValuePair> inputs) {
 		super(mapReduceTaskUuid, taskUuid);
 		this.key = key;
 		this.reduceInstruction = reduceInstruction;
-		this.input = inputs;
+		this.values = inputs;
 	}
 
 	/** {@inheritDoc} */
@@ -56,7 +56,7 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 		started();
 
 		try {
-			this.reduceInstruction.reduce(ctx, key, input.iterator());
+			this.reduceInstruction.reduce(ctx, key, values.iterator());
 			completed();
 		} catch (Exception e) {
 			LOG.log(Level.WARNING, "Instruction threw Exception", e);
@@ -81,6 +81,10 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 	@Override
 	public String getInput() {
 		return this.key;
+	}
+	
+	public List<KeyValuePair> getValues() {
+		return this.values;
 	}
 
 	@Override

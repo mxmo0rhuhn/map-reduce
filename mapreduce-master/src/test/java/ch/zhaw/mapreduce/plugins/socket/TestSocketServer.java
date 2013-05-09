@@ -6,6 +6,7 @@ import ch.zhaw.mapreduce.MapReduceConfig;
 import ch.zhaw.mapreduce.MapReduceUtil;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
+import ch.zhaw.mapreduce.plugins.socket.impl.AgentRegistratorImpl;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -24,6 +25,7 @@ public class TestSocketServer {
 		//
 		Pool p = injector.getInstance(Pool.class);
 		SocketWorkerFactory swFactory = injector.getInstance(SocketWorkerFactory.class);
+		SocketResultCollector resCollector = injector.getInstance(SocketResultCollector.class);
 		//
 		// for (int i = 0; i < 10; i++) {
 		// MapWorkerTask mapTask = new MapWorkerTask("myMapReduceId", "myTaskId"+i, new TestMapInstruction(), null,
@@ -33,7 +35,7 @@ public class TestSocketServer {
 
 		LOG.info("I, " + MapReduceUtil.getLocalIp() + ", am thee Master and thou shalt be my Slaves!");
 		Registry reg = Simon.createRegistry(4753);
-		reg.bind("MapReduceSocketMaster", new RegistrationServerImpl(p, swFactory));
+		reg.bind("MapReduceSocketMaster", new AgentRegistratorImpl(p, swFactory, resCollector));
 		for (int i = 0; i < 10000; i++) {
 			p.enqueueWork(new MapWorkerTask("mrtUuid", "tUuid" + i, new TestMapInstruction(), null, "input"));
 		}

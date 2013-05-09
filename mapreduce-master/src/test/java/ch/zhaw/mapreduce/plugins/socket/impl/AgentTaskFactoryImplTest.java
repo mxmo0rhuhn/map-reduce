@@ -3,26 +3,24 @@ package ch.zhaw.mapreduce.plugins.socket.impl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
 import ch.zhaw.mapreduce.MapEmitter;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
+import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
+import ch.zhaw.mapreduce.plugins.socket.AbstractMapReduceMasterSocketTest;
 import ch.zhaw.mapreduce.plugins.socket.ByteArrayClassLoader;
+import ch.zhaw.mapreduce.plugins.socket.TestCombinerInstruction;
 import ch.zhaw.mapreduce.plugins.socket.TestMapInstruction;
+import ch.zhaw.mapreduce.plugins.socket.TestReduceInstruction;
 
-public class AgentTaskFactoryImplTest {
+public class AgentTaskFactoryImplTest extends AbstractMapReduceMasterSocketTest {
 
-	private final String mrUuid = "mrtUuid";
-
-	private final String taskUuid = "taskUuid";
-
-	private final String input = "input";
 	
 	@Test
-	public void shouldCorrectlyAssignParametersWithoutCombiner() {
+	public void shouldCorrectlyAssignMapParametersWithoutCombiner() {
 		MapWorkerTask mwt = new MapWorkerTask(mrUuid, taskUuid, new TestMapInstruction(), null, input);
 		MapAgentTask agentTask = (MapAgentTask) new AgentTaskFactoryImpl().createAgentTask(mwt);
 		assertEquals(mrUuid, agentTask.getMapReduceTaskUuid());
@@ -34,8 +32,25 @@ public class AgentTaskFactoryImplTest {
 	}
 
 	@Test
-	public void shouldCorrectlyAssignParametersWithCombiner() {
-		fail("implement me");
+	public void shouldCorrectlyAssignMapParametersWithCombiner() {
+		MapWorkerTask mwt = new MapWorkerTask(mrUuid, taskUuid, new TestMapInstruction(), new TestCombinerInstruction(), input);
+		MapAgentTask agentTask = (MapAgentTask) new AgentTaskFactoryImpl().createAgentTask(mwt);
+		assertEquals(mrUuid, agentTask.getMapReduceTaskUuid());
+		assertEquals(taskUuid, agentTask.getTaskUuid());
+		assertNotNull(agentTask.getMapInstruction());
+		assertEquals(TestMapInstruction.class.getName(), agentTask.getMapInstructionName());
+		assertNotNull(agentTask.getCombinerInstruction());
+		assertEquals(TestCombinerInstruction.class.getName(), agentTask.getCombinerInstructionName());
+	}
+	
+	@Test
+	public void shouldCorrectlyAssignReduceParameters() {
+		ReduceWorkerTask rwt = new ReduceWorkerTask(mrUuid, taskUuid, new TestReduceInstruction(), reduceKey, reduceValues);
+		ReduceAgentTask agentTask = (ReduceAgentTask) new AgentTaskFactoryImpl().createAgentTask(rwt);
+		assertEquals(mrUuid, agentTask.getMapReduceTaskUuid());
+		assertEquals(taskUuid, agentTask.getTaskUuid());
+		assertEquals(TestReduceInstruction.class.getName(), agentTask.getReduceInstructionName());
+		assertNotNull(agentTask.getReduceInstruction());
 	}
 
 	@Test

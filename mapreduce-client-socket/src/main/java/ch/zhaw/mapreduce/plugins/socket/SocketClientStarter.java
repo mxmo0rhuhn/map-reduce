@@ -5,6 +5,9 @@ import ch.zhaw.mapreduce.MapReduceUtil;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
+import de.root1.simon.Lookup;
+import de.root1.simon.Simon;
+
 /**
  * 
  * @author Reto Hablützel (rethab)
@@ -29,9 +32,12 @@ public class SocketClientStarter {
 		int masterport = Integer.parseInt(args[1]);
 		int nworker = args.length == 3 ? Integer.parseInt(args[2]) : Runtime.getRuntime().availableProcessors() + 1;
 		
-		Injector injector = Guice.createInjector(new SocketClientConfig(masterip, masterport));
+		Lookup lookup = Simon.createNameLookup(masterip, masterport);
+		SocketResultCollector resCollector = (SocketResultCollector) lookup.lookup(SharedSocketConfig.SOCKET_RESULT_COLLECTOR_SIMON_BINDING);
+		
+		Injector injector = Guice.createInjector(new SocketClientConfig(resCollector));
 		SocketAgentFactory saFactory = injector.getInstance(SocketAgentFactory.class);
-		binder = injector.getInstance(SocketClientBinder.class);
+		binder = new SocketClientBinder(lookup, SharedSocketConfig.AGENT_REGISTRATOR_SIMON_BINDING);
 		
 		for (int i = 0; i < nworker; i++) {
 			binder.registerAgent(saFactory.createSocketAgent(clientIp));

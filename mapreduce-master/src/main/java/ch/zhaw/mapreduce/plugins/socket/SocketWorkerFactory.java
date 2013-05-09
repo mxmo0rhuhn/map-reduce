@@ -1,7 +1,5 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
-import ch.zhaw.mapreduce.Worker;
-
 /**
  * Factory um neue SocketWorker zu erstellen. Die Factory basiert auf AssistedInject von Guice.
  * 
@@ -15,8 +13,10 @@ public interface SocketWorkerFactory {
 	 * 
 	 * @param eine
 	 *            Referenz zum SocketAgent (client)
+	 * @param Referenz
+	 *            zum SocketResultCollector, da wo alle Resultate sind
 	 * @return Instanz vom Worker
 	 */
-	Worker createSocketWorker(SocketAgent agent);
+	SocketWorker createSocketWorker(SocketAgent agent, SocketResultCollector resultCollector);
 
 }

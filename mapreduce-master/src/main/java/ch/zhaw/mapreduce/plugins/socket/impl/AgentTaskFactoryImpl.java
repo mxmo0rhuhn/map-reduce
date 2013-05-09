@@ -7,32 +7,44 @@ import java.util.logging.Logger;
 
 import ch.zhaw.mapreduce.WorkerTask;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
+import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 import ch.zhaw.mapreduce.plugins.socket.AgentTask;
 import ch.zhaw.mapreduce.plugins.socket.AgentTaskFactory;
 
 public class AgentTaskFactoryImpl implements AgentTaskFactory {
 
 	private static final int BUF_SIZE = 256;
-	
+
 	private static final Logger LOG = Logger.getLogger(AgentTaskFactoryImpl.class.getName());
 
 	@Override
 	public AgentTask createAgentTask(WorkerTask workerTask) {
 		if (workerTask instanceof MapWorkerTask) {
 			return createMapAgentTask((MapWorkerTask) workerTask);
+		} else if (workerTask instanceof ReduceWorkerTask) {
+			return createReduceAgentTask((ReduceWorkerTask) workerTask);
 		} else {
-			throw new UnsupportedOperationException("reduce");
+			throw new IllegalArgumentException("Unknown Type of WorkerTask: " + workerTask);
 		}
 	}
 
+	/**
+	 * Erstellt neuen MapAgentTask basierend auf dem MapWorkerTask
+	 */
 	private AgentTask createMapAgentTask(MapWorkerTask mwt) {
-		return new MapAgentTask(mwt.getMapReduceTaskUuid(), mwt.getTaskUuid(),
-			name(mwt.getMapInstruction()), bytes(mwt.getMapInstruction()),
-			mwt.getCombinerInstruction() != null ? name(mwt.getCombinerInstruction()) : null,
-			mwt.getCombinerInstruction() != null ? bytes(mwt.getCombinerInstruction()) : null,
-			mwt.getInput());
+		return new MapAgentTask(mwt.getMapReduceTaskUuid(), mwt.getTaskUuid(), name(mwt.getMapInstruction()),
+				bytes(mwt.getMapInstruction()),
+				mwt.getCombinerInstruction() != null ? name(mwt.getCombinerInstruction()) : null,
+				mwt.getCombinerInstruction() != null ? bytes(mwt.getCombinerInstruction()) : null, mwt.getInput());
 	}
-	
+
+	/**
+	 * Erstellt neuen ReduceAgentTask basierend auf dem ReduceWorkerTask
+	 */
+	private AgentTask createReduceAgentTask(ReduceWorkerTask rwt) {
+		return new ReduceAgentTask(rwt.getMapReduceTaskUuid(), rwt.getTaskUuid(), name(rwt.getReduceInstruction()),
+				bytes(rwt.getReduceInstruction()), rwt.getInput(), rwt.getValues());
+	}
 
 	/**
 	 * Liest die bytes aus der Klasse, die hier als Instanz uebergeben wurde. Die bytes werden dann an den Client

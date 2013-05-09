@@ -16,16 +16,13 @@ public interface SocketAgent {
 	void helloslave();
 
 	/**
-	 * Wird vom Master/SocketWorker aufgerufen, um einen Task auf dem Client/Worker auszuführen. Das Resultat wird als
-	 * Rückgabewert zurückgegeben.
+	 * Wird vom Master/SocketWorker aufgerufen, um einen Task auf dem Client/Worker auszuführen.
 	 * 
 	 * @param task
 	 *            der auszuführende Task
-	 * @return das Resultat der Berechnung
-	 * @throws InvalidAgentTaskException
-	 *             wenn der Agent den Task nicht ausführen kann
+	 * @return ob der task akzeptiert wurde oder nicht
 	 */
-	SocketTaskResult runTask(AgentTask task) throws InvalidAgentTaskException;
+	AgentTaskState runTask(AgentTask task) ;
 
 	/**
 	 * Liefer die IP vom Client/Worker

@@ -5,7 +5,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
+import org.jmock.Sequence;
+import org.jmock.api.ThreadingPolicy;
+import org.jmock.auto.Auto;
 import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.junit.Rule;
@@ -17,7 +21,6 @@ import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.WorkerTask;
-import ch.zhaw.mapreduce.plugins.socket.impl.ReduceTaskRunner;
 import ch.zhaw.mapreduce.plugins.socket.impl.TestCombinerInstruction;
 import ch.zhaw.mapreduce.plugins.socket.impl.TestMapInstruction;
 import ch.zhaw.mapreduce.plugins.socket.impl.TestReduceInstruction;
@@ -32,7 +35,17 @@ import ch.zhaw.mapreduce.plugins.socket.impl.TestReduceInstruction;
 public abstract class AbstractClientSocketMapReduceTest {
 
 	@Rule
-	public JUnitRuleMockery mockery = new JUnitRuleMockery();
+	public JUnitRuleMockery mockery = new JUnitRuleMockery() {
+		{
+			ThreadingPolicy pol = useThreadingPolicy();
+			if (pol != null) {
+				setThreadingPolicy(pol);
+			}
+		}
+	};
+	
+	@Auto
+	protected Sequence events;
 
 	@Mock
 	protected MapInstruction mapInstr;
@@ -56,11 +69,11 @@ public abstract class AbstractClientSocketMapReduceTest {
 	protected AgentTask aTask;
 
 	@Mock
-	protected SocketTaskResult result;
+	protected TaskResult taskResult;
 
 	@Mock
 	protected TaskRunnerFactory trFactory;
-	
+
 	@Mock
 	protected MapTaskRunnerFactory mtrFactory;
 
@@ -71,11 +84,19 @@ public abstract class AbstractClientSocketMapReduceTest {
 	protected TaskRunner taskRunner;
 
 	@Mock
-	protected SocketTaskResultFactory strFactory;
+	protected ExecutorService execMock;
 
 	@Mock
-	protected SocketTaskResult stResult;
-	
+	protected SocketResultCollector resCollector;
+
+	@Mock
+	protected SocketAgentResultFactory sarFactory;
+
+	@Mock
+	protected SocketAgentResult saResult;
+
+	protected final long taskRunTimeout = 1000;
+
 	protected final String miName = TestMapInstruction.class.getName();
 
 	protected final byte[] mi = bytes(new TestMapInstruction());
@@ -97,13 +118,17 @@ public abstract class AbstractClientSocketMapReduceTest {
 	protected final String taskUuid = "taskUuid";
 
 	protected final String mapInput = "mapInput";
-	
+
 	protected final String reduceKey = "redKey";
-	
+
 	protected final List<KeyValuePair> reduceValues = Arrays.asList(new KeyValuePair("key1", "val1"));
-	
-	protected final List<String> reduceResult = Arrays.asList(new String[] {"reduceRes1", "reduceRes2"});
-	
+
+	protected final List<String> reduceResult = Arrays.asList(new String[] { "reduceRes1", "reduceRes2" });
+
+	protected ThreadingPolicy useThreadingPolicy() {
+		return null;
+	}
+
 	/** Kopiert fuer tests von: SocketTaskFactoryImpl */
 	private static byte[] bytes(Object instance) {
 		Class<?> klass = instance.getClass();

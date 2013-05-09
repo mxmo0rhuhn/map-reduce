@@ -9,7 +9,6 @@ public class TestMapInstruction implements MapInstruction {
 	public void map(MapEmitter emitter, String input) {
 		try {
 			System.out.println("sleeping");
-			Thread.sleep(50);
 			System.out.println("done sleeping");
 		} catch (Exception e) {
 			System.err.println(e);

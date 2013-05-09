@@ -21,14 +21,15 @@ public class SocketConfigTest {
 	@Mock
 	private SocketAgent agent;
 	
+	@Mock
+	private SocketResultCollector resCollector;
+	
 	@Test
 	public void shouldCreateSocketTask() {
 		Injector injector = Guice.createInjector(new MapReduceConfig()).createChildInjector(new SocketServerConfig());
-		Worker worker = injector.getInstance(SocketWorkerFactory.class).createSocketWorker(agent);
+		Worker worker = injector.getInstance(SocketWorkerFactory.class).createSocketWorker(agent, resCollector);
 		assertNotNull(worker);
 		assertTrue(worker instanceof SocketWorker);
-		SocketWorker sworker = (SocketWorker)worker;
-		assertSame(agent, sworker.getSocketAgent());
 	}
 
 }

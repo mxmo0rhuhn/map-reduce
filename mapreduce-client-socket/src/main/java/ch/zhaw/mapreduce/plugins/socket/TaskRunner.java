@@ -14,9 +14,9 @@ public interface TaskRunner {
 	 * Führt den Task aus und füllt das Resultat in ein SocketTaskResult. Darin muss auch die Exception, falls eine
 	 * geworfen wurde.
 	 * 
-	 * @return eine Instanz vom SocketTaskResult. Darf nicht null sein - im Fehlerfall muss die Exception Teil des
+	 * @return eine Instanz vom TaskResult. Darf nicht null sein - im Fehlerfall muss die Exception Teil des
 	 *         Resultats sein.
 	 */
-	SocketTaskResult runTask();
+	TaskResult runTask();
 
 }
