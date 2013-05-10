@@ -13,24 +13,22 @@ import ch.zhaw.mapreduce.WorkerTask;
  */
 abstract class AbstractWorkerTask implements WorkerTask {
 
-	private static final long serialVersionUID = 7421579837577817746L;
-
 	private static final Logger LOG = Logger.getLogger(AbstractWorkerTask.class.getName());
-	
+
 	private final String mapReduceTaskUuid;
-	
+
 	private final String taskUuid;
 
 	/** Der Zustand in dem sich der Worker befindet */
 	private volatile State currentState = State.INITIATED;
-	
+
 	private transient volatile Worker worker;
 
 	AbstractWorkerTask(String mapReduceTaskUuid, String taskUuid) {
 		this.mapReduceTaskUuid = mapReduceTaskUuid;
 		this.taskUuid = taskUuid;
 	}
-	
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -38,7 +36,7 @@ abstract class AbstractWorkerTask implements WorkerTask {
 	public final Worker getWorker() {
 		return this.worker;
 	}
-	
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -54,7 +52,7 @@ abstract class AbstractWorkerTask implements WorkerTask {
 	public final String getMapReduceTaskUuid() {
 		return this.mapReduceTaskUuid;
 	}
-	
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -105,6 +103,12 @@ abstract class AbstractWorkerTask implements WorkerTask {
 		}
 		LOG.finest("From " + this.currentState + " to " + newState);
 		this.currentState = newState;
+	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + "[MapReduceTaskUuid=" + this.mapReduceTaskUuid + ",TaskUuid=" + this.taskUuid
+				+ ",State=" + this.currentState + "]";
 	}
 
 }

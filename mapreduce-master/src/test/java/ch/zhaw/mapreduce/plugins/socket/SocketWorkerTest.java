@@ -90,7 +90,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 			oneOf(workerTask).completed();
 			then(taskRunnerState.is("taskDone"));
 		}});
-		p.enqueueWork(workerTask);
+		p.enqueueTask(workerTask);
 		sync.waitUntil(taskRunnerState.is("taskRunning"), 200);
 		sw.resultAvailable(mrUuid, taskUuid, true);
 		sync.waitUntil(taskRunnerState.is("taskDone"), 200);

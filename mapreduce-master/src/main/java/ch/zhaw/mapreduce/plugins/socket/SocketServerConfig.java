@@ -14,6 +14,7 @@ import ch.zhaw.mapreduce.impl.FilePersistence;
 import ch.zhaw.mapreduce.impl.SocketResultCollectorImpl;
 import ch.zhaw.mapreduce.plugins.socket.impl.AgentRegistratorImpl;
 import ch.zhaw.mapreduce.plugins.socket.impl.AgentTaskFactoryImpl;
+import ch.zhaw.mapreduce.plugins.socket.impl.NamedThreadFactory;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -24,7 +25,7 @@ public class SocketServerConfig extends AbstractModule {
 	
 	private static final Logger LOG = Logger.getLogger(SocketServerConfig.class.getName());
 	
-	private static final int DEFAULT_TASKRUNNER_SERVICE_POOL_SIZE = 3;
+	private static final int DEFAULT_TASKRUNNER_SERVICE_POOL_SIZE = 1;
 	
 	@Override
 	protected void configure() {
@@ -48,7 +49,7 @@ public class SocketServerConfig extends AbstractModule {
 	private ExecutorService taskrunnerservice() {
 		int poolSize = sysProp("socket.taskrunnerservice", DEFAULT_TASKRUNNER_SERVICE_POOL_SIZE);
 		LOG.info("Starting ExecutorService for TaskRunnner with PoolSize="+poolSize);
-		return Executors.newFixedThreadPool(poolSize);
+		return Executors.newFixedThreadPool(poolSize, new NamedThreadFactory("SocketWorkerTaskRunner"));
 	}
 	
 	int sysProp(String name, int def) {

@@ -22,8 +22,6 @@ import com.google.inject.assistedinject.Assisted;
  */
 public class MapWorkerTask extends AbstractWorkerTask {
 
-	private static final long serialVersionUID = -6784218417643187180L;
-
 	private static final Logger LOG = Logger.getLogger(MapWorkerTask.class.getName());
 
 	/** Aufgabe, die der Task derzeit ausführt */

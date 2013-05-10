@@ -162,7 +162,7 @@ public class ReduceWorkerTaskTest {
 				will(returnValue(ctx));
 			}
 		});
-		pool.enqueueWork(task);
+		pool.enqueueTask(task);
 		Thread.yield();
 		Thread.sleep(200);
 		assertEquals(State.INPROGRESS, task.getCurrentState());
@@ -210,11 +210,11 @@ public class ReduceWorkerTaskTest {
 				will(returnValue(ctx));
 			}
 		});
-		pool.enqueueWork(task);
+		pool.enqueueTask(task);
 		assertTrue(threadExec1.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.FAILED, task.getCurrentState());
 		assertSame(worker1, task.getWorker());
-		pool.enqueueWork(task);
+		pool.enqueueTask(task);
 		assertTrue(threadExec2.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.COMPLETED, task.getCurrentState());
 		assertSame(worker2, task.getWorker());
@@ -230,7 +230,7 @@ public class ReduceWorkerTaskTest {
 				never(reduceInstr);
 			}
 		});
-		pool.enqueueWork(task);
+		pool.enqueueTask(task);
 		assertEquals(State.ENQUEUED, task.getCurrentState());
 	}
 

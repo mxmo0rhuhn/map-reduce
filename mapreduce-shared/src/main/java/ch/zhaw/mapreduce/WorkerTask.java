@@ -1,6 +1,5 @@
 package ch.zhaw.mapreduce;
 
-import java.io.Serializable;
 
 
 
@@ -10,7 +9,7 @@ import java.io.Serializable;
  * @author Max
  * 
  */
-public interface WorkerTask extends Serializable {
+public interface WorkerTask {
 
 	// Alle möglichen Zustände in denen sich Worker befinden kann
 	public enum State {

@@ -146,7 +146,7 @@ public final class Master {
 					mapInstruction, combinerInstruction, todo);
 
 			activeTasks.add(new KeyValuePair<String, WorkerTask>(mapTaskUuid, mapTask));
-			pool.enqueueWork(mapTask);
+			pool.enqueueTask(mapTask);
 		}
 		return uuidToInputMapping;
 	}
@@ -187,7 +187,7 @@ public final class Master {
 					mapReduceTaskUuid, curInput.getKey(), reduceInstruction, curInput.getValue());
 
 			activeTasks.add(new KeyValuePair<String, WorkerTask>(curInput.getKey(), reduceTask));
-			pool.enqueueWork(reduceTask);
+			pool.enqueueTask(reduceTask);
 			reduceToUuid.put(curInput.getKey(), curInput);
 		}
 		return reduceToUuid;
@@ -320,7 +320,7 @@ public final class Master {
 
 				activeWorkerTasks.add(new KeyValuePair<String, WorkerTask>(rescheduleTodo.getKey(),
 						mapTask));
-				pool.enqueueWork(mapTask);
+				pool.enqueueTask(mapTask);
 			}
 			break;
 		case REDUCE:
@@ -333,7 +333,7 @@ public final class Master {
 
 				activeWorkerTasks.add(new KeyValuePair<String, WorkerTask>(rescheduleTodo.getKey(),
 						reduceTask));
-				pool.enqueueWork(reduceTask);
+				pool.enqueueTask(reduceTask);
 			}
 
 			break;

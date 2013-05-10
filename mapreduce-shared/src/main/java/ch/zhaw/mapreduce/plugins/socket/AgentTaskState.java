@@ -1,5 +1,7 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
+import java.io.Serializable;
+
 /**
  * Wenn der SocketWorker dem SocketAgent einen Task zu Ausführung gibt, kriegt er einen Status zurück, ob der Task
  * akzeptiert wurde etc.
@@ -7,7 +9,9 @@ package ch.zhaw.mapreduce.plugins.socket;
  * @author Reto Hablützel (rethab)
  * 
  */
-public final class AgentTaskState {
+public final class AgentTaskState implements Serializable {
+
+	private static final long serialVersionUID = 741887843664884234L;
 
 	public enum State {
 		/**

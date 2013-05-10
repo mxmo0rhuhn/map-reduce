@@ -38,6 +38,7 @@ public class SocketClientStarter {
 		Injector injector = Guice.createInjector(new SocketClientConfig(resCollector, nworker));
 		SocketAgentFactory saFactory = injector.getInstance(SocketAgentFactory.class);
 		binder = new SocketClientBinder(lookup, SharedSocketConfig.AGENT_REGISTRATOR_SIMON_BINDING);
+		binder.bind();
 		
 		for (int i = 0; i < nworker; i++) {
 			binder.registerAgent(saFactory.createSocketAgent(clientIp));

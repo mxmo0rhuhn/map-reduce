@@ -31,6 +31,9 @@ public class SocketWorker implements Worker, SocketResultObserver {
 
 	/** RPC */
 	private final SocketAgent agent;
+	
+	/** Cache IP wegen Performance */
+	private final String agentIP;
 
 	private final ExecutorService taskRunnerService;
 
@@ -46,6 +49,7 @@ public class SocketWorker implements Worker, SocketResultObserver {
 	public SocketWorker(@Assisted SocketAgent agent, @Named("taskrunnerservice") ExecutorService exec, Pool pool,
 			AgentTaskFactory atFactory, @Assisted SocketResultCollector resCollector) {
 		this.agent = agent;
+		this.agentIP = agent.getIp();
 		this.taskRunnerService = exec;
 		this.pool = pool;
 		this.atFactory = atFactory;
@@ -170,6 +174,11 @@ public class SocketWorker implements Worker, SocketResultObserver {
 	public void stopCurrentTask(String mapReduceUuid, String taskUuid) {
 		// TODO FIXME
 		throw new UnsupportedOperationException("Missing feature for SocketAgents. Implement Me!");
+	}
+	
+	@Override
+	public String toString() {
+		return getClass().getSimpleName()+" for SocketAgent with IP="+this.agentIP;
 	}
 
 }

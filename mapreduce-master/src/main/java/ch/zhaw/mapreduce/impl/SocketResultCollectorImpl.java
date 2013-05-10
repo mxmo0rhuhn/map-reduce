@@ -22,7 +22,7 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 
 	private static final Logger LOG = Logger.getLogger(SocketResultCollectorImpl.class.getName());
 
-	private final ConcurrentMap<String, SocketResultObserver> observers = new ConcurrentHashMap<String, SocketResultObserver>();
+	private final ConcurrentMap<String, ResultState> results = new ConcurrentHashMap<String, ResultState>();
 
 	private final Persistence pers;
 
@@ -49,6 +49,14 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 
 	@Override
 	public void registerObserver(String mapReduceTaskUuid, String taskUuid, SocketResultObserver observer) {
+		String key = createKey(mapReduceTaskUuid, taskUuid);
+		ResultState resultState = this.results.putIfAbsent(key, ResultState.requestedBy(observer));
+		if (resultState != null) {
+			if (resultState.available()) {
+				// ok. notifying.. but how bout success??
+			}
+		}
+		//wie wärs mit einer liste von bereits verfügbaren resultaten die halt zu schnell hier waren.
 		if (null != this.observers.putIfAbsent(createKey(mapReduceTaskUuid, taskUuid), observer)) {
 			LOG.log(Level.SEVERE, "This Task is already Observed! MapReduceTaskUuid={0} TaskUuid={1}",
 					new Object[] { mapReduceTaskUuid, taskUuid });
@@ -59,11 +67,18 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 
 	private void notifySocketWorker(String mapReduceTaskUuid, String taskUuid, boolean wasSuccessful) {
 		LOG.entering(getClass().getName(), "notifySocketWorker", new Object[]{mapReduceTaskUuid, taskUuid, wasSuccessful});
-		SocketResultObserver observer = this.observers.remove(createKey(mapReduceTaskUuid, taskUuid));
-		if (observer == null) {
-			LOG.log(Level.SEVERE, "No Observer found for MapReduceTaskUuid={0} TaskUuid={1}", new Object[]{mapReduceTaskUuid, taskUuid});
+		String key = createKey(mapReduceTaskUuid, taskUuid);
+		ResultState resultState = this.results.putIfAbsent(key, ResultState.resultAvailable());
+		if (null != resultState) {
+			if (resultState.requested()) {
+				LOG.log(Level.FINE, "Result was Requested MapReduceTaskUuid={0}, TaskUuid={1}", new Object[]{mapReduceTaskUuid, taskUuid});
+				SocketResultObserver observer = resultState.requestedBy();
+				observer.resultAvailable(mapReduceTaskUuid, taskUuid, wasSuccessful);
+			} else {
+				LOG.log(Level.SEVERE, "Result in unexpected State={0} for MapReduceTaskUuid={1}, TaskUuid={2}", new Object[]{resultState, mapReduceTaskUuid, taskUuid});
+			}
 		} else {
-			observer.resultAvailable(mapReduceTaskUuid, taskUuid, wasSuccessful);
+			LOG.log(Level.FINE, "Result for MapReduceTaskUuid={0}, TaskUuid={1} now Available", new Object[]{mapReduceTaskUuid, taskUuid});
 		}
 		LOG.exiting(getClass().getName(), "notifySocketWorker");
 	}

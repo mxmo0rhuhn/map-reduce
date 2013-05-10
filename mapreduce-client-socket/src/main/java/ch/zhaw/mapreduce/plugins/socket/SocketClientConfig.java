@@ -14,6 +14,7 @@ import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.impl.InMemoryPersistence;
 import ch.zhaw.mapreduce.impl.LocalContext;
 import ch.zhaw.mapreduce.plugins.socket.impl.MapTaskRunner;
+import ch.zhaw.mapreduce.plugins.socket.impl.NamedThreadFactory;
 import ch.zhaw.mapreduce.plugins.socket.impl.ReduceTaskRunner;
 import ch.zhaw.mapreduce.plugins.socket.impl.SocketAgentImpl;
 import ch.zhaw.mapreduce.plugins.socket.impl.SocketAgentResultFactoryImpl;
@@ -61,7 +62,7 @@ public final class SocketClientConfig extends AbstractModule {
 	@Named("taskRunnerService")
 	private ExecutorService taskRunnerService() {
 		LOG.info("Use Pool of Size " + this.nworker + " for TaskRunnerService");
-		return Executors.newFixedThreadPool(this.nworker);
+		return Executors.newFixedThreadPool(this.nworker, new NamedThreadFactory("TaskRunnerService"));
 	}
 
 	@Provides
@@ -70,7 +71,7 @@ public final class SocketClientConfig extends AbstractModule {
 	private ExecutorService resultPusherService() {
 		int poolSize = (int) sysProp("resultPusherService", this.nworker);
 		LOG.info("Use Pool of Size " + poolSize + " for ResultPusherService");
-		return Executors.newFixedThreadPool(poolSize);
+		return Executors.newFixedThreadPool(poolSize, new NamedThreadFactory("ResultPusherService"));
 	}
 
 	long sysProp(String name, long def) {

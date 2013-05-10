@@ -21,8 +21,6 @@ import com.google.inject.assistedinject.Assisted;
  */
 public class ReduceWorkerTask extends AbstractWorkerTask {
 
-	private static final long serialVersionUID = -4544962800740268187L;
-
 	private static final Logger LOG = Logger.getLogger(ReduceWorkerTask.class.getName());
 
 	/**

@@ -3,13 +3,14 @@ package ch.zhaw.mapreduce.plugins.socket.impl;
 import static ch.zhaw.mapreduce.plugins.socket.AgentTaskState.State.ACCEPTED;
 import static ch.zhaw.mapreduce.plugins.socket.AgentTaskState.State.REJECTED;
 
-import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,6 +49,12 @@ public class SocketAgentImpl implements SocketAgent {
 	private static final Logger LOG = Logger.getLogger(SocketAgentImpl.class.getName());
 
 	/**
+	 * der result pusher wartet immer eine bestimmte zeit auf ein resultat, wenn nichts verfügbar ist, loggt er und
+	 * wartet wieder
+	 */
+	private static final int RESULT_PUSHER_CYCLE_TIMEOUT = 2000;
+
+	/**
 	 * Ein SocketAgent hat eine 1:1 Verbindung zum SocketWorker und führt nur einen Task aufs Mal aus
 	 */
 	private static final int MAX_CONCURRENT_TASKS = 1;
@@ -74,11 +81,14 @@ public class SocketAgentImpl implements SocketAgent {
 	 */
 	private final long taskRunTimeout;
 
+	/** wie viele tasks der socket agent bisher ausgeführt hat */
+	private final AtomicLong runTasks = new AtomicLong();
+
 	/**
 	 * Der Task, der gerade ausgeführt werden soll wird in diese Queue gesteckt um dann vom Result-Pusher wieder
-	 * herausgenommen zu werden.
+	 * herausgenommen zu werden. Double-Ended-Queue: wir füllen vorne rein und nehmen hinten raus.
 	 */
-	private final BlockingQueue<KeyValuePair<TaskID, Future<TaskResult>>> tasks = new LinkedBlockingQueue<KeyValuePair<TaskID, Future<TaskResult>>>(
+	private final BlockingDeque<KeyValuePair<TaskID, Future<TaskResult>>> tasks = new LinkedBlockingDeque<KeyValuePair<TaskID, Future<TaskResult>>>(
 			MAX_CONCURRENT_TASKS);
 
 	@Inject
@@ -104,19 +114,24 @@ public class SocketAgentImpl implements SocketAgent {
 			public void run() {
 				try {
 					while (true) {
-						// blockiere bis ein task aufgegeben wurde und nimm eine referenz auf den task (task bleibt in
-						// queue)
 						LOG.fine("Waiting For Next Task in Queue");
-						KeyValuePair<TaskID, Future<TaskResult>> pair = tasks.take();
+						KeyValuePair<TaskID, Future<TaskResult>> pair = tasks.pollLast(RESULT_PUSHER_CYCLE_TIMEOUT, TimeUnit.MILLISECONDS);
+						if (pair == null) {
+							LOG.log(Level.INFO, "Waited for {0} ms. Run {1} Tasks so far.", new Object[] {
+									RESULT_PUSHER_CYCLE_TIMEOUT, runTasks.get() });
+							continue;
+						}
 						TaskID taskID = pair.getKey();
 						Future<TaskResult> task = pair.getValue();
-						LOG.log(Level.FINE, "Took Task from Queue. Now waiting for its Completion {0}", new Object[]{taskID});
+						LOG.log(Level.FINE, "Took Task from Queue. Now waiting for its Completion {0}",
+								new Object[] { taskID });
 
 						SocketAgentResult saResult;
 						try {
 							TaskResult result = task.get(taskRunTimeout, TimeUnit.MILLISECONDS);
-							LOG.info("Task ran Fine");
-							saResult = sarFactory.createFromTaskResult(taskID.mapReduceTaskUuid, taskID.taskUuid, result);
+							LOG.log(Level.INFO, "Task ran Fine {0}", taskID);
+							saResult = sarFactory.createFromTaskResult(taskID.mapReduceTaskUuid, taskID.taskUuid,
+									result);
 						} catch (TimeoutException e) {
 							LOG.info("Task not completed within Timeout: " + taskRunTimeout);
 							// timeout abgelaufen, tasks soll nicht weiter ausgeführt werden
@@ -125,14 +140,13 @@ public class SocketAgentImpl implements SocketAgent {
 						} catch (Exception e) {
 							LOG.log(Level.WARNING, "Task threw Exception", e);
 							saResult = sarFactory.createFromException(taskID.mapReduceTaskUuid, taskID.taskUuid, e);
+						} finally {
+							runTasks.incrementAndGet();
 						}
 
 						LOG.finer("Before Pushing");
 						resultCollector.pushResult(saResult);
-						LOG.finer("After Pushing. Now removing Task from queue and thereby accepting next Task");
-						if (!tasks.remove(task)) {
-							throw new IllegalStateException("Task was not in Queue?!");
-						}
+						LOG.finer("After Pushing");
 					}
 				} catch (InterruptedException interrupted) {
 					LOG.info("Pusher Interrupted. Stop Pushing");
@@ -171,7 +185,8 @@ public class SocketAgentImpl implements SocketAgent {
 					return runner.runTask();
 				};
 			});
-			if (this.tasks.offer(new KeyValuePair<TaskID, Future<TaskResult>>(new TaskID(mrUuid, taskUuid), task))) {
+			TaskID taskID = new TaskID(mrUuid, taskUuid);
+			if (this.tasks.offerFirst(new KeyValuePair<TaskID, Future<TaskResult>>(taskID, task))) {
 				state = new AgentTaskState(ACCEPTED);
 				LOG.info("Accepted Task for Execution");
 			} else {
@@ -184,7 +199,7 @@ public class SocketAgentImpl implements SocketAgent {
 			LOG.log(Level.SEVERE, "Failed to Schedule Task", e);
 			state = new AgentTaskState(REJECTED, e.getMessage());
 		}
-		LOG.exiting(getClass().getName(), "runTask", state);
+		LOG.log(Level.FINER, "RETURN State={0}, TaskID={1}", new Object[]{state, new TaskID(mrUuid, taskUuid)});
 		return state;
 	}
 
@@ -204,13 +219,15 @@ public class SocketAgentImpl implements SocketAgent {
 	private static class TaskID {
 		final String mapReduceTaskUuid;
 		final String taskUuid;
+
 		TaskID(String mapReduceTaskUuid, String taskUuid) {
 			this.mapReduceTaskUuid = mapReduceTaskUuid;
 			this.taskUuid = taskUuid;
 		}
+
 		@Override
 		public String toString() {
-			return "TaskID [MapReduceTaskUuid="+this.mapReduceTaskUuid+",TaskUuid="+this.taskUuid+"]";
+			return "TaskID [MapReduceTaskUuid=" + this.mapReduceTaskUuid + ",TaskUuid=" + this.taskUuid + "]";
 		}
 	}
 }
