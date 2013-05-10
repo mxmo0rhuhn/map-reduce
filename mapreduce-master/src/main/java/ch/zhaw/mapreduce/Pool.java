@@ -86,29 +86,34 @@ public final class Pool {
 	 * {@inheritDoc}
 	 */
 	public void workerIsFinished(Worker finishedWorker) {
-		LOG.finest("Put Worker back to queue");
+		LOG.entering(getClass().getName(), "workerIsFinished", finishedWorker);
 		if (!workingWorker.remove(finishedWorker)) {
 			LOG.warning("Worker was not working before");
 		}
 		availableWorkerBlockingQueue.add(finishedWorker);
+		LOG.exiting(getClass().getName(), "workerIsFinished");
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
-	public boolean enqueueWork(WorkerTask task) {
-		LOG.finest("Enqueue Task");
+	public boolean enqueueTask(WorkerTask task) {
+		LOG.entering(getClass().getName(), "enqueueTask", task);
 		task.enqueued();
-		return taskQueue.offer(task);
+		boolean retVal = taskQueue.offer(task);
+		LOG.exiting(getClass().getName(), "enqueueTask", retVal);
+		return retVal;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public boolean donateWorker(Worker newWorker) {
-		LOG.finest("Donate Worker");
+		LOG.entering(getClass().getName(), "donateWorker", newWorker);
 		this.existingWorkers.add(newWorker);
-		return availableWorkerBlockingQueue.offer(newWorker);
+		boolean retVal = availableWorkerBlockingQueue.offer(newWorker);
+		LOG.exiting(getClass().getName(), "donateWorker", retVal);
+		return retVal;
 	}
 
 	private class WorkerTaskAdministrator implements Runnable {
@@ -143,9 +148,11 @@ public final class Pool {
 
 	/** {@inheritDoc} */
 	public void cleanResults(String mapReduceTaskUUID) {
+		LOG.entering(getClass().getName(), "cleanResults", mapReduceTaskUUID);
 		Worker[] allWorkers = this.existingWorkers.toArray(new Worker[this.existingWorkers.size()]);
 		for (Worker worker : allWorkers) {
 			worker.cleanAllResults(mapReduceTaskUUID);
 		}
+		LOG.exiting(getClass().getName(), "cleanResults");
 	}
 }

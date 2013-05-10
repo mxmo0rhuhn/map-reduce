@@ -105,7 +105,7 @@ public class PoolTest {
 			}
 		});
 
-		p.enqueueWork(task);
+		p.enqueueTask(task);
 		assertTrue(threadExec.waitForExpectedTasks(300, TimeUnit.MILLISECONDS));
 	}
 
@@ -130,7 +130,7 @@ public class PoolTest {
 		});
 
 		assertEquals(1, p.getFreeWorkers());
-		p.enqueueWork(task);
+		p.enqueueTask(task);
 		assertTrue(threadExec.waitForExpectedTasks(300, TimeUnit.MILLISECONDS));
 		assertEquals(1, p.getFreeWorkers());
 	}
