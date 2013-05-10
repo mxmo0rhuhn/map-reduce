@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import org.jmock.Sequence;
+import org.jmock.api.Imposteriser;
+import org.jmock.api.ThreadingPolicy;
 import org.jmock.auto.Auto;
 import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnitRuleMockery;
@@ -21,7 +23,27 @@ public abstract class AbstractMapReduceMasterSocketTest {
 	
 
 	@Rule
-	public JUnitRuleMockery mockery = new JUnitRuleMockery();
+	public JUnitRuleMockery mockery = new JUnitRuleMockery() {
+		{
+			ThreadingPolicy pol = useThreadingPolicy();
+			if (pol != null) {
+				setThreadingPolicy(pol);
+			}
+			
+			Imposteriser imp = useImposteriser();
+			if (imp != null) {
+				setImposteriser(imp);
+			}
+		}
+	};
+	
+	protected ThreadingPolicy useThreadingPolicy() {
+		return null;
+	}
+	
+	protected Imposteriser useImposteriser() {
+		return null;
+	}
 	
 	@Auto
 	protected Sequence events;

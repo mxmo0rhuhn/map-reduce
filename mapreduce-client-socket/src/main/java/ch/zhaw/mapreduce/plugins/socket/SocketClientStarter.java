@@ -35,7 +35,7 @@ public class SocketClientStarter {
 		Lookup lookup = Simon.createNameLookup(masterip, masterport);
 		SocketResultCollector resCollector = (SocketResultCollector) lookup.lookup(SharedSocketConfig.SOCKET_RESULT_COLLECTOR_SIMON_BINDING);
 		
-		Injector injector = Guice.createInjector(new SocketClientConfig(resCollector));
+		Injector injector = Guice.createInjector(new SocketClientConfig(resCollector, nworker));
 		SocketAgentFactory saFactory = injector.getInstance(SocketAgentFactory.class);
 		binder = new SocketClientBinder(lookup, SharedSocketConfig.AGENT_REGISTRATOR_SIMON_BINDING);
 		

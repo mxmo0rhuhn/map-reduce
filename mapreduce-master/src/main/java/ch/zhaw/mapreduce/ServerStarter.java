@@ -18,17 +18,16 @@ import com.google.inject.Injector;
  * 
  */
 public class ServerStarter {
+	
+	private static final Logger LOG = Logger.getLogger(ServerStarter.class.getName());
 
 	private final List<AgentPlugin> startedPlugins = new LinkedList<AgentPlugin>();
 	
 	private final Injector injector;
 
-	private final Logger log;
-	
 	private final Loader loader;
 	
 	public ServerStarter(Injector injector) {
-		this.log = injector.getInstance(Logger.class);
 		this.loader = injector.getInstance(Loader.class);
 		this.injector = injector;
 	}
@@ -38,9 +37,9 @@ public class ServerStarter {
 			try {
 				plugin.start(injector);
 				this.startedPlugins.add(plugin);
-				this.log.info("Loaded Plugin " + plugin.getClass().getName());
+				LOG.info("Loaded Plugin " + plugin.getClass().getName());
 			} catch (PluginException pe) {
-				this.log.severe("Failed to load Plugin " + plugin.getClass().getName() + ": " + pe.getMessage());
+				LOG.severe("Failed to load Plugin " + plugin.getClass().getName() + ": " + pe.getMessage());
 			}
 		}
 	}

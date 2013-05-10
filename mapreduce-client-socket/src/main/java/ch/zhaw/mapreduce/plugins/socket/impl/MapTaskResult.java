@@ -44,6 +44,7 @@ public final class MapTaskResult implements TaskResult {
 		return this.exception;
 	}
 
+	@Override
 	public List<KeyValuePair> getResult() {
 		return this.result;
 	}

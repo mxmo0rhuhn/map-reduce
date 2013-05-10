@@ -43,7 +43,8 @@ public final class ReduceTaskResult implements TaskResult {
 		return this.exception;
 	}
 
-	public List<String> getResult() {
+	@Override
+	public List<?> getResult() {
 		return this.result;
 	}
 

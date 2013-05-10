@@ -34,9 +34,8 @@ public class MapReduceConfig extends AbstractModule {
 
 		// AssistedInject Magic: Mit diesem FactoryModuleBuilder wird ein Binding für die RunnerFactory erstellt ohne,
 		// dass wir eine tatsächliche Implementation bereitstellen.
-		install(new FactoryModuleBuilder().implement(MapWorkerTask.class, MapWorkerTask.class)
-				.implement(ReduceWorkerTask.class, ReduceWorkerTask.class).build(WorkerTaskFactory.class));
-		install(new FactoryModuleBuilder().implement(Master.class, Master.class).build(MasterFactory.class));
+		install(new FactoryModuleBuilder().build(WorkerTaskFactory.class));
+		install(new FactoryModuleBuilder().build(MasterFactory.class));
 
 		bind(Pool.class);
 		bind(Loader.class);

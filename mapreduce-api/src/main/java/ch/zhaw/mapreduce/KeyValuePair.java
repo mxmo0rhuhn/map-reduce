@@ -42,7 +42,8 @@ public final class KeyValuePair<K, V> implements Serializable {
 		if (!(obj instanceof KeyValuePair)) {
 			return false;
 		}
-		KeyValuePair<String, String> other = (KeyValuePair<String, String>) obj;
+		@SuppressWarnings("rawtypes")
+		KeyValuePair other = (KeyValuePair) obj;
 		return key.equals(other.key) && value.equals(other.value);
 	}
 

@@ -31,5 +31,13 @@ public class SocketConfigTest {
 		assertNotNull(worker);
 		assertTrue(worker instanceof SocketWorker);
 	}
+	
+	@Test
+	public void resultCollectorShouldBeSingleton() {
+		Injector injector = Guice.createInjector(new MapReduceConfig()).createChildInjector(new SocketServerConfig());
+		SocketResultCollector col1 = injector.getInstance(SocketResultCollector.class);
+		SocketResultCollector col2 = injector.getInstance(SocketResultCollector.class);
+		assertSame(col1, col2);
+	}
 
 }

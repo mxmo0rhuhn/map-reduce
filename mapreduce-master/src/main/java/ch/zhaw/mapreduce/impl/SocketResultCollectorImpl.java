@@ -1,6 +1,8 @@
-package ch.zhaw.mapreduce.plugins.socket.impl;
+package ch.zhaw.mapreduce.impl;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -9,9 +11,9 @@ import javax.inject.Singleton;
 
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Persistence;
-import ch.zhaw.mapreduce.plugins.socket.ResultCollectorObserver;
 import ch.zhaw.mapreduce.plugins.socket.SocketAgentResult;
 import ch.zhaw.mapreduce.plugins.socket.SocketResultCollector;
+import ch.zhaw.mapreduce.plugins.socket.SocketResultObserver;
 import de.root1.simon.annotation.SimonRemote;
 
 @SimonRemote(SocketResultCollector.class)
@@ -19,6 +21,8 @@ import de.root1.simon.annotation.SimonRemote;
 public final class SocketResultCollectorImpl implements SocketResultCollector {
 
 	private static final Logger LOG = Logger.getLogger(SocketResultCollectorImpl.class.getName());
+
+	private final ConcurrentMap<String, SocketResultObserver> observers = new ConcurrentHashMap<String, SocketResultObserver>();
 
 	private final Persistence pers;
 
@@ -42,15 +46,30 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 
 		LOG.exiting(getClass().getName(), "pushResult");
 	}
-	
 
 	@Override
-	public void registerObserver(String mapReduceTaskUuid, String taskUuid, ResultCollectorObserver observer) {
-		foo bar
+	public void registerObserver(String mapReduceTaskUuid, String taskUuid, SocketResultObserver observer) {
+		if (null != this.observers.putIfAbsent(createKey(mapReduceTaskUuid, taskUuid), observer)) {
+			LOG.log(Level.SEVERE, "This Task is already Observed! MapReduceTaskUuid={0} TaskUuid={1}",
+					new Object[] { mapReduceTaskUuid, taskUuid });
+		} else {
+			LOG.log(Level.FINER, "Added Observer for MapReduceTaskUuid={0} TaskUuid={1}", new Object[]{mapReduceTaskUuid, taskUuid});
+		}
 	}
 
 	private void notifySocketWorker(String mapReduceTaskUuid, String taskUuid, boolean wasSuccessful) {
-		asdf
+		LOG.entering(getClass().getName(), "notifySocketWorker", new Object[]{mapReduceTaskUuid, taskUuid, wasSuccessful});
+		SocketResultObserver observer = this.observers.remove(createKey(mapReduceTaskUuid, taskUuid));
+		if (observer == null) {
+			LOG.log(Level.SEVERE, "No Observer found for MapReduceTaskUuid={0} TaskUuid={1}", new Object[]{mapReduceTaskUuid, taskUuid});
+		} else {
+			observer.resultAvailable(mapReduceTaskUuid, taskUuid, wasSuccessful);
+		}
+		LOG.exiting(getClass().getName(), "notifySocketWorker");
+	}
+
+	private String createKey(String mapReduceTaskUuid, String taskUuid) {
+		return mapReduceTaskUuid + '-' + taskUuid;
 	}
 
 	private void storeResult(SocketAgentResult saRes) {

@@ -48,7 +48,7 @@ public class MapReduceConfigTest {
 
 	@Test
 	public void shouldDefineBindingForMaster() {
-		assertNotNull(Guice.createInjector(new MapReduceConfig()).getInstance(Master.class));
+		assertNotNull(Guice.createInjector(new MapReduceConfig()).getInstance(MasterFactory.class).createMaster(1, 2, 3));
 	}
 
 	@Test
@@ -181,8 +181,8 @@ public class MapReduceConfigTest {
 	@Test
 	public void shouldProvideDifferentUUIDEveryTime() {
 		Injector injector = Guice.createInjector(new MapReduceConfig());
-		Master m1 = injector.getInstance(Master.class);
-		Master m2 = injector.getInstance(Master.class);
+		Master m1 = injector.getInstance(MasterFactory.class).createMaster(1, 2, 3);
+		Master m2 = injector.getInstance(MasterFactory.class).createMaster(1, 2, 3);
 		assertFalse(m1.getMapReduceTaskUuid().equals(m2.getMapReduceTaskUuid()));
 	}
 	

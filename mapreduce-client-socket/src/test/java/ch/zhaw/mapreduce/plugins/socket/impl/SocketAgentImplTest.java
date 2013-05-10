@@ -83,7 +83,7 @@ public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 				will(returnValue(taskRunner));
 				oneOf(taskRunner).runTask();
 				will(returnValue(taskResult));
-				oneOf(sarFactory).createFromTaskResult(taskResult);
+				oneOf(sarFactory).createFromTaskResult(mrtUuid, taskUuid, taskResult);
 				will(returnValue(saResult));
 				oneOf(resCollector).pushResult(saResult);
 				then(pusherState.is("pushedResult"));
@@ -122,7 +122,7 @@ public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 				will(returnValue(taskRunner));
 				oneOf(taskRunner).runTask();
 				will(returnValue(taskResult));
-				oneOf(sarFactory).createFromTaskResult(taskResult);
+				oneOf(sarFactory).createFromTaskResult(mrtUuid, taskUuid, taskResult);
 				will(returnValue(saResult));
 				then(pusherState.is("createdResult"));
 				oneOf(resCollector).pushResult(saResult);
@@ -152,7 +152,7 @@ public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 				will(returnValue(taskRunner));
 				oneOf(taskRunner).runTask();
 				will(throwException(new RuntimeException()));
-				oneOf(sarFactory).createFromException(with(aNonNull(Exception.class)));
+				oneOf(sarFactory).createFromException(with(mrtUuid), with(taskUuid), with(aNonNull(Exception.class)));
 				will(returnValue(saResult));
 				then(pusherState.is("createdResult"));
 				oneOf(resCollector).pushResult(saResult);

@@ -49,6 +49,6 @@ public interface SocketResultCollector {
 	 * @param taskUuid
 	 * @param observer
 	 */
-	void registerObserver(String mapReduceTaskUuid, String taskUuid, ResultCollectorObserver observer);
+	void registerObserver(String mapReduceTaskUuid, String taskUuid, SocketResultObserver observer);
 
 }

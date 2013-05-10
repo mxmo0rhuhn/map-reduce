@@ -17,6 +17,7 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.plugins.socket.AgentTask;
 import ch.zhaw.mapreduce.plugins.socket.AgentTaskState;
 import ch.zhaw.mapreduce.plugins.socket.SocketAgent;
@@ -77,7 +78,7 @@ public class SocketAgentImpl implements SocketAgent {
 	 * Der Task, der gerade ausgeführt werden soll wird in diese Queue gesteckt um dann vom Result-Pusher wieder
 	 * herausgenommen zu werden.
 	 */
-	private final BlockingQueue<Future<TaskResult>> tasks = new LinkedBlockingQueue<Future<TaskResult>>(
+	private final BlockingQueue<KeyValuePair<TaskID, Future<TaskResult>>> tasks = new LinkedBlockingQueue<KeyValuePair<TaskID, Future<TaskResult>>>(
 			MAX_CONCURRENT_TASKS);
 
 	@Inject
@@ -92,7 +93,6 @@ public class SocketAgentImpl implements SocketAgent {
 		this.resultCollector = resCollector;
 		this.sarFactory = sarFactory;
 		this.taskRunTimeout = taskRunTimeout;
-
 	}
 
 	/** Startet den Service, der immer wieder die Resultate dem Master gibt. */
@@ -107,22 +107,24 @@ public class SocketAgentImpl implements SocketAgent {
 						// blockiere bis ein task aufgegeben wurde und nimm eine referenz auf den task (task bleibt in
 						// queue)
 						LOG.fine("Waiting For Next Task in Queue");
-						Future<TaskResult> task = tasks.take();
-						LOG.fine("Took Task from Queue. Now waiting for its Completion");
+						KeyValuePair<TaskID, Future<TaskResult>> pair = tasks.take();
+						TaskID taskID = pair.getKey();
+						Future<TaskResult> task = pair.getValue();
+						LOG.log(Level.FINE, "Took Task from Queue. Now waiting for its Completion {0}", new Object[]{taskID});
 
 						SocketAgentResult saResult;
 						try {
 							TaskResult result = task.get(taskRunTimeout, TimeUnit.MILLISECONDS);
 							LOG.info("Task ran Fine");
-							saResult = sarFactory.createFromTaskResult(result);
+							saResult = sarFactory.createFromTaskResult(taskID.mapReduceTaskUuid, taskID.taskUuid, result);
 						} catch (TimeoutException e) {
 							LOG.info("Task not completed within Timeout: " + taskRunTimeout);
 							// timeout abgelaufen, tasks soll nicht weiter ausgeführt werden
-							saResult = sarFactory.createFromException(e);
+							saResult = sarFactory.createFromException(taskID.mapReduceTaskUuid, taskID.taskUuid, e);
 							task.cancel(true);
 						} catch (Exception e) {
 							LOG.log(Level.WARNING, "Task threw Exception", e);
-							saResult = sarFactory.createFromException(e);
+							saResult = sarFactory.createFromException(taskID.mapReduceTaskUuid, taskID.taskUuid, e);
 						}
 
 						LOG.finer("Before Pushing");
@@ -169,7 +171,7 @@ public class SocketAgentImpl implements SocketAgent {
 					return runner.runTask();
 				};
 			});
-			if (this.tasks.offer(task)) {
+			if (this.tasks.offer(new KeyValuePair<TaskID, Future<TaskResult>>(new TaskID(mrUuid, taskUuid), task))) {
 				state = new AgentTaskState(ACCEPTED);
 				LOG.info("Accepted Task for Execution");
 			} else {
@@ -197,5 +199,18 @@ public class SocketAgentImpl implements SocketAgent {
 	@Override
 	public String toString() {
 		return "SocketAgentImpl [ClientIP=" + this.clientIp + "]";
+	}
+
+	private static class TaskID {
+		final String mapReduceTaskUuid;
+		final String taskUuid;
+		TaskID(String mapReduceTaskUuid, String taskUuid) {
+			this.mapReduceTaskUuid = mapReduceTaskUuid;
+			this.taskUuid = taskUuid;
+		}
+		@Override
+		public String toString() {
+			return "TaskID [MapReduceTaskUuid="+this.mapReduceTaskUuid+",TaskUuid="+this.taskUuid+"]";
+		}
 	}
 }

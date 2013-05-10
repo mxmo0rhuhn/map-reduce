@@ -25,14 +25,14 @@ import com.google.inject.assistedinject.Assisted;
  * @author Reto Hablützel (rethab)
  * 
  */
-public class SocketWorker implements Worker, ResultCollectorObserver {
+public class SocketWorker implements Worker, SocketResultObserver {
 
 	private static final Logger LOG = Logger.getLogger(SocketWorker.class.getName());
 
 	/** RPC */
 	private final SocketAgent agent;
 
-	private final ExecutorService exec;
+	private final ExecutorService taskRunnerService;
 
 	private final Pool pool;
 
@@ -43,10 +43,10 @@ public class SocketWorker implements Worker, ResultCollectorObserver {
 	private volatile Future<WorkerTask> currentTask;
 
 	@Inject
-	public SocketWorker(@Assisted SocketAgent agent, @Named("socket.workerexecutorservice") ExecutorService exec,
-			Pool pool, AgentTaskFactory atFactory, @Assisted SocketResultCollector resCollector) {
+	public SocketWorker(@Assisted SocketAgent agent, @Named("taskrunnerservice") ExecutorService exec, Pool pool,
+			AgentTaskFactory atFactory, @Assisted SocketResultCollector resCollector) {
 		this.agent = agent;
-		this.exec = exec;
+		this.taskRunnerService = exec;
 		this.pool = pool;
 		this.atFactory = atFactory;
 		this.resCollector = resCollector;
@@ -54,16 +54,18 @@ public class SocketWorker implements Worker, ResultCollectorObserver {
 
 	@Override
 	public void resultAvailable(String mapReduceTaskUuid, String taskUuid, boolean success) {
+		LOG.entering(getClass().getName(), "resultAvailable", new Object[] { mapReduceTaskUuid, taskUuid, success });
 		Future<WorkerTask> future = this.currentTask;
 		if (future == null) {
-			// this should actually never happen :(
-			LOG.log(Level.SEVERE, "Result is Available for MissingTask {0} {1}", new Object[] { mapReduceTaskUuid,
-					taskUuid });
+			LOG.log(Level.SEVERE, "Got notified for missing Task {0} {1}", new Object[] { mapReduceTaskUuid, taskUuid });
+			return;
 		}
 		try {
 			// sollte nie blockieren, aber wir geben ihm ein bisschen zeit
 			WorkerTask task = future.get(100, TimeUnit.MILLISECONDS);
 			if (mapReduceTaskUuid.equals(task.getMapReduceTaskUuid()) && taskUuid.equals(task.getTaskUuid())) {
+				LOG.log(Level.FINE, "Go notified for MapReduceTaskUuid={0} TaskUuid={1} Success={2}", new Object[] {
+						mapReduceTaskUuid, taskUuid, success });
 				if (success) {
 					task.completed();
 				} else {
@@ -80,6 +82,7 @@ public class SocketWorker implements Worker, ResultCollectorObserver {
 			LOG.log(Level.SEVERE, "Failed to retrieve WorkerTask from Future {0} {1}", new Object[] {
 					mapReduceTaskUuid, taskUuid });
 		}
+		LOG.exiting(getClass().getName(), "resultAvailable");
 	}
 
 	/**
@@ -100,18 +103,20 @@ public class SocketWorker implements Worker, ResultCollectorObserver {
 	public void executeTask(final WorkerTask workerTask) {
 		LOG.entering(getClass().getName(), "executeTask", workerTask);
 		if (this.currentTask != null) {
-			throw new IllegalStateException("Cannot accept Work!");
+			LOG.severe("SocketWorker is already Running a Task!");
+			workerTask.failed();
+			return;
 		}
-		this.currentTask = this.exec.submit(new Callable<WorkerTask>() {
+		this.currentTask = this.taskRunnerService.submit(new Callable<WorkerTask>() {
 
 			@Override
 			public WorkerTask call() throws Exception {
 				AgentTask agentTask = atFactory.createAgentTask(workerTask);
-				workerTask.started();
 				AgentTaskState state = agent.runTask(agentTask); // RPC
 				switch (state.state()) {
 				case ACCEPTED:
 					LOG.fine("Task Accepted by SocketAgent");
+					workerTask.started();
 					resCollector.registerObserver(workerTask.getMapReduceTaskUuid(), workerTask.getTaskUuid(),
 							SocketWorker.this);
 					break;
