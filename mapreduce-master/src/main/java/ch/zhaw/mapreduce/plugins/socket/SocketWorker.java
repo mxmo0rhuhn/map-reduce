@@ -78,7 +78,7 @@ public class SocketWorker implements Worker, SocketResultObserver {
 		LOG.entering(getClass().getName(), "resultAvailable", new Object[] { mapReduceTaskUuid, taskUuid, success });
 		Future<WorkerTask> future = this.currentTask;
 		if (future == null) {
-			LOG.log(Level.SEVERE, "Got notified for missing Task {0} {1}", new Object[] { mapReduceTaskUuid, taskUuid });
+			LOG.log(Level.WARNING, "Got notified for missing Task {0} {1}", new Object[] { mapReduceTaskUuid, taskUuid });
 			return;
 		}
 		try {
@@ -127,7 +127,7 @@ public class SocketWorker implements Worker, SocketResultObserver {
 	public void executeTask(final WorkerTask workerTask) {
 		LOG.entering(getClass().getName(), "executeTask", workerTask);
 		// TODO currentTask wird nich zurückgesetzt, wenn das resultat verfügbar ist, bevor der task komplett dem worker
-		// übergeben wurde.
+		// übergeben wurde. oder wenn dieser worker gekillt wurde.
 		// if (this.currentTask != null) {
 		// LOG.severe("SocketWorker is already Running a Task!");
 		// workerTask.failed();
@@ -217,8 +217,8 @@ public class SocketWorker implements Worker, SocketResultObserver {
 	 */
 	@Override
 	public void stopCurrentTask(String mapReduceUuid, String taskUuid) {
-		// TODO FIXME
-		throw new UnsupportedOperationException("Missing feature for SocketAgents. Implement Me!");
+		LOG.log(Level.FINE, "SocketWorker does not stop but just make itself available again");
+		// TODO besser machen
 	}
 
 	@Override
