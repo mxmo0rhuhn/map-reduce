@@ -10,7 +10,6 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Singleton;
 
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Persistence;
@@ -191,7 +190,7 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 
 	@Override
 	public void cleanAllResults(String mapReduceTaskUuid) {
-		throw new UnsupportedOperationException("missing feature in persistence");
+		this.pers.destroy(mapReduceTaskUuid);
 	}
 
 	@Override

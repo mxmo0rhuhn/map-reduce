@@ -26,10 +26,6 @@ public class InMemoryPersistence implements Persistence {
 
 	private final ConcurrentMap<String, ConcurrentMap<String, List<String>>> reduceResults = new ConcurrentHashMap<String, ConcurrentMap<String, List<String>>>();
 
-	@Inject
-	InMemoryPersistence() {
-	}
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -129,6 +125,12 @@ public class InMemoryPersistence implements Persistence {
 		if (mrReduceResults != null) {
 			mrReduceResults.remove(taskUuid);
 		}
+	}
+
+	@Override
+	public void destroy(String mapReduceTaskUuid) {
+		this.mapResults.remove(mapReduceTaskUuid);
+		this.reduceResults.remove(mapReduceTaskUuid);
 	}
 
 }

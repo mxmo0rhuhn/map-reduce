@@ -221,4 +221,9 @@ public class FilePersistence implements Persistence {
 		}
 	}
 
+	@Override
+	public void destroy(String mapReduceTaskUuid) {
+		// TODO for now we're just filling up the disk
+	}
+
 }
