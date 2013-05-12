@@ -30,7 +30,7 @@ public class TestSocketServer {
 		reg.bind(SharedSocketConfig.AGENT_REGISTRATOR_SIMON_BINDING, agentRegistrator);
 		reg.bind(SharedSocketConfig.SOCKET_RESULT_COLLECTOR_SIMON_BINDING, resultCollector);
 		
-		for (int i = 0; i < 10000; i++) {
+		for (int i = 0; i < 1000000; i++) {
 			p.enqueueTask(new MapWorkerTask("mrtUuid", "tUuid" + i, new TestMapInstruction(), null, "input"));
 		}
 	}

@@ -86,11 +86,12 @@ public class AgentTaskFactoryImpl implements AgentTaskFactory {
 		if (klass.isAnonymousClass() || klass.isLocalClass() || klass.isMemberClass()) {
 			throw new IllegalArgumentException("Only regular Top-Level Classes are allowed for now");
 		}
-		String cacheKey = createCacheKey(mapReduceTaskUuid, instance);
+		String className = klass.getName();
+		String cacheKey = createCacheKey(mapReduceTaskUuid, className);
 		byte[] res = cache.get(cacheKey);
 		if (res == null) {
 
-			String resourceName = klass.getName().replace('.', '/') + ".class";
+			String resourceName = className.replace('.', '/') + ".class";
 			InputStream is = klass.getClassLoader().getResourceAsStream(resourceName);
 			if (is == null) {
 				throw new IllegalArgumentException("ResouceNotFound: " + resourceName);
@@ -118,8 +119,8 @@ public class AgentTaskFactoryImpl implements AgentTaskFactory {
 		return res;
 	}
 
-	private static String createCacheKey(String mapReduceTaskUuid, Object instance) {
-		return mapReduceTaskUuid + instance.getClass().getName();
+	private static String createCacheKey(String mapReduceTaskUuid,  String className) {
+		return mapReduceTaskUuid + className;
 	}
 
 	/**

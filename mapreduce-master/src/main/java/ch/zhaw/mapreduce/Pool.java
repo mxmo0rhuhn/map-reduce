@@ -6,8 +6,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
@@ -41,12 +43,19 @@ public final class Pool {
 
 	private final Executor workTaskAdministrator;
 
+	private final ExecutorService supervisorService;
+
+	private final long statisticsPrintTimeout;
+
 	/**
 	 * Erstellt einen neuen Pool der Aufgaben und Worker entgegen nimmt.
 	 */
 	@Inject
-	public Pool(@Named("poolExecutor") Executor exec) {
-		this.workTaskAdministrator = exec;
+	public Pool(@Named("poolExecutor") Executor workTaskAdministrator,
+			@Named("PoolSupervisor") ExecutorService supervisorService, @Named("PoolStatisticsPrinterTimeout") long statisticsTimeout) {
+		this.workTaskAdministrator = workTaskAdministrator;
+		this.supervisorService = supervisorService;
+		this.statisticsPrintTimeout = statisticsTimeout;
 	}
 
 	/**
@@ -62,6 +71,23 @@ public final class Pool {
 		} else {
 			throw new IllegalStateException("Cannot start Pool twice");
 		}
+	}
+
+	@PostConstruct
+	public void startSupervisor() {
+		this.supervisorService.submit(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					while (true) {
+						LOG.log(Level.INFO, "Statistics: {0} known Worker, {1} free worker, {2} tasks", new Object[] { getCurrentPoolSize(), getFreeWorkers(), taskQueue.size() });
+						Thread.sleep(statisticsPrintTimeout);
+					}
+				} catch (InterruptedException ie) {
+					LOG.info("Pool Supervisor Interrupted. Stopping");
+				}
+			}
+		});
 	}
 
 	public boolean isRunning() {
@@ -141,7 +167,7 @@ public final class Pool {
 		}
 
 	}
-	
+
 	public void computationStopped(String mapReduceTaskUUID) {
 		throw new UnsupportedOperationException("implement me");
 	}
