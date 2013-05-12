@@ -5,6 +5,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Logger;
 
+import javax.inject.Inject;
+import javax.inject.Named;
+
+import org.apache.solr.util.ConcurrentLRUCache;
+
 import ch.zhaw.mapreduce.WorkerTask;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
 import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
@@ -16,6 +21,19 @@ public class AgentTaskFactoryImpl implements AgentTaskFactory {
 	private static final int BUF_SIZE = 256;
 
 	private static final Logger LOG = Logger.getLogger(AgentTaskFactoryImpl.class.getName());
+
+	/**
+	 * Wir wollen nicht jedes mal das Object neu serialisieren, daher der Cache. Der Key vom Cache setzt sich aus
+	 * MapReduceTaskUuid und Klassennamen zusammen. Der Klassenname allein reicht nicht, weil mehrere Klasse gleich
+	 * heissen könnten und die MapReduceTaskUuid allein reicht nicht, weil es je 2-3 Klasse gibt (Map, Reduce, evt.
+	 * Combiner).
+	 */
+	private final ConcurrentLRUCache<String, byte[]> cache;
+
+	@Inject
+	public AgentTaskFactoryImpl(@Named("ObjectByteCacheSize") int cacheSize) {
+		this.cache = new ConcurrentLRUCache<String, byte[]>(cacheSize, 0);
+	}
 
 	@Override
 	public AgentTask createAgentTask(WorkerTask workerTask) {
@@ -32,18 +50,20 @@ public class AgentTaskFactoryImpl implements AgentTaskFactory {
 	 * Erstellt neuen MapAgentTask basierend auf dem MapWorkerTask
 	 */
 	private AgentTask createMapAgentTask(MapWorkerTask mwt) {
-		return new MapAgentTask(mwt.getMapReduceTaskUuid(), mwt.getTaskUuid(), name(mwt.getMapInstruction()),
-				bytes(mwt.getMapInstruction()),
-				mwt.getCombinerInstruction() != null ? name(mwt.getCombinerInstruction()) : null,
-				mwt.getCombinerInstruction() != null ? bytes(mwt.getCombinerInstruction()) : null, mwt.getInput());
+		String mrID = mwt.getMapReduceTaskUuid();
+		return new MapAgentTask(mrID, mwt.getTaskUuid(), name(mwt.getMapInstruction()), bytes(mrID,
+				mwt.getMapInstruction()), mwt.getCombinerInstruction() != null ? name(mwt.getCombinerInstruction())
+				: null, mwt.getCombinerInstruction() != null ? bytes(mrID, mwt.getCombinerInstruction()) : null,
+				mwt.getInput());
 	}
 
 	/**
 	 * Erstellt neuen ReduceAgentTask basierend auf dem ReduceWorkerTask
 	 */
 	private AgentTask createReduceAgentTask(ReduceWorkerTask rwt) {
+		String mrID = rwt.getMapReduceTaskUuid();
 		return new ReduceAgentTask(rwt.getMapReduceTaskUuid(), rwt.getTaskUuid(), name(rwt.getReduceInstruction()),
-				bytes(rwt.getReduceInstruction()), rwt.getInput(), rwt.getValues());
+				bytes(mrID, rwt.getReduceInstruction()), rwt.getInput(), rwt.getValues());
 	}
 
 	/**
@@ -52,6 +72,7 @@ public class AgentTaskFactoryImpl implements AgentTaskFactory {
 	 * dass die Klasse als .class-File auf dem Dateisystem verfügbar ist und vom Klassenlader (der die Instanz geladen
 	 * hat) gesehen wird.
 	 * 
+	 * @param mapReduceTaskUuid
 	 * @param instance
 	 *            Instanz der zu serialisierenden Klasse
 	 * @return bytes der übergebenen Instanz
@@ -60,34 +81,45 @@ public class AgentTaskFactoryImpl implements AgentTaskFactory {
 	 * @throws IllegalArgumentException
 	 *             wenn die klasse nicht als resouce gelesen werden kann
 	 */
-	static byte[] bytes(Object instance) {
+	byte[] bytes(String mapReduceTaskUuid, Object instance) {
 		Class<?> klass = instance.getClass();
 		if (klass.isAnonymousClass() || klass.isLocalClass() || klass.isMemberClass()) {
 			throw new IllegalArgumentException("Only regular Top-Level Classes are allowed for now");
 		}
-		String resourceName = klass.getName().replace('.', '/') + ".class";
-		InputStream is = klass.getClassLoader().getResourceAsStream(resourceName);
-		if (is == null) {
-			throw new IllegalArgumentException("ResouceNotFound: " + resourceName);
-		}
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		byte[] buf = new byte[BUF_SIZE];
-		int read;
-		try {
-			while ((read = is.read(buf)) != -1) {
-				bos.write(buf, 0, read);
+		String cacheKey = createCacheKey(mapReduceTaskUuid, instance);
+		byte[] res = cache.get(cacheKey);
+		if (res == null) {
+
+			String resourceName = klass.getName().replace('.', '/') + ".class";
+			InputStream is = klass.getClassLoader().getResourceAsStream(resourceName);
+			if (is == null) {
+				throw new IllegalArgumentException("ResouceNotFound: " + resourceName);
 			}
-		} catch (Exception e) {
-			LOG.severe("Failed to read Resouce " + resourceName + ": " + e.getMessage());
-		} finally {
-			if (is != null) {
-				try {
-					is.close();
-				} catch (IOException ignored) {
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			byte[] buf = new byte[BUF_SIZE];
+			int read;
+			try {
+				while ((read = is.read(buf)) != -1) {
+					bos.write(buf, 0, read);
+				}
+			} catch (Exception e) {
+				LOG.severe("Failed to read Resouce " + resourceName + ": " + e.getMessage());
+			} finally {
+				if (is != null) {
+					try {
+						is.close();
+					} catch (IOException ignored) {
+					}
 				}
 			}
+			res = bos.toByteArray();
+			this.cache.put(cacheKey, res);
 		}
-		return bos.toByteArray();
+		return res;
+	}
+
+	private static String createCacheKey(String mapReduceTaskUuid, Object instance) {
+		return mapReduceTaskUuid + instance.getClass().getName();
 	}
 
 	/**

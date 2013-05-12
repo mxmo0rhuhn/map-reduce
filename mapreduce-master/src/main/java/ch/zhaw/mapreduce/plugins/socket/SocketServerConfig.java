@@ -37,6 +37,7 @@ public class SocketServerConfig extends AbstractModule {
 		bind(SocketResultCollector.class).to(SocketResultCollectorImpl.class).in(Singleton.class);
 		bind(Integer.class).annotatedWith(Names.named("socket.masterpoolsize")).toInstance(1); 
 		bind(Long.class).annotatedWith(Names.named("agentTaskTriggeringTimeout")).toInstance((long)2000);
+		bind(Integer.class).annotatedWith(Names.named("ObjectByteCacheSize")).toInstance(30);
 		
 		install(new FactoryModuleBuilder().implement(Worker.class, SocketWorker.class).build(SocketWorkerFactory.class));
 

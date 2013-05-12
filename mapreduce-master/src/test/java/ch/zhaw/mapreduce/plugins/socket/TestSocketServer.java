@@ -25,6 +25,7 @@ public class TestSocketServer {
 		Pool p = injector.getInstance(Pool.class);
 
 		LOG.info("I, " + MapReduceUtil.getLocalIp() + ", am thee Master and thou shalt be my Slaves!");
+		Simon.setWorkerThreadPoolSize(-1);
 		Registry reg = Simon.createRegistry(4753);
 		reg.bind(SharedSocketConfig.AGENT_REGISTRATOR_SIMON_BINDING, agentRegistrator);
 		reg.bind(SharedSocketConfig.SOCKET_RESULT_COLLECTOR_SIMON_BINDING, resultCollector);
