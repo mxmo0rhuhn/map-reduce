@@ -62,6 +62,7 @@ public class CurrentMapReduceImplementation implements MapReduce {
 		this.mapInstruction = mapInstruction;
 		this.reduceInstruction = reduceInstruction;
 		this.combinerInstruction = combinerInstruction;
+		this.shuffleProcessorFactory = shuffleProcessorFactory;
 
 		int rescheduleStartPercentage = 90;
 		int rescheduleEvery = 10;
