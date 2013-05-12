@@ -45,10 +45,7 @@ public interface SocketResultCollector {
 	 * Ein ResultCollectorObserver (typischerweise SocketWorker) registriert sich beim SocketResultCollector und wir
 	 * benachrichtigt, sobald das Resultat für einen bestimmten Task angekommen ist.
 	 * 
-	 * @param mapReduceTaskUuid
-	 * @param taskUuid
-	 * @param observer
 	 */
-	void registerObserver(String mapReduceTaskUuid, String taskUuid, SocketResultObserver observer);
+	Boolean registerObserver(String mapReduceTaskUuid, String taskUuid, SocketResultObserver observer);
 
 }

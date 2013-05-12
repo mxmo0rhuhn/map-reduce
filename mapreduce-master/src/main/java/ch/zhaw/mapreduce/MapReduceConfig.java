@@ -2,14 +2,14 @@ package ch.zhaw.mapreduce;
 
 import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.inject.Named;
 
 import ch.zhaw.mapreduce.impl.InMemoryShuffler;
-import ch.zhaw.mapreduce.impl.MapWorkerTask;
-import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 import ch.zhaw.mapreduce.plugins.Loader;
+import ch.zhaw.mapreduce.plugins.socket.impl.NamedThreadFactory;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -42,6 +42,7 @@ public class MapReduceConfig extends AbstractModule {
 		bind(Shuffler.class).to(InMemoryShuffler.class);
 		
 		bind(String.class).annotatedWith(Names.named("plugins.property")).toInstance("mrplugins");
+		bind(Long.class).annotatedWith(Names.named("PoolStatisticsPrinterTimeout")).toInstance((long)10000);
 		
 		// see PostConstructFeature
 		bindListener(Matchers.any(), new PostConstructFeature());
@@ -50,7 +51,13 @@ public class MapReduceConfig extends AbstractModule {
 	@Provides
 	@Named("poolExecutor")
 	public Executor createPoolExec() {
-		return Executors.newSingleThreadExecutor();
+		return Executors.newSingleThreadExecutor(new NamedThreadFactory("PoolExecutor"));
+	}
+	
+	@Provides
+	@Named("PoolSupervisor")
+	public ExecutorService poolSupervisor() {
+		return Executors.newSingleThreadExecutor(new NamedThreadFactory("PoolSupervisor"));
 	}
 	
 	@Provides

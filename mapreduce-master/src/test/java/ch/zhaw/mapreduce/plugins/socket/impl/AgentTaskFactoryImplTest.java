@@ -18,11 +18,10 @@ import ch.zhaw.mapreduce.plugins.socket.TestReduceInstruction;
 
 public class AgentTaskFactoryImplTest extends AbstractMapReduceMasterSocketTest {
 
-	
 	@Test
 	public void shouldCorrectlyAssignMapParametersWithoutCombiner() {
 		MapWorkerTask mwt = new MapWorkerTask(mrUuid, taskUuid, new TestMapInstruction(), null, input);
-		MapAgentTask agentTask = (MapAgentTask) new AgentTaskFactoryImpl().createAgentTask(mwt);
+		MapAgentTask agentTask = (MapAgentTask) new AgentTaskFactoryImpl(1).createAgentTask(mwt);
 		assertEquals(mrUuid, agentTask.getMapReduceTaskUuid());
 		assertEquals(taskUuid, agentTask.getTaskUuid());
 		assertNotNull(agentTask.getMapInstruction());
@@ -33,8 +32,9 @@ public class AgentTaskFactoryImplTest extends AbstractMapReduceMasterSocketTest 
 
 	@Test
 	public void shouldCorrectlyAssignMapParametersWithCombiner() {
-		MapWorkerTask mwt = new MapWorkerTask(mrUuid, taskUuid, new TestMapInstruction(), new TestCombinerInstruction(), input);
-		MapAgentTask agentTask = (MapAgentTask) new AgentTaskFactoryImpl().createAgentTask(mwt);
+		MapWorkerTask mwt = new MapWorkerTask(mrUuid, taskUuid, new TestMapInstruction(),
+				new TestCombinerInstruction(), input);
+		MapAgentTask agentTask = (MapAgentTask) new AgentTaskFactoryImpl(2).createAgentTask(mwt);
 		assertEquals(mrUuid, agentTask.getMapReduceTaskUuid());
 		assertEquals(taskUuid, agentTask.getTaskUuid());
 		assertNotNull(agentTask.getMapInstruction());
@@ -42,11 +42,12 @@ public class AgentTaskFactoryImplTest extends AbstractMapReduceMasterSocketTest 
 		assertNotNull(agentTask.getCombinerInstruction());
 		assertEquals(TestCombinerInstruction.class.getName(), agentTask.getCombinerInstructionName());
 	}
-	
+
 	@Test
 	public void shouldCorrectlyAssignReduceParameters() {
-		ReduceWorkerTask rwt = new ReduceWorkerTask(mrUuid, taskUuid, new TestReduceInstruction(), reduceKey, reduceValues);
-		ReduceAgentTask agentTask = (ReduceAgentTask) new AgentTaskFactoryImpl().createAgentTask(rwt);
+		ReduceWorkerTask rwt = new ReduceWorkerTask(mrUuid, taskUuid, new TestReduceInstruction(), reduceKey,
+				reduceValues);
+		ReduceAgentTask agentTask = (ReduceAgentTask) new AgentTaskFactoryImpl(3).createAgentTask(rwt);
 		assertEquals(mrUuid, agentTask.getMapReduceTaskUuid());
 		assertEquals(taskUuid, agentTask.getTaskUuid());
 		assertEquals(TestReduceInstruction.class.getName(), agentTask.getReduceInstructionName());
@@ -61,7 +62,7 @@ public class AgentTaskFactoryImplTest extends AbstractMapReduceMasterSocketTest 
 
 	@Test
 	public void shouldReturnCorrectByteCode() throws Exception {
-		byte[] bytes = AgentTaskFactoryImpl.bytes(new TestMapInstruction());
+		byte[] bytes = new AgentTaskFactoryImpl(5).bytes(mrUuid, new TestMapInstruction());
 		ByteArrayClassLoader bacl = new ByteArrayClassLoader();
 		Class<?> klass = bacl.defineClass("ch.zhaw.mapreduce.plugins.socket.TestMapInstruction", bytes);
 		// typischweise weurde eine exception fliegen, wenn was nicht funktionert hat
@@ -71,7 +72,7 @@ public class AgentTaskFactoryImplTest extends AbstractMapReduceMasterSocketTest 
 
 	@Test(expected = IllegalArgumentException.class)
 	public void shouldNotAcceptAnonymousClasses() throws Exception {
-		AgentTaskFactoryImpl.bytes(new MapInstruction() {
+		new AgentTaskFactoryImpl(1).bytes(mrUuid, new MapInstruction() {
 			@Override
 			public void map(MapEmitter emitter, String input) {
 			}

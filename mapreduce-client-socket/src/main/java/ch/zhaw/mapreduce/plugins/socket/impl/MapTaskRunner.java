@@ -57,6 +57,7 @@ public final class MapTaskRunner implements TaskRunner {
 	@Override
 	public TaskResult runTask() {
 		LOG.entering(MapTaskRunner.class.getName(), "runTask");
+		// TODO ineffizient. impliziert das postconstructfeature, welches per reflection zeugs macht
 		Context ctx = this.ctxFactory.createContext(this.mapReduceTaskUuid, this.taskUuid);
 		try {
 			// Mappen

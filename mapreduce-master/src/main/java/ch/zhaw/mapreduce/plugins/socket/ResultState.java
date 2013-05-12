@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce.impl;
+package ch.zhaw.mapreduce.plugins.socket;
 
 import ch.zhaw.mapreduce.plugins.socket.SocketResultObserver;
 
@@ -11,14 +11,16 @@ import ch.zhaw.mapreduce.plugins.socket.SocketResultObserver;
  * 
  * Die StateMachine hat also zwei Kanten von einem initialen Zustand:
  * <ul>
- *  <li>Resultat wird von SocketAgent gepusht. Zustand: AVAILABLE. Sobald sich ein Observer registriert, wird er notifiziert. END</li>
- *  <li>Resultat wird vom SocketWorker (Observer) angefragt. Zustand: REQUESTED. Sobald das Resultat gepusht wird, wird der Observer notifiziert. END</li>
+ * <li>Resultat wird von SocketAgent gepusht. Zustand: AVAILABLE. Sobald sich ein Observer registriert, wird er
+ * notifiziert. END</li>
+ * <li>Resultat wird vom SocketWorker (Observer) angefragt. Zustand: REQUESTED. Sobald das Resultat gepusht wird, wird
+ * der Observer notifiziert. END</li>
  * </ul>
  * 
  * @author Reto Hablützel (rethab)
  * 
  */
-final class ResultState {
+public final class ResultState {
 
 	/**
 	 * Entweder ist das Resultat verfügbar oder es wurde nach ihm gefragt. Wenn nach ihm gefragt wurde, ist der observer
@@ -39,11 +41,17 @@ final class ResultState {
 	private final SocketResultObserver requestedBy;
 
 	/**
+	 * Ob die Berechnung erfolgreich war. Ist nur gesetzt, wenn der Status AVAILABLE ist
+	 */
+	private final boolean successful;
+
+	/**
 	 * Konstruktor ist private um ungültige Konstellationen zu vermeiden.
 	 */
-	private ResultState(State state, SocketResultObserver requestedBy) {
+	private ResultState(State state, SocketResultObserver requestedBy, boolean successful) {
 		this.state = state;
 		this.requestedBy = requestedBy;
+		this.successful = successful;
 	}
 
 	/**
@@ -56,14 +64,14 @@ final class ResultState {
 		if (requestedBy == null) {
 			throw new IllegalArgumentException("Requestor must not be null");
 		}
-		return new ResultState(State.REQUESTED, requestedBy);
+		return new ResultState(State.REQUESTED, requestedBy, false);
 	}
 
 	/**
 	 * Erstellt neues ResultState mit dem Status AVAILABLE und ohne Observer
 	 */
-	public static ResultState resultAvailable() {
-		return new ResultState(State.AVAILABLE, null);
+	public static ResultState resultAvailable(boolean successful) {
+		return new ResultState(State.AVAILABLE, null, successful);
 	}
 
 	/**
@@ -71,6 +79,13 @@ final class ResultState {
 	 */
 	public SocketResultObserver requestedBy() {
 		return this.requestedBy;
+	}
+
+	/**
+	 * Ob die Berechnung erfolgreich war. Ist nur sinnvoll gesetzt, wenn der Status AVAILABLE ist.
+	 */
+	public boolean successful() {
+		return this.successful;
 	}
 
 	/**
@@ -85,6 +100,17 @@ final class ResultState {
 	 */
 	public boolean requested() {
 		return this.state == State.REQUESTED;
+	}
+
+	@Override
+	public String toString() {
+		if (this.state == State.REQUESTED) {
+			return getClass().getSimpleName() + " [State=" + this.state + ",RequestedBy=" + this.requestedBy + "]";
+		} else if (this.state == State.AVAILABLE) {
+			return getClass().getSimpleName() + " [State=" + this.state + ",Success=" + this.successful + "]";
+		} else {
+			throw new IllegalStateException("Unhandled State: " + this.state);
+		}
 	}
 
 }

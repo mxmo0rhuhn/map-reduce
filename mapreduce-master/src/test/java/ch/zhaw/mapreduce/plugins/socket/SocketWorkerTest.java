@@ -33,7 +33,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
 		Pool p = new Pool(Executors.newSingleThreadExecutor());
 		p.init();
-		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector);
+		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200);
 		taskRunnerState.startsAs("beforeRunning");
 		mockery.checking(new Expectations() {{ 
 			oneOf(atFactory).createAgentTask(workerTask); will(returnValue(agentTask));
@@ -53,7 +53,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
 		Pool p = new Pool(Executors.newSingleThreadExecutor());
 		p.init();
-		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector);
+		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200);
 		taskRunnerState.startsAs("beforeRunning");
 		mockery.checking(new Expectations() {{ 
 			oneOf(atFactory).createAgentTask(workerTask); will(returnValue(agentTask));
@@ -73,7 +73,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
 		Pool p = new Pool(Executors.newSingleThreadExecutor());
 		p.init();
-		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector);
+		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200);
 		p.donateWorker(sw);
 		assertEquals(1, p.getFreeWorkers());
 		taskRunnerState.startsAs("beforeRunning");

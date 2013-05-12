@@ -16,7 +16,7 @@ public class AgentRegistratorImplTest extends AbstractMapReduceMasterSocketTest 
 		Pool p = new Pool(Executors.newSingleThreadExecutor());
 		p.init();
 		AgentRegistratorImpl reg = new AgentRegistratorImpl(p, swFactory, resCollector);
-		final SocketWorker sw = new SocketWorker(sAgent, execMock, p, atFactory, resCollector);
+		final SocketWorker sw = new SocketWorker(sAgent, execMock, p, atFactory, resCollector, 200);
 		this.mockery.checking(new Expectations() {{ 
 			oneOf(sAgent).helloslave();
 			oneOf(swFactory).createSocketWorker(sAgent, resCollector); will(returnValue(sw));

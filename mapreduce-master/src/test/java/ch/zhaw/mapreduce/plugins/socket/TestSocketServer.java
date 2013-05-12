@@ -25,11 +25,12 @@ public class TestSocketServer {
 		Pool p = injector.getInstance(Pool.class);
 
 		LOG.info("I, " + MapReduceUtil.getLocalIp() + ", am thee Master and thou shalt be my Slaves!");
+		Simon.setWorkerThreadPoolSize(-1);
 		Registry reg = Simon.createRegistry(4753);
 		reg.bind(SharedSocketConfig.AGENT_REGISTRATOR_SIMON_BINDING, agentRegistrator);
 		reg.bind(SharedSocketConfig.SOCKET_RESULT_COLLECTOR_SIMON_BINDING, resultCollector);
 		
-		for (int i = 0; i < 10000; i++) {
+		for (int i = 0; i < 1000000; i++) {
 			p.enqueueTask(new MapWorkerTask("mrtUuid", "tUuid" + i, new TestMapInstruction(), null, "input"));
 		}
 	}
