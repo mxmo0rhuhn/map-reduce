@@ -31,7 +31,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 	@Test
 	public void shoudlRunTask() throws Exception {
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
-		Pool p = new Pool(Executors.newSingleThreadExecutor());
+		Pool p = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		p.init();
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200);
 		taskRunnerState.startsAs("beforeRunning");
@@ -51,7 +51,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 	@Test
 	public void shouldGoBackToPoolIfTaskIsRejected() throws Exception {
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
-		Pool p = new Pool(Executors.newSingleThreadExecutor());
+		Pool p = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		p.init();
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200);
 		taskRunnerState.startsAs("beforeRunning");
@@ -71,7 +71,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 	@Test
 	public void shouldGoBackToPoolWhenTaskIsFinished() throws Exception {
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
-		Pool p = new Pool(Executors.newSingleThreadExecutor());
+		Pool p = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		p.init();
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200);
 		p.donateWorker(sw);

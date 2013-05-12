@@ -3,6 +3,7 @@ package ch.zhaw.mapreduce.roundtriptest;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -40,12 +41,14 @@ public class PerformanceTest {
 		int chunkSize = (int) Math.pow(10, 2);
 
 		long start = System.currentTimeMillis();
-		Map<String, String> results = master.runComputation(mapInstr, null, redInstr, generateIterator(inputs, chunkSize));
+		Map<String, List<String>> results = master.runComputation(mapInstr, null, redInstr, null, generateIterator(inputs, chunkSize));
 		long time = System.currentTimeMillis() - start;
 		// System.out.println("Time: " + time /*+ ", Results: " + results*/);
 		int sum = 0;
-		for (Map.Entry<String, String> entry : results.entrySet()) {
-			sum += Integer.parseInt(entry.getValue());
+		for (Map.Entry<String, List<String>> entry : results.entrySet()) {
+			for (String val : entry.getValue()) {
+				sum += Integer.parseInt(val);
+			}
 		}
 		assertEquals(inputs * chunkSize, sum);
 	}

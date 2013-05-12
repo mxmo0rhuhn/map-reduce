@@ -4,11 +4,11 @@
 package ch.zhaw.mapreduce;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.assistedinject.Assisted;
 
 /**
  * Stellt die Serverseitige Implementation des MapReduce Frameworks dar.
@@ -88,7 +88,7 @@ public class CurrentMapReduceImplementation implements MapReduce {
 	 * @see ch.zhaw.mapreduce.MapReduce#runMapReduceTask(java.util.Iterator)
 	 */
 	@Override
-	public Map<String, String> runMapReduceTask(Iterator<String> input) {
+	public Map<String, List<String>> runMapReduceTask(Iterator<String> input) {
 		try {
 			return this.master.runComputation(this.mapInstruction, this.combinerInstruction,
 					this.reduceInstruction, this.shuffleProcessorFactory, input); 

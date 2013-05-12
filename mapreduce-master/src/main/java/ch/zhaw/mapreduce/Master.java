@@ -34,7 +34,6 @@ public final class Master {
 	private MapInstruction mapInstruction;
 	private CombinerInstruction combinerInstruction;
 	private ReduceInstruction reduceInstruction;
-	private ShuffleProcessorFactory shuffleProcessorFactory;
 
 	// Prozentsatz der Aufgaben, die noch offen sein müssen bis rescheduled wird
 	private final int rescheduleStartPercentage;
@@ -68,14 +67,13 @@ public final class Master {
 		this.waitTime = waitTime;
 	}
 
-	public Map<String, String> runComputation(final MapInstruction mapInstruction,
+	public Map<String, List<String>> runComputation(final MapInstruction mapInstruction,
 			final CombinerInstruction combinerInstruction,
 			final ReduceInstruction reduceInstruction, ShuffleProcessorFactory shuffleProcessorFactory, Iterator<String> input)
 			throws InterruptedException {
 		this.mapInstruction = mapInstruction;
 		this.combinerInstruction = combinerInstruction;
 		this.reduceInstruction = reduceInstruction;
-		this.shuffleProcessorFactory = shuffleProcessorFactory;
 
 		// Alle gerade in der ausführung befindlichen Worker Tasks
 		Set<KeyValuePair<String, WorkerTask>> activeTasks = new LinkedHashSet<KeyValuePair<String, WorkerTask>>();
@@ -112,7 +110,7 @@ public final class Master {
 		// Collecting results
 		logger.info("Collecting results started");
 		curState = State.NONE;
-		Map<String, String> results = collectResults(reduceResults);
+		Map<String, List<String>> results = collectResults(reduceResults);
 		logger.info("Collected " + results.size() + " results");
 
 		// Cleaning results from workers
@@ -209,13 +207,18 @@ public final class Master {
 	 *            ein Set mit fertiggestellten Reduce Tasks
 	 * @return
 	 */
-	Map<String, String> collectResults(Set<WorkerTask> reduceResults) {
-		Map<String, String> resultStructure = new HashMap<String, String>();
+	Map<String, List<String>> collectResults(Set<WorkerTask> reduceResults) {
+		Map<String, List<String>> resultStructure = new HashMap<String, List<String>>();
 		for (WorkerTask task : reduceResults) {
 			ReduceWorkerTask reduceTask = (ReduceWorkerTask) task;
 			for (String value : reduceTask.getResults()) {
 				// Input ist bei Reduce Task der Key und bei Map task der wirkliche Input string
-				resultStructure.put(reduceTask.getInput(), value);
+				String input = reduceTask.getInput();
+				if (!resultStructure.containsKey(input)) {
+					resultStructure.put(input, new LinkedList<String>());
+				}
+				List<String> entries = resultStructure.get(input);
+				entries.add(value);
 			}
 		}
 		return resultStructure;

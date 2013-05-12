@@ -1,6 +1,7 @@
 package ch.zhaw.mapreduce;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,5 +55,5 @@ public interface MapReduce {
 	 *            der gesamte input als Iterator
 	 * @return das Resultat von dem ganzen MapReduceTask
 	 */
-	Map<String, String> runMapReduceTask(Iterator<String> input);
+	Map<String, List<String>> runMapReduceTask(Iterator<String> input);
 }

@@ -62,6 +62,9 @@ public class ReduceWorkerTaskTest {
 
 	@Mock
 	private Worker worker;
+	
+	@Mock
+	private ExecutorService execMock;
 
 	private final String taskUUID = "taskUUID";
 	
@@ -84,7 +87,7 @@ public class ReduceWorkerTaskTest {
 	@Test
 	public void shouldRunReduceInstruction() {
 		Executor poolExec = Executors.newSingleThreadExecutor();
-		Pool pool = new Pool(poolExec);
+		Pool pool = new Pool(poolExec, execMock, 1000);
 		pool.init();
 		final ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, reduceInstr, key, keyVals);
 		this.mockery.checking(new Expectations() {
@@ -141,7 +144,7 @@ public class ReduceWorkerTaskTest {
 		ExecutorService poolExec = Executors.newSingleThreadExecutor();
 		final CyclicBarrier barrier = new CyclicBarrier(2);
 		ExecutorService taskExec = Executors.newSingleThreadExecutor();
-		final Pool pool = new Pool(poolExec);
+		final Pool pool = new Pool(poolExec, execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, taskExec, ctxFactory);
 		pool.donateWorker(worker);
@@ -178,7 +181,7 @@ public class ReduceWorkerTaskTest {
 		ExecutorService poolExec = Executors.newSingleThreadExecutor();
 		ExactCommandExecutor threadExec1 = new ExactCommandExecutor(1);
 		ExactCommandExecutor threadExec2 = new ExactCommandExecutor(1);
-		final Pool pool = new Pool(poolExec);
+		final Pool pool = new Pool(poolExec, execMock, 1000);
 		final AtomicInteger cnt = new AtomicInteger();
 		pool.init();
 		ThreadWorker worker1 = new ThreadWorker(pool, threadExec1, ctxFactory);
@@ -222,7 +225,7 @@ public class ReduceWorkerTaskTest {
 
 	@Test
 	public void shouldBeEnqueuedAfterSubmissionToPool() {
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		final ReduceWorkerTask task = new ReduceWorkerTask("mrtuid", taskUUID, reduceInstr, key, keyVals);
 		this.mockery.checking(new Expectations() {

@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -42,11 +43,14 @@ public class PoolTest {
 	@Mock
 	private Context ctx;
 	
+	@Mock
+	private ExecutorService execMock;
+	
 	private Executor executor = Executors.newSingleThreadExecutor();
 
 	@Test
 	public void shouldHaveZeroInitialWorker() {
-		Pool p = new Pool(executor);
+		Pool p = new Pool(executor, execMock, 1000);
 		p.init();
 		assertEquals(0, p.getCurrentPoolSize());
 		assertEquals(0, p.getFreeWorkers());
@@ -54,7 +58,7 @@ public class PoolTest {
 
 	@Test
 	public void shouldHaveOneWorker() {
-		Pool p = new Pool(executor);
+		Pool p = new Pool(executor, execMock, 1000);
 		p.init();
 		p.donateWorker(worker);
 		assertEquals(1, p.getCurrentPoolSize());
@@ -65,7 +69,7 @@ public class PoolTest {
 	public void shouldHaveTwoWorker() {
 		Worker w1 = this.mockery.mock(Worker.class, "w1");
 		Worker w2 = this.mockery.mock(Worker.class, "w2");
-		Pool p = new Pool(executor);
+		Pool p = new Pool(executor, execMock, 1000);
 		p.init();
 		p.donateWorker(w1);
 		p.donateWorker(w2);
@@ -75,7 +79,7 @@ public class PoolTest {
 
 	@Test(expected = IllegalStateException.class)
 	public void shouldNotBeAbleToInitTwice() {
-		Pool p = new Pool(this.executor);
+		Pool p = new Pool(this.executor, execMock, 1000);
 		try {
 			p.init(); // first time must work
 		} catch (IllegalStateException ise) {
@@ -88,7 +92,7 @@ public class PoolTest {
 	public void shouldExecuteWork() throws InterruptedException {
 		final Executor poolExec = Executors.newSingleThreadExecutor();
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
-		Pool p = new Pool(poolExec);
+		Pool p = new Pool(poolExec, execMock, 1000);
 		p.init();
 		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxFactory);
 		p.donateWorker(worker);
@@ -113,7 +117,7 @@ public class PoolTest {
 	public void workerShouldBeFreeAgainAfterwards() {
 		final Executor poolExec = Executors.newSingleThreadExecutor();
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
-		Pool p = new Pool(poolExec);
+		Pool p = new Pool(poolExec, execMock, 1000);
 		p.init();
 		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxFactory);
 		p.donateWorker(worker);
@@ -145,7 +149,7 @@ public class PoolTest {
 				return ts[0];
 			}
 		});
-		Pool pool = new Pool(exec);
+		Pool pool = new Pool(exec, execMock, 1000);
 		pool.init();
 		assertTrue(pool.isRunning());
 		Thread.sleep(200);

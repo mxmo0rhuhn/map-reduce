@@ -43,10 +43,13 @@ public class ThreadWorkerTest {
 	@Mock
 	private Context ctx;
 	
+	@Mock
+	private ExecutorService execMock;
+	
 	@Test
 	public void shouldGoBackToPool() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		final ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		this.mockery.checking(new Expectations() {{
@@ -63,7 +66,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldReturnEmpyListForUnknownMapReduceIdForMapResult() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "1")});
@@ -84,7 +87,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldReturnEmpyListForKnownMapReduceIdButUnknownTaskUuidForMapResult() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "1")});
@@ -105,7 +108,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldReturnEmpyListForUnknownMapReduceIdForReduceResult() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "1")});
@@ -126,7 +129,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldReturnEmpyListForKnownMapReduceIdButUnknownTaskUuidForReduceResult() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "1")});
@@ -147,7 +150,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldReturnMapValuesFromContext() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("hello", "1")});
@@ -169,7 +172,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldReturnReduceValuesFromContext() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		final List<String> result = Arrays.asList(new String[]{"hello", "world"});
@@ -193,7 +196,7 @@ public class ThreadWorkerTest {
 		final Context ctx1 = this.mockery.mock(Context.class, "ctx1");
 		final Context ctx2 = this.mockery.mock(Context.class, "ctx2");
 		ExactCommandExecutor exec = new ExactCommandExecutor(2);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		final List<KeyValuePair> result1 = Arrays.asList(new KeyValuePair[]{new KeyValuePair("key1", "val1")});
@@ -228,7 +231,7 @@ public class ThreadWorkerTest {
 		final Context ctx1 = this.mockery.mock(Context.class, "ctx1");
 		final Context ctx2 = this.mockery.mock(Context.class, "ctx2");
 		ExactCommandExecutor exec = new ExactCommandExecutor(2);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		final List<String> result1 = Arrays.asList(new String[]{"hello"});
@@ -261,7 +264,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldNotRemoveMapResultsWhenReading() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("key", "val")});
@@ -286,7 +289,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldNotRemoveReduceResultsWhenReading() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		final List<String> result = Arrays.asList(new String[]{"hello"});
@@ -311,7 +314,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldCleanMapResultsInContext() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[]{new KeyValuePair("key", "val")});
@@ -338,7 +341,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldCleanReduceResultsInContext() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		final List<String> result = Arrays.asList(new String[]{"hello"});
@@ -366,7 +369,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldDoNothingWhenAskedToCleanInexistentMapReduceUUID() {
 		ExecutorService exec = Executors.newSingleThreadExecutor();
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		worker.cleanAllResults("iDoNotExist");
@@ -375,7 +378,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldDoNothingWhenAskedToCleanInexistentTaskUUID() {
 		ExecutorService exec = Executors.newSingleThreadExecutor();
-		Pool pool = new Pool(Executors.newSingleThreadExecutor());
+		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, exec, ctxFactory);
 		worker.cleanSpecificResult("inexistentMapReduceTaskUuid", "inexistentTaskUuid");

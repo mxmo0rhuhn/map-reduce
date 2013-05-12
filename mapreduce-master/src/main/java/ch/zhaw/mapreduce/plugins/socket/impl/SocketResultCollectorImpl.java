@@ -21,7 +21,6 @@ import ch.zhaw.mapreduce.plugins.socket.SocketResultObserver;
 import de.root1.simon.annotation.SimonRemote;
 
 @SimonRemote(SocketResultCollector.class)
-@Singleton
 public final class SocketResultCollectorImpl implements SocketResultCollector {
 
 	private static final Logger LOG = Logger.getLogger(SocketResultCollectorImpl.class.getName());

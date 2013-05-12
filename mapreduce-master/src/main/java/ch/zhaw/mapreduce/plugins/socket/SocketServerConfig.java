@@ -1,5 +1,6 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -20,6 +21,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Names;
+
+import de.root1.simon.Registry;
+import de.root1.simon.Simon;
 
 public class SocketServerConfig extends AbstractModule {
 	
@@ -43,6 +47,13 @@ public class SocketServerConfig extends AbstractModule {
 
 		bind(String.class).annotatedWith(Names.named("filepersistence.directory")).toInstance(System.getProperty("java.io.tmpdir") + "/socket/filepers/");
 		bind(String.class).annotatedWith(Names.named("filepersistence.ending")).toInstance(".ser");
+		
+		
+		try {
+			bind(Registry.class).toInstance(Simon.createRegistry(sysProp("simonport", 4753)));
+		} catch (IOException e) {
+			addError(e);
+		}
 	}
 	
 	@Provides

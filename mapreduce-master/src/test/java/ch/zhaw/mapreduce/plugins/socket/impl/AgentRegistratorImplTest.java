@@ -13,7 +13,7 @@ public class AgentRegistratorImplTest extends AbstractMapReduceMasterSocketTest 
 	
 	@Test
 	public void shouldAcknowledgeAndCreateNewWorker() {
-		Pool p = new Pool(Executors.newSingleThreadExecutor());
+		Pool p = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		p.init();
 		AgentRegistratorImpl reg = new AgentRegistratorImpl(p, swFactory, resCollector);
 		final SocketWorker sw = new SocketWorker(sAgent, execMock, p, atFactory, resCollector, 200);
