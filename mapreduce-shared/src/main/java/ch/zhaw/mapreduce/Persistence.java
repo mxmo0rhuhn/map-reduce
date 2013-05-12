@@ -94,4 +94,9 @@ public interface Persistence {
 	 */
 	void destroy(String mrUuid, String taskUuid) throws IllegalArgumentException;
 
+	/**
+	 * Löscht alle Resultate für diese MapReduceTaskUuid
+	 */
+	void destroy(String mapReduceTaskUuid);
+
 }
