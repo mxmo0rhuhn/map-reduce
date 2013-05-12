@@ -20,6 +20,7 @@ public class CurrentMapReduceImplementation implements MapReduce {
 
 	private MapInstruction mapInstruction;
 	private ReduceInstruction reduceInstruction;
+	private ShuffleProcessorFactory shuffleProcessorFactory;
 	private CombinerInstruction combinerInstruction;
 
 	private Master master;
@@ -56,7 +57,7 @@ public class CurrentMapReduceImplementation implements MapReduce {
 	 */
 	@Override
 	public MapReduce newMRTask(MapInstruction mapInstruction, ReduceInstruction reduceInstruction,
-			CombinerInstruction combinerInstruction, Map<String, String> config) {
+			CombinerInstruction combinerInstruction,ShuffleProcessorFactory shuffleProcessorFactory,  Map<String, String> config) {
 
 		this.mapInstruction = mapInstruction;
 		this.reduceInstruction = reduceInstruction;
@@ -90,7 +91,7 @@ public class CurrentMapReduceImplementation implements MapReduce {
 	public Map<String, String> runMapReduceTask(Iterator<String> input) {
 		try {
 			return this.master.runComputation(this.mapInstruction, this.combinerInstruction,
-					this.reduceInstruction, input);
+					this.reduceInstruction, this.shuffleProcessorFactory, input); 
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			throw new IllegalStateException("Computation aborted.");

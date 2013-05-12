@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
@@ -32,6 +34,7 @@ public final class Master {
 	private MapInstruction mapInstruction;
 	private CombinerInstruction combinerInstruction;
 	private ReduceInstruction reduceInstruction;
+	private ShuffleProcessorFactory shuffleProcessorFactory;
 
 	// Prozentsatz der Aufgaben, die noch offen sein müssen bis rescheduled wird
 	private final int rescheduleStartPercentage;
@@ -47,6 +50,7 @@ public final class Master {
 	private final Pool pool;
 	private final String mapReduceTaskUuid;
 	private final WorkerTaskFactory workerTaskFactory;
+	private final ExecutorService executorPool = Executors.newCachedThreadPool();
 
 	@Inject
 	Master(Pool pool, WorkerTaskFactory workerTaskFactory,
@@ -66,11 +70,12 @@ public final class Master {
 
 	public Map<String, String> runComputation(final MapInstruction mapInstruction,
 			final CombinerInstruction combinerInstruction,
-			final ReduceInstruction reduceInstruction, Iterator<String> input)
+			final ReduceInstruction reduceInstruction, ShuffleProcessorFactory shuffleProcessorFactory, Iterator<String> input)
 			throws InterruptedException {
 		this.mapInstruction = mapInstruction;
 		this.combinerInstruction = combinerInstruction;
 		this.reduceInstruction = reduceInstruction;
+		this.shuffleProcessorFactory = shuffleProcessorFactory;
 
 		// Alle gerade in der ausführung befindlichen Worker Tasks
 		Set<KeyValuePair<String, WorkerTask>> activeTasks = new LinkedHashSet<KeyValuePair<String, WorkerTask>>();
@@ -90,6 +95,10 @@ public final class Master {
 		curState = State.SHUFFLE;
 		Shuffler s = createShuffler(mapResults);
 		logger.info("SHUFFLE done");
+		
+		if(shuffleProcessorFactory != null) {
+			executorPool.execute(shuffleProcessorFactory.getNewRunnable(s.getResults()));
+		}
 
 		// REDUCE
 		logger.info("REDUCE started");

@@ -36,11 +36,13 @@ public interface MapReduce {
 	 *            eine Reduce Anweisung, die ausgeführt werden soll
 	 * @param combinerInstruction
 	 *            eine optionale combiner Instruction, die ausgeführt werden soll
+	 * @param shuffleProcessorFactory
+	 *            Eine Factory die runnables zurückgibt, von denen jeweils einer ausgeführt wird mit den ergebnissen der shuffle Phase ausgeführt wird, sobald die shuffle Phase beendet ist.
 	 * @param Config
 	 *            Konfigurationsparameter für die Ausführung
 	 */
 	MapReduce newMRTask(MapInstruction mapInstruction, ReduceInstruction reduceInstruction,
-			CombinerInstruction combinerInstruction, Map<String, String> Config);
+			CombinerInstruction combinerInstruction, ShuffleProcessorFactory shuffleProcessorFactory, Map<String, String> Config);
 
 	/**
 	 * Wendet auf alle Elemente vom übergebenen Iterator (via next) den Map- und Reduce-Task an. Die

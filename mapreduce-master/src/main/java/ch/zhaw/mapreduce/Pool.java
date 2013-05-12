@@ -84,7 +84,7 @@ public final class Pool {
 						Thread.sleep(statisticsPrintTimeout);
 					}
 				} catch (InterruptedException ie) {
-					LOG.info("Pool Supervisor Interrupted. Stopping");
+					LOG.info("Pool Supervisor Interrupted. Stopping"); 
 				}
 			}
 		});
