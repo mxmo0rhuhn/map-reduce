@@ -1,7 +1,6 @@
-package ch.zhaw.mapreduce.impl;
+package ch.zhaw.mapreduce.plugins.socket.impl;
 
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -15,6 +14,7 @@ import javax.inject.Singleton;
 
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Persistence;
+import ch.zhaw.mapreduce.plugins.socket.ResultState;
 import ch.zhaw.mapreduce.plugins.socket.SocketAgentResult;
 import ch.zhaw.mapreduce.plugins.socket.SocketResultCollector;
 import ch.zhaw.mapreduce.plugins.socket.SocketResultObserver;

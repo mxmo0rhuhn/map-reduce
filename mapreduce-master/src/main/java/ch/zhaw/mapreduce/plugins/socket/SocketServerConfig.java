@@ -11,10 +11,10 @@ import javax.inject.Singleton;
 import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.impl.FilePersistence;
-import ch.zhaw.mapreduce.impl.SocketResultCollectorImpl;
 import ch.zhaw.mapreduce.plugins.socket.impl.AgentRegistratorImpl;
 import ch.zhaw.mapreduce.plugins.socket.impl.AgentTaskFactoryImpl;
 import ch.zhaw.mapreduce.plugins.socket.impl.NamedThreadFactory;
+import ch.zhaw.mapreduce.plugins.socket.impl.SocketResultCollectorImpl;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;

@@ -1,4 +1,4 @@
-package ch.zhaw.mapreduce.impl;
+package ch.zhaw.mapreduce.plugins.socket;
 
 import ch.zhaw.mapreduce.plugins.socket.SocketResultObserver;
 
@@ -20,7 +20,7 @@ import ch.zhaw.mapreduce.plugins.socket.SocketResultObserver;
  * @author Reto Hablützel (rethab)
  * 
  */
-final class ResultState {
+public final class ResultState {
 
 	/**
 	 * Entweder ist das Resultat verfügbar oder es wurde nach ihm gefragt. Wenn nach ihm gefragt wurde, ist der observer
