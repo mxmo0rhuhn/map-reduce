@@ -10,6 +10,7 @@ import ch.zhaw.mapreduce.impl.InMemoryShuffler;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
 import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 import ch.zhaw.mapreduce.plugins.Loader;
+import ch.zhaw.mapreduce.plugins.socket.impl.NamedThreadFactory;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -50,7 +51,7 @@ public class MapReduceConfig extends AbstractModule {
 	@Provides
 	@Named("poolExecutor")
 	public Executor createPoolExec() {
-		return Executors.newSingleThreadExecutor();
+		return Executors.newSingleThreadExecutor(new NamedThreadFactory("PoolExecutor"));
 	}
 	
 	@Provides
