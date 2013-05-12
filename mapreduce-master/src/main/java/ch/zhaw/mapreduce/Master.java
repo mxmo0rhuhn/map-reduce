@@ -205,6 +205,7 @@ public final class Master {
 		for (WorkerTask task : reduceResults) {
 			ReduceWorkerTask reduceTask = (ReduceWorkerTask) task;
 			for (String value : reduceTask.getResults()) {
+				// Input ist bei Reduce Task der Key und bei Map task der wirkliche Input string
 				resultStructure.put(reduceTask.getInput(), value);
 			}
 		}
