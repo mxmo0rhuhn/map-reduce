@@ -5,6 +5,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -31,7 +32,7 @@ public class SocketWorker implements Worker, SocketResultObserver {
 
 	/** RPC */
 	private final SocketAgent agent;
-	
+
 	/** Cache IP wegen Performance */
 	private final String agentIP;
 
@@ -43,19 +44,35 @@ public class SocketWorker implements Worker, SocketResultObserver {
 
 	private final SocketResultCollector resCollector;
 
+	/**
+	 * Dieser Task wird momentan auf dem SocketAgent ausgeführt. Wir behalten hier die Referenz für das Status Update,
+	 * wenn das Resultat verfügbar ist.
+	 */
 	private volatile Future<WorkerTask> currentTask;
+
+	/**
+	 * Maxmale Zeit, die gewartet wird, um einen Task auf dem Agent auszufuehren.
+	 */
+	private final long agentTaskTriggeringTimeout;
 
 	@Inject
 	public SocketWorker(@Assisted SocketAgent agent, @Named("taskrunnerservice") ExecutorService exec, Pool pool,
-			AgentTaskFactory atFactory, @Assisted SocketResultCollector resCollector) {
+			AgentTaskFactory atFactory, @Assisted SocketResultCollector resCollector,
+			@Named("agentTaskTriggeringTimeout") long agentTaskTriggeringTimeout) {
 		this.agent = agent;
 		this.agentIP = agent.getIp();
 		this.taskRunnerService = exec;
 		this.pool = pool;
 		this.atFactory = atFactory;
 		this.resCollector = resCollector;
+		this.agentTaskTriggeringTimeout = agentTaskTriggeringTimeout;
 	}
 
+	/**
+	 * Wir nehmen an, da ein SocketWorker nur einen Task gleichzeitig ausführen kann, dass diese Notifizierung für diese
+	 * Berechnung zu dem Task gehört, der gerade ausgefürt wird (currentTask). Dann setzten wir den Status vom Task und
+	 * geben den SocketWorker zurück zum Pool.
+	 */
 	@Override
 	public void resultAvailable(String mapReduceTaskUuid, String taskUuid, boolean success) {
 		LOG.entering(getClass().getName(), "resultAvailable", new Object[] { mapReduceTaskUuid, taskUuid, success });
@@ -65,8 +82,7 @@ public class SocketWorker implements Worker, SocketResultObserver {
 			return;
 		}
 		try {
-			// sollte nie blockieren, aber wir geben ihm ein bisschen zeit
-			WorkerTask task = future.get(100, TimeUnit.MILLISECONDS);
+			WorkerTask task = future.get(agentTaskTriggeringTimeout, TimeUnit.MILLISECONDS);
 			if (mapReduceTaskUuid.equals(task.getMapReduceTaskUuid()) && taskUuid.equals(task.getTaskUuid())) {
 				LOG.log(Level.FINE, "Go notified for MapReduceTaskUuid={0} TaskUuid={1} Success={2}", new Object[] {
 						mapReduceTaskUuid, taskUuid, success });
@@ -82,9 +98,13 @@ public class SocketWorker implements Worker, SocketResultObserver {
 			}
 			this.currentTask = null;
 			pool.workerIsFinished(SocketWorker.this);
-		} catch (Exception e) {
-			LOG.log(Level.SEVERE, "Failed to retrieve WorkerTask from Future {0} {1}", new Object[] {
+		} catch (TimeoutException e) {
+			LOG.log(Level.SEVERE, "Caught TimeoutException for MapReduceTaskUuid={0}, TaskUuid={1}", new Object[] {
 					mapReduceTaskUuid, taskUuid });
+			// TODO der muesste dann natuerlich wieder in pool oder so..
+		} catch (Exception e) {
+			LOG.log(Level.SEVERE, "Caught Exception", e);
+			// TODO der muesste dann natuerlich wieder in pool oder so..
 		}
 		LOG.exiting(getClass().getName(), "resultAvailable");
 	}
@@ -106,23 +126,48 @@ public class SocketWorker implements Worker, SocketResultObserver {
 	@Override
 	public void executeTask(final WorkerTask workerTask) {
 		LOG.entering(getClass().getName(), "executeTask", workerTask);
-		if (this.currentTask != null) {
-			LOG.severe("SocketWorker is already Running a Task!");
-			workerTask.failed();
-			return;
-		}
+		// TODO currentTask wird nich zurückgesetzt, wenn das resultat verfügbar ist, bevor der task komplett dem worker
+		// übergeben wurde.
+		// if (this.currentTask != null) {
+		// LOG.severe("SocketWorker is already Running a Task!");
+		// workerTask.failed();
+		// return;
+		// }
 		this.currentTask = this.taskRunnerService.submit(new Callable<WorkerTask>() {
 
 			@Override
 			public WorkerTask call() throws Exception {
+				String mapReduceTaskUuid = workerTask.getMapReduceTaskUuid();
+				String taskUuid = workerTask.getTaskUuid();
 				AgentTask agentTask = atFactory.createAgentTask(workerTask);
+				LOG.log(Level.FINE, "Before running Task on Agent MapReduceTaskUuid={0}, TaskUuid={1}, Agent={2}",
+						new Object[] { mapReduceTaskUuid, taskUuid, agentIP });
 				AgentTaskState state = agent.runTask(agentTask); // RPC
+				LOG.log(Level.FINE, "After running Task on Agent MapReduceTaskUuid={0}, TaskUuid={1}, Agent={2}",
+						new Object[] { mapReduceTaskUuid, taskUuid, agentIP });
 				switch (state.state()) {
 				case ACCEPTED:
-					LOG.fine("Task Accepted by SocketAgent");
+					LOG.log(Level.FINE, "Task Accepted by SocketAgent for MapReduceTaskUuid={0}, TaskUuid={1}",
+							new Object[] { mapReduceTaskUuid, taskUuid });
 					workerTask.started();
-					resCollector.registerObserver(workerTask.getMapReduceTaskUuid(), workerTask.getTaskUuid(),
-							SocketWorker.this);
+					Boolean success = resCollector.registerObserver(mapReduceTaskUuid, taskUuid, SocketWorker.this);
+					if (success != null) {
+						LOG.log(Level.FINE,
+								"Result already available for MapReduceTaskUuid={0}, TaskUuid={1}, Success={2}",
+								new Object[] { mapReduceTaskUuid, taskUuid, success });
+						if (success) {
+							workerTask.completed();
+						} else {
+							workerTask.failed();
+						}
+						pool.workerIsFinished(SocketWorker.this);
+						// TODO gefährlich und wahrscheinlich falsch. unklar definierter zeitpunkt um in den pool zurück
+						// zu gehen. currentTask müsste auch auf null gesetzt werden!
+					} else {
+						LOG.log(Level.FINE,
+								"Result not available. Registered as Observer for MapReduceTaskUuid={0}, TaskUuid={1}",
+								new Object[] { mapReduceTaskUuid, taskUuid });
+					}
 					break;
 				case REJECTED:
 					LOG.warning("Task Rejected by SocketAgent: " + state.msg());
@@ -130,7 +175,7 @@ public class SocketWorker implements Worker, SocketResultObserver {
 					pool.workerIsFinished(SocketWorker.this);
 					break;
 				default:
-					throw new IllegalStateException("Unhandle: " + state.state());
+					throw new IllegalStateException("Unhandled: " + state.state());
 				}
 				return workerTask;
 			}
@@ -175,10 +220,10 @@ public class SocketWorker implements Worker, SocketResultObserver {
 		// TODO FIXME
 		throw new UnsupportedOperationException("Missing feature for SocketAgents. Implement Me!");
 	}
-	
+
 	@Override
 	public String toString() {
-		return getClass().getSimpleName()+" for SocketAgent with IP="+this.agentIP;
+		return getClass().getSimpleName() + " for SocketAgent with IP=" + this.agentIP;
 	}
 
 }

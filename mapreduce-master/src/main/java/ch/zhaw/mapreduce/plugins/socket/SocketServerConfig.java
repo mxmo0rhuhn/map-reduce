@@ -36,6 +36,7 @@ public class SocketServerConfig extends AbstractModule {
 		bind(Persistence.class).to(FilePersistence.class);
 		bind(SocketResultCollector.class).to(SocketResultCollectorImpl.class).in(Singleton.class);
 		bind(Integer.class).annotatedWith(Names.named("socket.masterpoolsize")).toInstance(1); 
+		bind(Long.class).annotatedWith(Names.named("agentTaskTriggeringTimeout")).toInstance((long)2000);
 		
 		install(new FactoryModuleBuilder().implement(Worker.class, SocketWorker.class).build(SocketWorkerFactory.class));
 
@@ -50,6 +51,13 @@ public class SocketServerConfig extends AbstractModule {
 		int poolSize = sysProp("socket.taskrunnerservice", DEFAULT_TASKRUNNER_SERVICE_POOL_SIZE);
 		LOG.info("Starting ExecutorService for TaskRunnner with PoolSize="+poolSize);
 		return Executors.newFixedThreadPool(poolSize, new NamedThreadFactory("SocketWorkerTaskRunner"));
+	}
+	
+	@Provides
+	@Singleton
+	@Named("resultCollectorSuperVisorService")
+	private ExecutorService supervisorExecutorService() {
+		return Executors.newSingleThreadExecutor(new NamedThreadFactory("ResultCollectorSupervisor"));
 	}
 	
 	int sysProp(String name, int def) {

@@ -1,12 +1,16 @@
 package ch.zhaw.mapreduce.impl;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Singleton;
 
 import ch.zhaw.mapreduce.KeyValuePair;
@@ -26,9 +30,20 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 
 	private final Persistence pers;
 
+	private final ExecutorService supervisorService;
+
 	@Inject
-	SocketResultCollectorImpl(Persistence pers) {
+	SocketResultCollectorImpl(Persistence pers,
+			@Named("resultCollectorSuperVisorService") ExecutorService supervisorService) {
 		this.pers = pers;
+		this.supervisorService = supervisorService;
+	}
+
+	@PostConstruct
+	public void initSupervisor() {
+		LOG.entering(getClass().getName(), "initSupervisor");
+		this.supervisorService.submit(createSupervisor());
+		LOG.exiting(getClass().getName(), "initSupervisor");
 	}
 
 	@Override
@@ -47,38 +62,78 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 		LOG.exiting(getClass().getName(), "pushResult");
 	}
 
+	/**
+	 * Registriert einen Observer für das Resultat einer Berechnung. Wenn die Berechnung bereits verfügbar ist, wird der
+	 * Observer sofort benachrichtig. Wenn das Resultat schon einmal Requested wurde, wird der vorherige Observer
+	 * überschrieben.
+	 * 
+	 * @return null, wenn das resultat noch nicht verfügbar ist, sonst boolean mit true, wenn es erfolgreich war, sonst
+	 *         false.
+	 */
 	@Override
-	public void registerObserver(String mapReduceTaskUuid, String taskUuid, SocketResultObserver observer) {
+	public Boolean registerObserver(String mapReduceTaskUuid, String taskUuid, SocketResultObserver observer) {
+		LOG.entering(getClass().getName(), "registerObserver", new Object[] { mapReduceTaskUuid, taskUuid, observer });
 		String key = createKey(mapReduceTaskUuid, taskUuid);
-		ResultState resultState = this.results.putIfAbsent(key, ResultState.requestedBy(observer));
+		ResultState newResultState = ResultState.requestedBy(observer);
+		ResultState resultState = this.results.putIfAbsent(key, newResultState);
+		Boolean result = null;
 		if (resultState != null) {
 			if (resultState.available()) {
-				// ok. notifying.. but how bout success??
+				LOG.log(Level.FINE, "Result is already available for MapReduceTaskUuid={0}, TaskUuid={1}, Success={2}",
+						new Object[] { mapReduceTaskUuid, taskUuid, resultState.successful() });
+				this.results.remove(key);
+				result = Boolean.valueOf(resultState.successful());
+				LOG.log(Level.FINE,
+						"Notified Observer and Removed Result from List for MapReduceTaskUuid={0}, TaskUuid={1}, Observer={2}",
+						new Object[] { mapReduceTaskUuid, taskUuid, observer });
+			} else if (resultState.requested()) {
+				LOG.log(Level.WARNING,
+						"Second Observer for same Result, MapReduceTaskUuid={0}, TaskUuid={1}, Replacing Observer={2} with Observer={3}",
+						new Object[] { mapReduceTaskUuid, taskUuid, resultState.requestedBy(),
+								newResultState.requestedBy() });
+				this.results.put(key, newResultState);
+			} else {
+				throw new IllegalStateException("ResultState not handled: " + resultState);
 			}
-		}
-		//wie wärs mit einer liste von bereits verfügbaren resultaten die halt zu schnell hier waren.
-		if (null != this.observers.putIfAbsent(createKey(mapReduceTaskUuid, taskUuid), observer)) {
-			LOG.log(Level.SEVERE, "This Task is already Observed! MapReduceTaskUuid={0} TaskUuid={1}",
-					new Object[] { mapReduceTaskUuid, taskUuid });
 		} else {
-			LOG.log(Level.FINER, "Added Observer for MapReduceTaskUuid={0} TaskUuid={1}", new Object[]{mapReduceTaskUuid, taskUuid});
+			LOG.log(Level.FINE, "Added Observer for MapReduceTaskUuid={0}, TaskUuid={1}, Observer={2}", new Object[] {
+					mapReduceTaskUuid, taskUuid, observer });
 		}
+		LOG.exiting(getClass().getName(), "registerObserver", result);
+		return result;
 	}
 
+	/**
+	 * Notifiziert den Observer, dass ein Resultat verfügbar ist, wenn ein Observer für diese Berechnung eingetragen
+	 * ist. Wenn kein Observer eingetragen ist, d.h. das Resultat wurde noch nicht Requested, wird dies so in der Liste
+	 * eingetragen. Wenn das Resultat schonmal als Available eingetragen wurde, wird der vorherige Zustand
+	 * überschrieben.
+	 * 
+	 */
 	private void notifySocketWorker(String mapReduceTaskUuid, String taskUuid, boolean wasSuccessful) {
-		LOG.entering(getClass().getName(), "notifySocketWorker", new Object[]{mapReduceTaskUuid, taskUuid, wasSuccessful});
+		LOG.entering(getClass().getName(), "notifySocketWorker", new Object[] { mapReduceTaskUuid, taskUuid,
+				wasSuccessful });
 		String key = createKey(mapReduceTaskUuid, taskUuid);
-		ResultState resultState = this.results.putIfAbsent(key, ResultState.resultAvailable());
+		ResultState newState = ResultState.resultAvailable(wasSuccessful);
+		ResultState resultState = this.results.putIfAbsent(key, newState);
 		if (null != resultState) {
 			if (resultState.requested()) {
-				LOG.log(Level.FINE, "Result was Requested MapReduceTaskUuid={0}, TaskUuid={1}", new Object[]{mapReduceTaskUuid, taskUuid});
+				LOG.log(Level.FINE, "Result was Requested MapReduceTaskUuid={0}, TaskUuid={1}", new Object[] {
+						mapReduceTaskUuid, taskUuid });
 				SocketResultObserver observer = resultState.requestedBy();
 				observer.resultAvailable(mapReduceTaskUuid, taskUuid, wasSuccessful);
 			} else {
-				LOG.log(Level.SEVERE, "Result in unexpected State={0} for MapReduceTaskUuid={1}, TaskUuid={2}", new Object[]{resultState, mapReduceTaskUuid, taskUuid});
+				this.results.put(key, newState);
+				LOG.log(Level.WARNING,
+						"Result was already Available. Replacing old State with new one for MapReduceTaskUuid={0}, TaskUuid={1}",
+						new Object[] { mapReduceTaskUuid, taskUuid });
 			}
+			LOG.log(Level.FINE, "Removing Result from List for MapReduceTaskUuid={0}, TaskUuid={1}", new Object[] {
+					mapReduceTaskUuid, taskUuid });
+			this.results.remove(key);
 		} else {
-			LOG.log(Level.FINE, "Result for MapReduceTaskUuid={0}, TaskUuid={1} now Available", new Object[]{mapReduceTaskUuid, taskUuid});
+			LOG.log(Level.FINE, "Result for MapReduceTaskUuid={0}, TaskUuid={1} now Available", new Object[] {
+					mapReduceTaskUuid, taskUuid });
 		}
 		LOG.exiting(getClass().getName(), "notifySocketWorker");
 	}
@@ -143,6 +198,24 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 	@Override
 	public void cleanResult(String mapReduceTaskUuid, String taskUuid) {
 		this.pers.destroy(mapReduceTaskUuid, taskUuid);
+	}
+
+	private Runnable createSupervisor() {
+		return new Runnable() {
+
+			@Override
+			public void run() {
+				try {
+					while (true) {
+						int size = results.size();
+						LOG.log(Level.INFO, "Number of Results in List = {0}", size);
+						Thread.sleep(10000);
+					}
+				} catch (InterruptedException ie) {
+					LOG.info("Supervisor Interrupted. Stopping");
+				}
+			}
+		};
 	}
 
 }
