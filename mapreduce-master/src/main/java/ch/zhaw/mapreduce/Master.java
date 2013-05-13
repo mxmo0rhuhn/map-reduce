@@ -16,11 +16,11 @@ import java.util.logging.Logger;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.inject.Provider;
 
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
 import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 
-import com.google.inject.Provider;
 import com.google.inject.assistedinject.Assisted;
 
 public final class Master {
