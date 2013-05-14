@@ -106,7 +106,7 @@ public class MapReduceConfigTest {
 			}
 			
 			@Provides
-			@Named("PoolStatisticsPrinterTimeout")
+			@Named("StatisticsPrinterTimeout")
 			public long timeout() {
 				return 1L;
 			}

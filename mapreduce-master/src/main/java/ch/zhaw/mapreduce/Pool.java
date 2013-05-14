@@ -44,7 +44,7 @@ public final class Pool {
 	private final Executor workTaskAdministrator;
 
 	private final ExecutorService supervisorService;
-
+	private final Runtime runtime;
 	private final long statisticsPrintTimeout;
 
 	/**
@@ -52,10 +52,11 @@ public final class Pool {
 	 */
 	@Inject
 	public Pool(@Named("poolExecutor") Executor workTaskAdministrator,
-			@Named("PoolSupervisor") ExecutorService supervisorService, @Named("PoolStatisticsPrinterTimeout") long statisticsTimeout) {
+			@Named("PoolSupervisor") ExecutorService supervisorService, @Named("StatisticsPrinterTimeout") long statisticsTimeout) {
 		this.workTaskAdministrator = workTaskAdministrator;
 		this.supervisorService = supervisorService;
 		this.statisticsPrintTimeout = statisticsTimeout;
+		this.runtime = Runtime.getRuntime();
 	}
 
 	/**
@@ -80,7 +81,8 @@ public final class Pool {
 			public void run() {
 				try {
 					while (true) {
-						LOG.log(Level.INFO, "Statistics: {0} known Worker, {1} free worker, {2} tasks", new Object[] { getCurrentPoolSize(), getFreeWorkers(), taskQueue.size() });
+						LOG.log(Level.INFO, "Statistics: {0} known Worker, {1} free worker, {2} tasks, consumed memory: {3} MB, free memory: {4} MB, max. memory {5} MB", new Object[] { getCurrentPoolSize(), getFreeWorkers(), taskQueue.size(), runtime.totalMemory()/1024/1024 , runtime.freeMemory()/1024/1024, runtime.maxMemory()/1024/1024});
+					    
 						Thread.sleep(statisticsPrintTimeout);
 					}
 				} catch (InterruptedException ie) {
@@ -143,8 +145,16 @@ public final class Pool {
 	 */
 	public boolean enqueueTask(WorkerTask task) {
 		LOG.entering(getClass().getName(), "enqueueTask", task);
-		task.enqueued();
+	
+//		runtime.totalMemory(), runtime.freeMemory(), runtime.maxMemory()
+//		while (!retVal) {
 		boolean retVal = taskQueue.offer(task);
+		if(retVal) {
+			task.enqueued();
+//		} else {
+//			wait
+//		}
+		}
 		LOG.exiting(getClass().getName(), "enqueueTask", retVal);
 		return retVal;
 	}
