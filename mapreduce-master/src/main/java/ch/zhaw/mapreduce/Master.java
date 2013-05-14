@@ -69,7 +69,8 @@ public final class Master {
 
 	public Map<String, List<String>> runComputation(final MapInstruction mapInstruction,
 			final CombinerInstruction combinerInstruction,
-			final ReduceInstruction reduceInstruction, ShuffleProcessorFactory shuffleProcessorFactory, Iterator<String> input)
+			final ReduceInstruction reduceInstruction,
+			ShuffleProcessorFactory shuffleProcessorFactory, Iterator<String> input)
 			throws InterruptedException {
 		this.mapInstruction = mapInstruction;
 		this.combinerInstruction = combinerInstruction;
@@ -93,8 +94,8 @@ public final class Master {
 		curState = State.SHUFFLE;
 		Shuffler s = createShuffler(mapResults);
 		logger.info("SHUFFLE done");
-		
-		if(shuffleProcessorFactory != null) {
+
+		if (shuffleProcessorFactory != null) {
 			executorPool.execute(shuffleProcessorFactory.getNewRunnable(s.getResults()));
 		}
 
@@ -158,7 +159,7 @@ public final class Master {
 		return uuidToInputMapping;
 	}
 
-	Shuffler createShuffler(Collection<WorkerTask> mapResults) { 
+	Shuffler createShuffler(Collection<WorkerTask> mapResults) {
 		Shuffler s = shufflerProvider.get();
 		for (WorkerTask task : mapResults) {
 			MapWorkerTask mapTask = (MapWorkerTask) task;
@@ -294,6 +295,8 @@ public final class Master {
 			activeWorkerTasks.removeAll(toInactiveWorkerTasks);
 
 			// Ein gewisser Prozentsatz der Aufgaben ist erfüllt
+			logger.info("" + (doneInputUUIDs.size() * 100)
+					/ originalUuidToKeyValuePairUUIDInputMapping.size() + " % Tasks processed");
 			if ((doneInputUUIDs.size() * 100) / originalUuidToKeyValuePairUUIDInputMapping.size() >= rescheduleStartPercentage) {
 
 				if (rescheduleCounter >= rescheduleEvery) {
