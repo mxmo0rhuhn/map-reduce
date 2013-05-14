@@ -12,8 +12,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
@@ -46,21 +48,28 @@ public final class Master {
 
 	private final Provider<Shuffler> shufflerProvider;
 
+	private final ExecutorService supervisorService;
 	private final Pool pool;
 	private final String mapReduceTaskUuid;
 	private final WorkerTaskFactory workerTaskFactory;
 	private final ExecutorService executorPool = Executors.newCachedThreadPool();
+	private final long statisticsPrintTimeout;
+	private volatile int currentTaskPercentage; 
 
 	@Inject
 	Master(Pool pool, WorkerTaskFactory workerTaskFactory,
 			@Named("mapReduceTaskUuid") String mapReduceTaskUuid,
 			Provider<Shuffler> shufflerProvider,
+			@Named("MasterSupervisor") ExecutorService supervisorService, 
+			@Named("StatisticsPrinterTimeout") long statisticsTimeout,
 			@Assisted("rescheduleStartPercentage") int rescheduleStartPercentage,
 			@Assisted("rescheduleEvery") int rescheduleEvery, @Assisted("waitTime") int waitTime) {
 		this.pool = pool;
 		this.workerTaskFactory = workerTaskFactory;
 		this.mapReduceTaskUuid = mapReduceTaskUuid;
 		this.shufflerProvider = shufflerProvider;
+		this.supervisorService = supervisorService;
+		this.statisticsPrintTimeout = statisticsTimeout;
 
 		this.rescheduleStartPercentage = rescheduleStartPercentage;
 		this.rescheduleEvery = rescheduleEvery;
@@ -121,6 +130,24 @@ public final class Master {
 		return results;
 	}
 
+	@PostConstruct
+	public void startSupervisor() {
+		this.supervisorService.submit(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					while (true) {
+			logger.info("" + currentTaskPercentage + " % Tasks processed");
+					    
+						Thread.sleep(statisticsPrintTimeout);
+					}
+				} catch (InterruptedException ie) {
+					logger.info("Master Supervisor Interrupted. Stopping"); 
+				}
+			}
+		});
+	}
+	
 	/**
 	 * Erstellt für jeden Teil des Inputs eine UUID und ein Mapping auf den input und führt danach
 	 * jeweils einen WorkerTask mit diesem input aus
@@ -295,9 +322,8 @@ public final class Master {
 			activeWorkerTasks.removeAll(toInactiveWorkerTasks);
 
 			// Ein gewisser Prozentsatz der Aufgaben ist erfüllt
-			logger.info("" + (doneInputUUIDs.size() * 100)
-					/ originalUuidToKeyValuePairUUIDInputMapping.size() + " % Tasks processed");
-			if ((doneInputUUIDs.size() * 100) / originalUuidToKeyValuePairUUIDInputMapping.size() >= rescheduleStartPercentage) {
+			currentTaskPercentage = (doneInputUUIDs.size() * 100) / originalUuidToKeyValuePairUUIDInputMapping.size();
+			if (currentTaskPercentage >= rescheduleStartPercentage) {
 
 				if (rescheduleCounter >= rescheduleEvery) {
 					rescheduleInput.addAll(remainingUuidMapping.values());

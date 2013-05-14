@@ -52,7 +52,7 @@ public final class Pool {
 	 */
 	@Inject
 	public Pool(@Named("poolExecutor") Executor workTaskAdministrator,
-			@Named("PoolSupervisor") ExecutorService supervisorService, @Named("PoolStatisticsPrinterTimeout") long statisticsTimeout) {
+			@Named("PoolSupervisor") ExecutorService supervisorService, @Named("StatisticsPrinterTimeout") long statisticsTimeout) {
 		this.workTaskAdministrator = workTaskAdministrator;
 		this.supervisorService = supervisorService;
 		this.statisticsPrintTimeout = statisticsTimeout;
@@ -81,7 +81,7 @@ public final class Pool {
 			public void run() {
 				try {
 					while (true) {
-						LOG.log(Level.INFO, "Statistics: {0} known Worker, {1} free worker, {2} tasks, consumed memory: {3}, free memory: {4}, max. memory {5}", new Object[] { getCurrentPoolSize(), getFreeWorkers(), taskQueue.size(), runtime.totalMemory(), runtime.freeMemory(), runtime.maxMemory()});
+						LOG.log(Level.INFO, "Statistics: {0} known Worker, {1} free worker, {2} tasks, consumed memory: {3} MB, free memory: {4} MB, max. memory {5} MB", new Object[] { getCurrentPoolSize(), getFreeWorkers(), taskQueue.size(), runtime.totalMemory()/1024/1024 , runtime.freeMemory()/1024/1024, runtime.maxMemory()/1024/1024});
 					    
 						Thread.sleep(statisticsPrintTimeout);
 					}

@@ -42,7 +42,7 @@ public class MapReduceConfig extends AbstractModule {
 		bind(Shuffler.class).to(InMemoryShuffler.class);
 		
 		bind(String.class).annotatedWith(Names.named("plugins.property")).toInstance("mrplugins");
-		bind(Long.class).annotatedWith(Names.named("PoolStatisticsPrinterTimeout")).toInstance((long)10000);
+		bind(Long.class).annotatedWith(Names.named("StatisticsPrinterTimeout")).toInstance((long)10000);
 		
 		// see PostConstructFeature
 		bindListener(Matchers.any(), new PostConstructFeature());
@@ -52,6 +52,12 @@ public class MapReduceConfig extends AbstractModule {
 	@Named("poolExecutor")
 	public Executor createPoolExec() {
 		return Executors.newSingleThreadExecutor(new NamedThreadFactory("PoolExecutor"));
+	}
+	
+	@Provides
+	@Named("MasterSupervisor")
+	public ExecutorService MasterSupervisor() {
+		return Executors.newSingleThreadExecutor(new NamedThreadFactory("MasterSupervisor"));
 	}
 	
 	@Provides
