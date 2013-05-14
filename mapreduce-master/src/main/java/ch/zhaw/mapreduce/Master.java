@@ -158,7 +158,7 @@ public final class Master {
 		return uuidToInputMapping;
 	}
 
-	Shuffler createShuffler(Collection<WorkerTask> mapResults) {
+	Shuffler createShuffler(Collection<WorkerTask> mapResults) { 
 		Shuffler s = shufflerProvider.get();
 		for (WorkerTask task : mapResults) {
 			MapWorkerTask mapTask = (MapWorkerTask) task;
