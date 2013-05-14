@@ -230,4 +230,10 @@ public class SocketAgentImpl implements SocketAgent {
 			return "TaskID [MapReduceTaskUuid=" + this.mapReduceTaskUuid + ",TaskUuid=" + this.taskUuid + "]";
 		}
 	}
+
+	@Override
+	public String ping() {
+		LOG.fine("Received Ping from Master");
+		return "pong";
+	}
 }

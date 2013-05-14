@@ -15,6 +15,20 @@ public class InMemoryPersistenceTest {
 	private final String taskUuid = "taskUuid";
 	
 	@Test
+	public void shouldReturnEmptyListForMissingMapTasks() {
+		InMemoryPersistence pers = new InMemoryPersistence();
+		pers.storeMap(mrUuid, taskUuid, "key", "val");
+		assertNotNull(pers.getMap(mrUuid, "idonotexist"));
+	}
+	
+	@Test
+	public void shouldReturnEmptyListForMissingReduceTasks() {
+		InMemoryPersistence pers = new InMemoryPersistence();
+		pers.storeReduce(mrUuid, taskUuid, "result");
+		assertNotNull(pers.getReduce(mrUuid, "idonotexist"));
+	}
+	
+	@Test
 	public void shouldReadPreviouslyStoredMapValues() {
 		InMemoryPersistence pers = new InMemoryPersistence();
 		pers.storeMap(mrUuid, taskUuid, "key", "val");

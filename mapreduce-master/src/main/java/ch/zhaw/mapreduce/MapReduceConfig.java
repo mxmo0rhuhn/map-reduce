@@ -42,7 +42,7 @@ public class MapReduceConfig extends AbstractModule {
 		bind(Shuffler.class).to(InMemoryShuffler.class);
 		
 		bind(String.class).annotatedWith(Names.named("plugins.property")).toInstance("mrplugins");
-		bind(Long.class).annotatedWith(Names.named("PoolStatisticsPrinterTimeout")).toInstance((long)10000);
+		bind(Long.class).annotatedWith(Names.named("PoolStatisticsPrinterTimeout")).toInstance(10000L);
 		
 		// see PostConstructFeature
 		bindListener(Matchers.any(), new PostConstructFeature());

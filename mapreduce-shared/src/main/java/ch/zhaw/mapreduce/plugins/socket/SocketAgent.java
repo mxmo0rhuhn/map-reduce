@@ -31,4 +31,6 @@ public interface SocketAgent {
 	 */
 	String getIp();
 
+	String ping();
+
 }

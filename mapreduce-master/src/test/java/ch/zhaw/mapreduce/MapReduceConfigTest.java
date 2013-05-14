@@ -10,6 +10,7 @@ import static org.junit.Assert.assertTrue;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.inject.Named;
@@ -96,6 +97,18 @@ public class MapReduceConfigTest {
 			protected void configure() {
 				bind(Pool.class);
 				bindListener(Matchers.any(), new PostConstructFeature());
+			}
+			
+			@Provides
+			@Named("PoolSupervisor")
+			public ExecutorService poolSup() {
+				return Executors.newSingleThreadExecutor();
+			}
+			
+			@Provides
+			@Named("PoolStatisticsPrinterTimeout")
+			public long timeout() {
+				return 1L;
 			}
 
 			@Provides

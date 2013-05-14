@@ -1,9 +1,6 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
-import ch.zhaw.mapreduce.PostConstructFeature;
-
 import com.google.inject.AbstractModule;
-import com.google.inject.matcher.Matchers;
 import com.google.inject.name.Names;
 
 /**
@@ -22,7 +19,6 @@ public class SharedSocketConfig extends AbstractModule {
 	protected void configure() {
 		bind(String.class).annotatedWith(Names.named("agentRegistratorSimonBinding")).toInstance(AGENT_REGISTRATOR_SIMON_BINDING);
 		bind(String.class).annotatedWith(Names.named("resultCollectorSimonBinding")).toInstance(SOCKET_RESULT_COLLECTOR_SIMON_BINDING);
-		bindListener(Matchers.any(), new PostConstructFeature());
 	}
 
 }

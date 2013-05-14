@@ -44,6 +44,11 @@ public final class ResultState {
 	 * Ob die Berechnung erfolgreich war. Ist nur gesetzt, wenn der Status AVAILABLE ist
 	 */
 	private final boolean successful;
+	
+	/**
+	 * Der timestamp, wann der status erstellt wurde
+	 */
+	private final long created;
 
 	/**
 	 * Konstruktor ist private um ungültige Konstellationen zu vermeiden.
@@ -52,6 +57,7 @@ public final class ResultState {
 		this.state = state;
 		this.requestedBy = requestedBy;
 		this.successful = successful;
+		this.created = System.currentTimeMillis();
 	}
 
 	/**
@@ -100,6 +106,13 @@ public final class ResultState {
 	 */
 	public boolean requested() {
 		return this.state == State.REQUESTED;
+	}
+	
+	/**
+	 * Wann der status erstellt wurde
+	 */
+	public long created() {
+		return this.created;
 	}
 
 	@Override

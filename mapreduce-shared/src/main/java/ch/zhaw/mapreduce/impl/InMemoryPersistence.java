@@ -80,10 +80,14 @@ public class InMemoryPersistence implements Persistence {
 	@Override
 	public List<String> getReduce(String mrUuid, String taskUuid) {
 		ConcurrentMap<String, List<String>> mrResults = this.reduceResults.get(mrUuid);
-		if (mrResults == null) {
-			return Collections.emptyList();
+		List<String> res = null;
+		if (mrResults != null) {
+			res = mrResults.get(taskUuid);
 		}
-		return mrResults.get(taskUuid);
+		if (res == null) {
+			res = Collections.emptyList();
+		}
+		return res;
 	}
 
 	/**
@@ -92,10 +96,14 @@ public class InMemoryPersistence implements Persistence {
 	@Override
 	public List<KeyValuePair> getMap(String mrUuid, String taskUuid) {
 		ConcurrentMap<String, List<KeyValuePair>> mrResults = this.mapResults.get(mrUuid);
-		if (mrResults == null) {
-			return Collections.emptyList();
+		List<KeyValuePair> res = null;
+		if (mrResults != null) {
+			res = mrResults.get(taskUuid);
 		}
-		return mrResults.get(taskUuid);
+		if (res == null) {
+			res = Collections.emptyList();
+		}
+		return res;
 	}
 
 	/**

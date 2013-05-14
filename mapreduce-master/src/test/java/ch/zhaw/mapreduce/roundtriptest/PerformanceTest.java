@@ -14,6 +14,7 @@ import ch.zhaw.mapreduce.MapEmitter;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.MapReduceConfig;
 import ch.zhaw.mapreduce.Master;
+import ch.zhaw.mapreduce.MasterFactory;
 import ch.zhaw.mapreduce.ReduceEmitter;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.plugins.AgentPlugin;
@@ -28,7 +29,7 @@ public class PerformanceTest {
 	public void countRandomCharacters() throws Exception {
 		System.setProperty("mrplugins", "Thread");
 		Injector injector = Guice.createInjector(new MapReduceConfig());
-		Master master = injector.getInstance(Master.class);
+		Master master = injector.getInstance(MasterFactory.class).createMaster(1, 2, 3);
 		Loader pluginLoader = injector.getInstance(Loader.class);
 		for (AgentPlugin plugin : pluginLoader.loadPlugins()) {
 			plugin.start(injector);

@@ -1,6 +1,7 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 
 import ch.zhaw.mapreduce.KeyValuePair;
 
@@ -47,5 +48,10 @@ public interface SocketResultCollector {
 	 * 
 	 */
 	Boolean registerObserver(String mapReduceTaskUuid, String taskUuid, SocketResultObserver observer);
+
+	/** 
+	 * Liefert eine Referenz auf alle Resultat-Stati. Diese Methde ist für den Cleaner-Task gedacht.
+	 */
+	ConcurrentMap<String, ResultState> getResultStates();
 
 }

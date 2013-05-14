@@ -3,13 +3,10 @@ package ch.zhaw.mapreduce.plugins.socket.impl;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
-import javax.inject.Named;
 
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Persistence;
@@ -19,6 +16,25 @@ import ch.zhaw.mapreduce.plugins.socket.SocketResultCollector;
 import ch.zhaw.mapreduce.plugins.socket.SocketResultObserver;
 import de.root1.simon.annotation.SimonRemote;
 
+/**
+ * Der SocketResultCollector wird vom SocketAgent angesprochen, sobald dieser die Berechnung abgeschlossen hat. Dabei
+ * wird dem SocketResultCollector vom SocketAgent das Resultat der Berechnung mitgeteilt, welches auf dem Server
+ * gespeichert wird. Aussedem merkt sich der SocketResultCollector, welche Resultate angekommen sind.
+ * 
+ * Andererseits kann sich ein SocketWorker beim SocketResultCollector registrieren, sodass er notifiziert wird, sobald
+ * das Resultat seiner Berechnung verfügbar ist. Für diesen Mechanismus wird die ResultState Klasse verwendet, welche
+ * die Idee dahinter noch genauer erklärt.
+ * 
+ * Die Liste mit den verfügbaren Resultaten wird periodisch vom ResultCleanerTask aufgeräumt, weil z.B. ein SocketWorker
+ * sterben könnte und dann das Resultat nie akzeptieren würde.
+ * 
+ * @see ResultState
+ * 
+ * @see ResultCleanerTaskTest
+ * 
+ * @author Reto Hablützel (rethab)
+ * 
+ */
 @SimonRemote(SocketResultCollector.class)
 public final class SocketResultCollectorImpl implements SocketResultCollector {
 
@@ -26,22 +42,14 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 
 	private final ConcurrentMap<String, ResultState> results = new ConcurrentHashMap<String, ResultState>();
 
+	/**
+	 * Die Resultate vom SocketAgent werden mit der Persistence gespeichert, um später vom Master abgeholt zu werden.
+	 */
 	private final Persistence pers;
 
-	private final ExecutorService supervisorService;
-
 	@Inject
-	SocketResultCollectorImpl(Persistence pers,
-			@Named("resultCollectorSuperVisorService") ExecutorService supervisorService) {
+	SocketResultCollectorImpl(Persistence pers) {
 		this.pers = pers;
-		this.supervisorService = supervisorService;
-	}
-
-	@PostConstruct
-	public void initSupervisor() {
-		LOG.entering(getClass().getName(), "initSupervisor");
-		this.supervisorService.submit(createSupervisor());
-		LOG.exiting(getClass().getName(), "initSupervisor");
 	}
 
 	@Override
@@ -136,7 +144,7 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 		LOG.exiting(getClass().getName(), "notifySocketWorker");
 	}
 
-	private String createKey(String mapReduceTaskUuid, String taskUuid) {
+	String createKey(String mapReduceTaskUuid, String taskUuid) {
 		return mapReduceTaskUuid + '-' + taskUuid;
 	}
 
@@ -154,7 +162,8 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 	}
 
 	/**
-	 * Prüft, ob der Inhalt der Liste diesen Typ hat
+	 * Prüft, ob der Inhalt der Liste diesen Typ hat. Somit kann erkannt werden, ob es sich um ein Map- oder
+	 * Reduce-Resultat handelt.
 	 */
 	boolean hasType(List<?> res, Class<?> klass) {
 		return res != null && res.get(0).getClass().equals(klass);
@@ -198,22 +207,9 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 		this.pers.destroy(mapReduceTaskUuid, taskUuid);
 	}
 
-	private Runnable createSupervisor() {
-		return new Runnable() {
-
-			@Override
-			public void run() {
-				try {
-					while (true) {
-						int size = results.size();
-						LOG.log(Level.INFO, "Number of Results in List = {0}", size);
-						Thread.sleep(10000);
-					}
-				} catch (InterruptedException ie) {
-					LOG.info("Supervisor Interrupted. Stopping");
-				}
-			}
-		};
+	@Override
+	public ConcurrentMap<String, ResultState> getResultStates() {
+		return this.results;
 	}
 
 }

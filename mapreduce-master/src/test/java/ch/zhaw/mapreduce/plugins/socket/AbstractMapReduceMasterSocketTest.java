@@ -3,7 +3,9 @@ package ch.zhaw.mapreduce.plugins.socket;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
+import org.jmock.Expectations;
 import org.jmock.Sequence;
 import org.jmock.api.Imposteriser;
 import org.jmock.api.ThreadingPolicy;
@@ -80,6 +82,15 @@ public abstract class AbstractMapReduceMasterSocketTest {
 	
 	@Mock
 	protected ExecutorService execMock;
+	
+	@Mock
+	protected ScheduledExecutorService schedService;
+	
+	@Mock
+	protected SocketResultObserver srObserver;
+	
+	@Mock
+	protected SocketAgentResult saRes;
 
 	protected final String mrUuid = "mrtUuid";
 
@@ -96,4 +107,5 @@ public abstract class AbstractMapReduceMasterSocketTest {
 
 	protected final List<KeyValuePair> reduceValues = Arrays.asList(new KeyValuePair[] {
 			new KeyValuePair("ke1", "va1"), new KeyValuePair("ke2", "va2") });
+	
 }

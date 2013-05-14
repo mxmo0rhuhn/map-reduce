@@ -107,6 +107,24 @@ public final class Pool {
 	public int getFreeWorkers() {
 		return availableWorkerBlockingQueue.size();
 	}
+	
+	/**
+	 * Diese Methode wird augerufen, wenn ein Worker nicht mehr zum Ausführen von Tasks zur Verfügung stehen soll.
+	 */
+	public void iDied(Worker deadWorker) {
+		LOG.entering(getClass().getName(), "iDied", deadWorker);
+		// wir versuchen einfach zu löschen, falls er existiert
+		if (this.availableWorkerBlockingQueue.remove(deadWorker)) {
+			LOG.log(Level.INFO, "Removed {0} from availableWorkers", new Object[]{deadWorker});
+		}
+		if (this.workingWorker.remove(deadWorker)) {
+			LOG.log(Level.INFO, "Removed {0} from workingWorker", new Object[]{deadWorker});
+		}
+		if(this.existingWorkers.remove(deadWorker)) {
+			LOG.log(Level.INFO, "Removed {0} from existingWorkers", new Object[]{deadWorker});
+		}
+		LOG.exiting(getClass().getName(), "iDied");
+	}
 
 	/**
 	 * {@inheritDoc}
@@ -166,10 +184,6 @@ public final class Pool {
 			}
 		}
 
-	}
-
-	public void computationStopped(String mapReduceTaskUUID) {
-		throw new UnsupportedOperationException("implement me");
 	}
 
 	/** {@inheritDoc} */

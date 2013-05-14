@@ -11,6 +11,7 @@ import javax.inject.Singleton;
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.Persistence;
+import ch.zhaw.mapreduce.PostConstructFeature;
 import ch.zhaw.mapreduce.impl.InMemoryPersistence;
 import ch.zhaw.mapreduce.impl.LocalContext;
 import ch.zhaw.mapreduce.plugins.socket.impl.MapTaskRunner;
@@ -23,6 +24,7 @@ import ch.zhaw.mapreduce.plugins.socket.impl.TaskRunnerFactoryImpl;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
+import com.google.inject.matcher.Matchers;
 import com.google.inject.name.Names;
 
 public final class SocketClientConfig extends AbstractModule {
@@ -43,7 +45,8 @@ public final class SocketClientConfig extends AbstractModule {
 	@Override
 	protected void configure() {
 		install(new SharedSocketConfig());
-
+		bindListener(Matchers.any(), new PostConstructFeature());
+		
 		bind(Persistence.class).to(InMemoryPersistence.class);
 		bind(TaskRunnerFactory.class).to(TaskRunnerFactoryImpl.class);
 		bind(SocketAgentResultFactory.class).to(SocketAgentResultFactoryImpl.class);
