@@ -37,7 +37,7 @@ public final class SocketClientConfig extends AbstractModule {
 
 	private final int nworker;
 
-	SocketClientConfig(SocketResultCollector resCollector, int nworker) {
+	public SocketClientConfig(SocketResultCollector resCollector, int nworker) {
 		this.resCollector = resCollector;
 		this.nworker = nworker;
 	}

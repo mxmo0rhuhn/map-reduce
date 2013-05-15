@@ -4,6 +4,7 @@ import java.util.logging.Logger;
 
 import ch.zhaw.mapreduce.MapReduceConfig;
 import ch.zhaw.mapreduce.MapReduceUtil;
+import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
 
@@ -21,6 +22,7 @@ public class TestSocketServer {
 		
 		AgentRegistrator agentRegistrator = injector.getInstance(AgentRegistrator.class);
 		SocketResultCollector resultCollector = injector.getInstance(SocketResultCollector.class);
+		Persistence pers = injector.getInstance(Persistence.class);
 		Pool p = injector.getInstance(Pool.class);
 
 		LOG.info("I, " + MapReduceUtil.getLocalIp() + ", am thee Master and thou shalt be my Slaves!");
@@ -30,7 +32,7 @@ public class TestSocketServer {
 		reg.bind(SharedSocketConfig.SOCKET_RESULT_COLLECTOR_SIMON_BINDING, resultCollector);
 		
 		for (int i = 0; i < 1000000; i++) {
-			p.enqueueTask(new MapWorkerTask("mrtUuid", "tUuid" + i, new TestMapInstruction(), null, "input"));
+			p.enqueueTask(new MapWorkerTask("mrtUuid", "tUuid" + i, pers, new TestMapInstruction(), null, "input"));
 		}
 	}
 

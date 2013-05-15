@@ -20,7 +20,7 @@ import javax.inject.Singleton;
 /**
  * Implementation des Pools mit lokalen Threads auf dem jeweiligen PC
  * 
- * @author Max, Desiree Sacher
+ * @author Max, Sacher
  * 
  */
 @Singleton
@@ -185,8 +185,7 @@ public final class Pool {
 				while (true) {
 					LOG.finest("Waiting for Task and Worker");
 					WorkerTask task = taskQueue.take(); // blockiert bis ein Task da ist
-					Worker worker = availableWorkers.take(); // blockiert, bis ein
-																// Worker frei ist
+					Worker worker = availableWorkers.take(); // blockiert, bis ein Worker frei ist
 					workingWorkers.add(worker);
 					task.setWorker(worker);
 					LOG.finest("Execute Task on Worker");

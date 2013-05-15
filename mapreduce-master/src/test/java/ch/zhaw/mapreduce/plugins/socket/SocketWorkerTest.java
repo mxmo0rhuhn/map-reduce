@@ -108,7 +108,6 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 		taskRunnerState.startsAs("beforeRunning");
 		mockery.checking(new Expectations() {{ 
 			oneOf(workerTask).enqueued();
-			oneOf(workerTask).setWorker(sw);
 			oneOf(atFactory).createAgentTask(workerTask); will(returnValue(agentTask));
 			oneOf(sAgent).runTask(agentTask); will(returnValue(new AgentTaskState(State.ACCEPTED)));
 			oneOf(workerTask).started();

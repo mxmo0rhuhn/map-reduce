@@ -9,6 +9,7 @@ import javax.inject.Named;
 
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
+import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.ReduceInstruction;
 
 import com.google.inject.assistedinject.Assisted;
@@ -22,6 +23,8 @@ import com.google.inject.assistedinject.Assisted;
 public class ReduceWorkerTask extends AbstractWorkerTask {
 
 	private static final Logger LOG = Logger.getLogger(ReduceWorkerTask.class.getName());
+
+	private final Persistence persistence;
 
 	/**
 	 * Fuer diesen Key wollen wir reduzieren
@@ -40,10 +43,13 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 
 	@Inject
 	public ReduceWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUuid,
-			@Named("taskUuid") String taskUuid, @Assisted ReduceInstruction reduceInstruction,
-			@Assisted("key") String key, @Assisted List<KeyValuePair> inputs) {
+			@Named("taskUuid") String taskUuid, Persistence persistence,
+			@Assisted ReduceInstruction reduceInstruction,
+			@Assisted("key") String key,
+			@Assisted List<KeyValuePair> inputs) {
 		super(mapReduceTaskUuid, taskUuid);
 		this.key = key;
+		this.persistence = persistence;
 		this.reduceInstruction = reduceInstruction;
 		this.values = inputs;
 	}
@@ -59,7 +65,7 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 		} catch (Exception e) {
 			LOG.log(Level.WARNING, "Instruction threw Exception", e);
 			failed();
-			getWorker().cleanSpecificResult(getMapReduceTaskUuid(), getTaskUuid());
+			this.persistence.destroy(getMapReduceTaskUuid(), getTaskUuid());
 		}
 	}
 
@@ -73,21 +79,21 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 	}
 
 	public List<String> getResults() {
-		return getWorker().getReduceResult(getMapReduceTaskUuid(), getTaskUuid());
+		return this.persistence.getReduce(getMapReduceTaskUuid(), getTaskUuid());
 	}
 
 	@Override
 	public String getInput() {
 		return this.key;
 	}
-	
+
 	public List<KeyValuePair> getValues() {
 		return this.values;
 	}
 
 	@Override
 	public void abort() {
-		getWorker().stopCurrentTask(getMapReduceTaskUuid(), getTaskUuid());
+		this.persistence.destroy(getMapReduceTaskUuid(), getTaskUuid());
 		aborted();
 	}
 

@@ -10,7 +10,7 @@ public class MapReduceUtilTest {
 	public void shouldReadSensibleIpAddress() {
 		String ip = MapReduceUtil.getLocalIp();
 		assertNotNull(ip);
-		assertTrue(ip.startsWith("192") || ip.startsWith("172.") || ip.startsWith("10."));
+		assertTrue(ip, ip.startsWith("192") || ip.startsWith("172.") || ip.startsWith("10.") || ip.startsWith("160."));
 	}
 
 }

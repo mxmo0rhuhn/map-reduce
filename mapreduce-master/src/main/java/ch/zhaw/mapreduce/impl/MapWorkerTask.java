@@ -12,6 +12,7 @@ import ch.zhaw.mapreduce.CombinerInstruction;
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;
+import ch.zhaw.mapreduce.Persistence;
 
 import com.google.inject.assistedinject.Assisted;
 
@@ -23,6 +24,8 @@ import com.google.inject.assistedinject.Assisted;
 public class MapWorkerTask extends AbstractWorkerTask {
 
 	private static final Logger LOG = Logger.getLogger(MapWorkerTask.class.getName());
+	
+	private final Persistence persistence;
 
 	/** Aufgabe, die der Task derzeit ausführt */
 	private final MapInstruction mapInstruction;
@@ -36,10 +39,12 @@ public class MapWorkerTask extends AbstractWorkerTask {
 	@Inject
 	public MapWorkerTask(@Assisted("mapReduceTaskUuid") String mapReduceTaskUuid,
 			@Named("taskUuid") String taskUuid, 
+			Persistence persistence,
 			@Assisted MapInstruction mapInstruction,
 			@Assisted @Nullable CombinerInstruction combinerInstruction,
 			@Assisted("input") String input) {
 		super(mapReduceTaskUuid, taskUuid);
+		this.persistence = persistence;
 		this.mapInstruction = mapInstruction;
 		this.combinerInstruction = combinerInstruction;
 		this.input = input;
@@ -65,7 +70,7 @@ public class MapWorkerTask extends AbstractWorkerTask {
 		} catch (Exception e) {
 			LOG.log(Level.WARNING, "Instruction threw Exception", e);
 			failed();
-			getWorker().cleanSpecificResult(getMapReduceTaskUuid(), getTaskUuid());
+			this.persistence.destroy(getMapReduceTaskUuid(), getTaskUuid());
 		}
 	}
 
@@ -88,7 +93,7 @@ public class MapWorkerTask extends AbstractWorkerTask {
 	}
 
 	public List<KeyValuePair> getResults() {
-		return getWorker().getMapResult(getMapReduceTaskUuid(), getTaskUuid());
+		return this.persistence.getMap(getMapReduceTaskUuid(), getTaskUuid());
 	}
 
 	@Override
@@ -99,7 +104,7 @@ public class MapWorkerTask extends AbstractWorkerTask {
 	@Override
 	public void abort() {
 		aborted();
-		getWorker().stopCurrentTask(getMapReduceTaskUuid(), getTaskUuid());
+		this.persistence.destroy(getMapReduceTaskUuid(), getTaskUuid());
 	}
 
 }

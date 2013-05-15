@@ -2,7 +2,6 @@ package ch.zhaw.mapreduce.impl;
 
 import java.util.logging.Logger;
 
-import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
 
 /**
@@ -22,27 +21,9 @@ abstract class AbstractWorkerTask implements WorkerTask {
 	/** Der Zustand in dem sich der Worker befindet */
 	private volatile State currentState = State.INITIATED;
 
-	private transient volatile Worker worker;
-
 	AbstractWorkerTask(String mapReduceTaskUuid, String taskUuid) {
 		this.mapReduceTaskUuid = mapReduceTaskUuid;
 		this.taskUuid = taskUuid;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final Worker getWorker() {
-		return this.worker;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final void setWorker(Worker worker) {
-		this.worker = worker;
 	}
 
 	/**

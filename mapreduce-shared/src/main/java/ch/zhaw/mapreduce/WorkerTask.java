@@ -12,7 +12,7 @@ package ch.zhaw.mapreduce;
 public interface WorkerTask {
 
 	// Alle möglichen Zustände in denen sich Worker befinden kann
-	public enum State {
+	public static enum State {
 		INITIATED, // erstellt
 		ENQUEUED, // dem pool zur ausfuehrung ueberreicht
 		INPROGRESS, // pool hat task akzeptiert
@@ -48,18 +48,6 @@ public interface WorkerTask {
 	 * @return die MapReduceTask ID zu der dieser Task gehoert
 	 */
 	String getMapReduceTaskUuid();
-
-	/**
-	 * Weist der Aufgabe einen verarbeitenden Worker zu
-	 * @param worker
-	 */
-	void setWorker(Worker worker);
-	
-	/** 
-	 * Gibt den Worker der diese Aufgabe bearbeitet zurück
-	 * @return der Worker
-	 */
-	Worker getWorker();
 
 	/**
 	 * Gibt den von diesem Worker bearbeiteten Input zurück

@@ -30,6 +30,7 @@ import org.junit.Test;
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
+import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.ReduceEmitter;
 import ch.zhaw.mapreduce.ReduceInstruction;
@@ -61,10 +62,10 @@ public class ReduceWorkerTaskTest {
 	private ContextFactory ctxFactory;
 
 	@Mock
-	private Worker worker;
+	private ExecutorService execMock;
 	
 	@Mock
-	private ExecutorService execMock;
+	private Persistence pers;
 
 	private final String taskUUID = "taskUUID";
 	
@@ -74,13 +75,13 @@ public class ReduceWorkerTaskTest {
 
 	@Test
 	public void shouldSetMapReduceTaskUUID() {
-		ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, reduceInstr, key, keyVals);
+		ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, pers, reduceInstr, key, keyVals);
 		assertEquals("uuid", task.getMapReduceTaskUuid());
 	}
 
 	@Test
 	public void shouldSetReduceInstruction() {
-		ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, reduceInstr, key, keyVals);
+		ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, pers, reduceInstr, key, keyVals);
 		assertSame(reduceInstr, task.getReduceInstruction());
 	}
 
@@ -89,7 +90,7 @@ public class ReduceWorkerTaskTest {
 		Executor poolExec = Executors.newSingleThreadExecutor();
 		Pool pool = new Pool(poolExec, execMock, 1000);
 		pool.init();
-		final ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, reduceInstr, key, keyVals);
+		final ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, pers, reduceInstr, key, keyVals);
 		this.mockery.checking(new Expectations() {
 			{
 				oneOf(reduceInstr).reduce(with(ctx), with(key), with(aNonNull(Iterator.class)));
@@ -100,42 +101,39 @@ public class ReduceWorkerTaskTest {
 
 	@Test
 	public void shouldSetInputUUID() {
-		ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, reduceInstr, key, keyVals);
+		ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, pers, reduceInstr, key, keyVals);
 		assertEquals(taskUUID, task.getTaskUuid());
 	}
 
 	@Test
 	public void shouldSetStateToFailedOnException() {
-		ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, reduceInstr, key, keyVals);
+		ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, pers, reduceInstr, key, keyVals);
 		this.mockery.checking(new Expectations() {
 			{
 				oneOf(reduceInstr).reduce(with(ctx), with(key), with(aNonNull(Iterator.class)));
 				will(throwException(new NullPointerException()));
-				oneOf(worker).cleanSpecificResult("uuid", taskUUID);
+				oneOf(pers).destroy("uuid", taskUUID);
 			}
 		});
-		task.setWorker(worker);
 		task.runTask(ctx);
 		assertEquals(State.FAILED, task.getCurrentState());
-		assertSame(worker, task.getWorker());
 	}
 
 	@Test
 	public void shouldSetStateToCompletedOnSuccess() {
-		ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, reduceInstr, key, keyVals);
+		ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, pers, reduceInstr, key, keyVals);
 		this.mockery.checking(new Expectations() {
 			{
 				oneOf(reduceInstr).reduce(with(ctx), with(key), with(aNonNull(Iterator.class)));
 			}
 		});
-		task.setWorker(worker);
 		task.runTask(ctx);
 		assertEquals(State.COMPLETED, task.getCurrentState());
 	}
 
 	@Test
 	public void shouldSetStateToInitiatedInitially() {
-		ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, reduceInstr, key, keyVals);
+		ReduceWorkerTask task = new ReduceWorkerTask("uuid", taskUUID, pers, reduceInstr, key, keyVals);
 		assertEquals(State.INITIATED, task.getCurrentState());
 	}
 
@@ -148,7 +146,7 @@ public class ReduceWorkerTaskTest {
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, taskExec, ctxFactory);
 		pool.donateWorker(worker);
-		final ReduceWorkerTask task = new ReduceWorkerTask("mrtUuid", taskUUID,  new ReduceInstruction() {
+		final ReduceWorkerTask task = new ReduceWorkerTask("mrtUuid", taskUUID,  pers, new ReduceInstruction() {
 			@Override
 			public void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair> values) {
 				try {
@@ -188,7 +186,7 @@ public class ReduceWorkerTaskTest {
 		pool.donateWorker(worker1);
 		ThreadWorker worker2 = new ThreadWorker(pool, threadExec2, ctxFactory);
 		pool.donateWorker(worker2);
-		final ReduceWorkerTask task = new ReduceWorkerTask("mrtUuid", taskUUID, new ReduceInstruction() {
+		final ReduceWorkerTask task = new ReduceWorkerTask("mrtUuid", taskUUID, pers, new ReduceInstruction() {
 			
 			@Override
 			public void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair> values) {
@@ -207,7 +205,7 @@ public class ReduceWorkerTaskTest {
 				oneOf(ctxFactory).createContext("mrtUuid", taskUUID);
 				will(returnValue(ctx));
 				inSequence(events);
-				oneOf(ctx).destroy();
+				oneOf(pers).destroy("mrtUuid", taskUUID);
 				inSequence(events);
 				oneOf(ctxFactory).createContext("mrtUuid", taskUUID);
 				will(returnValue(ctx));
@@ -216,18 +214,16 @@ public class ReduceWorkerTaskTest {
 		pool.enqueueTask(task);
 		assertTrue(threadExec1.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.FAILED, task.getCurrentState());
-		assertSame(worker1, task.getWorker());
 		pool.enqueueTask(task);
 		assertTrue(threadExec2.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
 		assertEquals(State.COMPLETED, task.getCurrentState());
-		assertSame(worker2, task.getWorker());
 	}
 
 	@Test
 	public void shouldBeEnqueuedAfterSubmissionToPool() {
 		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
-		final ReduceWorkerTask task = new ReduceWorkerTask("mrtuid", taskUUID, reduceInstr, key, keyVals);
+		final ReduceWorkerTask task = new ReduceWorkerTask("mrtuid", taskUUID, pers, reduceInstr, key, keyVals);
 		this.mockery.checking(new Expectations() {
 			{
 				never(reduceInstr);
