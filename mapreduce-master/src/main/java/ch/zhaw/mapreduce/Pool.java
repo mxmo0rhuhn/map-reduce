@@ -1,13 +1,15 @@
 package ch.zhaw.mapreduce;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,22 +30,18 @@ public final class Pool {
 
 	private static final Logger LOG = Logger.getLogger(Pool.class.getName());
 
-	private final List<Worker> existingWorkers = new CopyOnWriteArrayList<Worker>();
-
 	// Liste mit allen Workern
-	private final Queue<Worker> workingWorker = new ConcurrentLinkedQueue<Worker>();
+	private final Queue<Worker> workingWorkers = new ConcurrentLinkedQueue<Worker>();
 
 	// Liste mit allen Workern, die Arbeit übernehmen können.
-	private final BlockingQueue<Worker> availableWorkerBlockingQueue = new LinkedBlockingQueue<Worker>();
+	private final BlockingQueue<Worker> availableWorkers = new LinkedBlockingQueue<Worker>();
 
 	// Liste mit aller Arbeit, die von Workern übernommen werden kann.
 	private final BlockingQueue<WorkerTask> taskQueue = new LinkedBlockingQueue<WorkerTask>();
 
 	private final AtomicBoolean isRunning = new AtomicBoolean();
-
 	private final Executor workTaskAdministrator;
-
-	private final ExecutorService supervisorService;
+	private final ScheduledExecutorService supervisorService;
 	private final Runtime runtime;
 	private final long statisticsPrintTimeout;
 
@@ -52,7 +50,8 @@ public final class Pool {
 	 */
 	@Inject
 	public Pool(@Named("poolExecutor") Executor workTaskAdministrator,
-			@Named("PoolSupervisor") ExecutorService supervisorService, @Named("StatisticsPrinterTimeout") long statisticsTimeout) {
+			@Named("PoolSupervisor") ScheduledExecutorService supervisorService,
+			@Named("StatisticsPrinterTimeout") long statisticsTimeout) {
 		this.workTaskAdministrator = workTaskAdministrator;
 		this.supervisorService = supervisorService;
 		this.statisticsPrintTimeout = statisticsTimeout;
@@ -76,20 +75,17 @@ public final class Pool {
 
 	@PostConstruct
 	public void startSupervisor() {
-		this.supervisorService.submit(new Runnable() {
+		this.supervisorService.schedule(new Runnable() {
 			@Override
 			public void run() {
-				try {
-					while (true) {
-						LOG.log(Level.INFO, "Statistics: {0} known Worker, {1} free worker, {2} tasks, consumed memory: {3} MB, free memory: {4} MB, max. memory {5} MB", new Object[] { getCurrentPoolSize(), getFreeWorkers(), taskQueue.size(), runtime.totalMemory()/1024/1024 , runtime.freeMemory()/1024/1024, runtime.maxMemory()/1024/1024});
-					    
-						Thread.sleep(statisticsPrintTimeout);
-					}
-				} catch (InterruptedException ie) {
-					LOG.info("Pool Supervisor Interrupted. Stopping"); 
-				}
+				LOG.log(Level.INFO,
+						"Statistics: {0} known Worker, {1} free worker, {2} tasks, consumed memory: {3} MB, free memory: {4} MB, max. memory {5} MB",
+						new Object[] { getCurrentPoolSize(), getFreeWorkers(), taskQueue.size(),
+								runtime.totalMemory() / 1024 / 1024,
+								runtime.freeMemory() / 1024 / 1024,
+								runtime.maxMemory() / 1024 / 1024 });
 			}
-		});
+		}, statisticsPrintTimeout, TimeUnit.MILLISECONDS);
 	}
 
 	public boolean isRunning() {
@@ -100,30 +96,28 @@ public final class Pool {
 	 * {@inheritDoc} Der Wert ist optimistisch - kann veraltet sein.
 	 */
 	public int getCurrentPoolSize() {
-		return existingWorkers.size();
+		return workingWorkers.size() + availableWorkers.size();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public int getFreeWorkers() {
-		return availableWorkerBlockingQueue.size();
+		return availableWorkers.size();
 	}
-	
+
 	/**
-	 * Diese Methode wird augerufen, wenn ein Worker nicht mehr zum Ausführen von Tasks zur Verfügung stehen soll.
+	 * Diese Methode wird augerufen, wenn ein Worker nicht mehr zum Ausführen von Tasks zur
+	 * Verfügung stehen soll.
 	 */
 	public void iDied(Worker deadWorker) {
 		LOG.entering(getClass().getName(), "iDied", deadWorker);
 		// wir versuchen einfach zu löschen, falls er existiert
-		if (this.availableWorkerBlockingQueue.remove(deadWorker)) {
-			LOG.log(Level.INFO, "Removed {0} from availableWorkers", new Object[]{deadWorker});
+		if (this.availableWorkers.remove(deadWorker)) {
+			LOG.log(Level.INFO, "Removed {0} from availableWorkers", new Object[] { deadWorker });
 		}
-		if (this.workingWorker.remove(deadWorker)) {
-			LOG.log(Level.INFO, "Removed {0} from workingWorker", new Object[]{deadWorker});
-		}
-		if(this.existingWorkers.remove(deadWorker)) {
-			LOG.log(Level.INFO, "Removed {0} from existingWorkers", new Object[]{deadWorker});
+		if (this.workingWorkers.remove(deadWorker)) {
+			LOG.log(Level.INFO, "Removed {0} from workingWorker", new Object[] { deadWorker });
 		}
 		LOG.exiting(getClass().getName(), "iDied");
 	}
@@ -133,10 +127,10 @@ public final class Pool {
 	 */
 	public void workerIsFinished(Worker finishedWorker) {
 		LOG.entering(getClass().getName(), "workerIsFinished", finishedWorker);
-		if (!workingWorker.remove(finishedWorker)) {
+		if (!workingWorkers.remove(finishedWorker)) {
 			LOG.warning("Worker was not working before");
 		}
-		availableWorkerBlockingQueue.add(finishedWorker);
+		availableWorkers.add(finishedWorker);
 		LOG.exiting(getClass().getName(), "workerIsFinished");
 	}
 
@@ -145,15 +139,15 @@ public final class Pool {
 	 */
 	public boolean enqueueTask(WorkerTask task) {
 		LOG.entering(getClass().getName(), "enqueueTask", task);
-	
-//		runtime.totalMemory(), runtime.freeMemory(), runtime.maxMemory()
-//		while (!retVal) {
+
+		// runtime.totalMemory(), runtime.freeMemory(), runtime.maxMemory()
+		// while (!retVal) {
 		boolean retVal = taskQueue.offer(task);
-		if(retVal) {
+		if (retVal) {
 			task.enqueued();
-//		} else {
-//			wait
-//		}
+			// } else {
+			// wait
+			// }
 		}
 		LOG.exiting(getClass().getName(), "enqueueTask", retVal);
 		return retVal;
@@ -164,8 +158,7 @@ public final class Pool {
 	 */
 	public boolean donateWorker(Worker newWorker) {
 		LOG.entering(getClass().getName(), "donateWorker", newWorker);
-		this.existingWorkers.add(newWorker);
-		boolean retVal = availableWorkerBlockingQueue.offer(newWorker);
+		boolean retVal = availableWorkers.offer(newWorker);
 		LOG.exiting(getClass().getName(), "donateWorker", retVal);
 		return retVal;
 	}
@@ -181,8 +174,9 @@ public final class Pool {
 				while (true) {
 					LOG.finest("Waiting for Task and Worker");
 					WorkerTask task = taskQueue.take(); // blockiert bis ein Task da ist
-					Worker worker = availableWorkerBlockingQueue.take(); // blockiert, bis ein Worker frei ist
-					workingWorker.add(worker);
+					Worker worker = availableWorkers.take(); // blockiert, bis ein
+																			// Worker frei ist
+					workingWorkers.add(worker);
 					task.setWorker(worker);
 					LOG.finest("Execute Task on Worker");
 					worker.executeTask(task);
@@ -197,12 +191,20 @@ public final class Pool {
 	}
 
 	/** {@inheritDoc} */
-	public void cleanResults(String mapReduceTaskUUID) {
+	public void cleanAllResults(String mapReduceTaskUUID) {
 		LOG.entering(getClass().getName(), "cleanResults", mapReduceTaskUUID);
-		Worker[] allWorkers = this.existingWorkers.toArray(new Worker[this.existingWorkers.size()]);
-		for (Worker worker : allWorkers) {
-			worker.cleanAllResults(mapReduceTaskUUID);
-		}
+		Iterator<Worker> workingWorkerIterator = workingWorkers.iterator();
+		Iterator<Worker> availableWorkerIterator = availableWorkers.iterator();
+		
+		cleanResults(workingWorkerIterator, mapReduceTaskUUID);
+		cleanResults(availableWorkerIterator, mapReduceTaskUUID);
+		
 		LOG.exiting(getClass().getName(), "cleanResults");
+	}
+	
+	private void cleanResults(Iterator<Worker> workers, String mapReduceTaskUUID) {
+		while(workers.hasNext()) {
+			workers.next().cleanAllResults(mapReduceTaskUUID);
+		}
 	}
 }

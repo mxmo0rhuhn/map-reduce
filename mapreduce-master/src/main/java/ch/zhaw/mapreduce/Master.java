@@ -125,7 +125,7 @@ public final class Master {
 
 		// Cleaning results from workers
 		logger.info("Cleaning results started");
-		this.pool.cleanResults(mapReduceTaskUuid);
+		this.pool.cleanAllResults(mapReduceTaskUuid);
 		logger.info("Cleaning results done");
 		return results;
 	}
