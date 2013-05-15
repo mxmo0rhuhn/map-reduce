@@ -103,7 +103,6 @@ public class PoolTest {
 				oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrTaskUUID"));
 				oneOf(task).getTaskUuid(); will(returnValue("taskUUID"));
 				oneOf(ctxFactory).createContext("mrTaskUUID", "taskUUID"); will(returnValue(ctx));
-				oneOf(task).setWorker(worker);
 				inSequence(events);
 				oneOf(task).runTask(ctx);
 			}
@@ -128,7 +127,6 @@ public class PoolTest {
 				oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrTaskUUID"));
 				oneOf(task).getTaskUuid(); will(returnValue("taskUUID"));
 				oneOf(ctxFactory).createContext("mrTaskUUID", "taskUUID"); will(returnValue(ctx));
-				oneOf(task).setWorker(worker);
 				oneOf(task).runTask(ctx);
 			}
 		});

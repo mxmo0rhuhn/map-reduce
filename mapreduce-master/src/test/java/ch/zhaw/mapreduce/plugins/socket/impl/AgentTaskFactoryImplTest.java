@@ -20,7 +20,7 @@ public class AgentTaskFactoryImplTest extends AbstractMapReduceMasterSocketTest 
 
 	@Test
 	public void shouldCorrectlyAssignMapParametersWithoutCombiner() {
-		MapWorkerTask mwt = new MapWorkerTask(mrUuid, taskUuid, new TestMapInstruction(), null, input);
+		MapWorkerTask mwt = new MapWorkerTask(mrUuid, taskUuid, persistence, new TestMapInstruction(), null, input);
 		MapAgentTask agentTask = (MapAgentTask) new AgentTaskFactoryImpl(1).createAgentTask(mwt);
 		assertEquals(mrUuid, agentTask.getMapReduceTaskUuid());
 		assertEquals(taskUuid, agentTask.getTaskUuid());
@@ -32,7 +32,7 @@ public class AgentTaskFactoryImplTest extends AbstractMapReduceMasterSocketTest 
 
 	@Test
 	public void shouldCorrectlyAssignMapParametersWithCombiner() {
-		MapWorkerTask mwt = new MapWorkerTask(mrUuid, taskUuid, new TestMapInstruction(),
+		MapWorkerTask mwt = new MapWorkerTask(mrUuid, taskUuid, persistence, new TestMapInstruction(),
 				new TestCombinerInstruction(), input);
 		MapAgentTask agentTask = (MapAgentTask) new AgentTaskFactoryImpl(2).createAgentTask(mwt);
 		assertEquals(mrUuid, agentTask.getMapReduceTaskUuid());
@@ -45,7 +45,7 @@ public class AgentTaskFactoryImplTest extends AbstractMapReduceMasterSocketTest 
 
 	@Test
 	public void shouldCorrectlyAssignReduceParameters() {
-		ReduceWorkerTask rwt = new ReduceWorkerTask(mrUuid, taskUuid, new TestReduceInstruction(), reduceKey,
+		ReduceWorkerTask rwt = new ReduceWorkerTask(mrUuid, taskUuid, persistence, new TestReduceInstruction(), reduceKey,
 				reduceValues);
 		ReduceAgentTask agentTask = (ReduceAgentTask) new AgentTaskFactoryImpl(3).createAgentTask(rwt);
 		assertEquals(mrUuid, agentTask.getMapReduceTaskUuid());

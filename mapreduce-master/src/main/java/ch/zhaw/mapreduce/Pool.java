@@ -183,7 +183,6 @@ public final class Pool {
 					WorkerTask task = taskQueue.take(); // blockiert bis ein Task da ist
 					Worker worker = availableWorkerBlockingQueue.take(); // blockiert, bis ein Worker frei ist
 					workingWorker.add(worker);
-					task.setWorker(worker);
 					LOG.finest("Execute Task on Worker");
 					worker.executeTask(task);
 				}

@@ -10,9 +10,7 @@ import java.util.logging.Logger;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Worker;
-import ch.zhaw.mapreduce.impl.FilePersistence;
 import ch.zhaw.mapreduce.plugins.socket.impl.AgentRegistratorImpl;
 import ch.zhaw.mapreduce.plugins.socket.impl.AgentTaskFactoryImpl;
 import ch.zhaw.mapreduce.plugins.socket.impl.NamedThreadFactory;
@@ -51,15 +49,11 @@ public class SocketServerConfig extends AbstractModule {
 		
 		// SocketWorker
 		bind(AgentTaskFactory.class).to(AgentTaskFactoryImpl.class);
-		bind(Persistence.class).to(FilePersistence.class);
 		bind(Integer.class).annotatedWith(Names.named("ObjectByteCacheSize")).toInstance(intProp("ObjectByteCacheSize", 30));
 		bind(Long.class).annotatedWith(Names.named("AgentTaskTriggeringTimeout")).toInstance(longProp("AgentTaskTriggeringTimeout", 2*SECOND));
 		bind(Long.class).annotatedWith(Names.named("AgentPingerDelay")).toInstance(longProp("AgentPingerDelay",5*SECOND));
 		install(new FactoryModuleBuilder().implement(Worker.class, SocketWorker.class).build(SocketWorkerFactory.class));
 
-		bind(String.class).annotatedWith(Names.named("filepersistence.directory")).toInstance(System.getProperty("java.io.tmpdir") + "/socket/filepers/");
-		bind(String.class).annotatedWith(Names.named("filepersistence.ending")).toInstance(".ser");
-		
 		try {
 			bind(Registry.class).toInstance(Simon.createRegistry(intProp("simonport", 4753)));
 		} catch (IOException e) {

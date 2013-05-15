@@ -7,6 +7,7 @@ import java.util.concurrent.Executors;
 
 import javax.inject.Named;
 
+import ch.zhaw.mapreduce.impl.FilePersistence;
 import ch.zhaw.mapreduce.impl.InMemoryShuffler;
 import ch.zhaw.mapreduce.plugins.Loader;
 import ch.zhaw.mapreduce.plugins.socket.impl.NamedThreadFactory;
@@ -40,7 +41,10 @@ public class MapReduceConfig extends AbstractModule {
 		bind(Pool.class);
 		bind(Loader.class);
 		bind(Shuffler.class).to(InMemoryShuffler.class);
-		
+		bind(Persistence.class).to(FilePersistence.class);
+		bind(String.class).annotatedWith(Names.named("filepersistence.directory")).toInstance(System.getProperty("java.io.tmpdir") + "/socket/filepers/");
+		bind(String.class).annotatedWith(Names.named("filepersistence.ending")).toInstance(".ser");
+				
 		bind(String.class).annotatedWith(Names.named("plugins.property")).toInstance("mrplugins");
 		bind(Long.class).annotatedWith(Names.named("StatisticsPrinterTimeout")).toInstance(10000L);
 		
