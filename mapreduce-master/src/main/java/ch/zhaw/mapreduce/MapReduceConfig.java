@@ -2,7 +2,6 @@ package ch.zhaw.mapreduce;
 
 import java.util.UUID;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -50,6 +49,9 @@ public class MapReduceConfig extends AbstractModule {
 		bind(Long.class).annotatedWith(Names.named("StatisticsPrinterTimeout")).toInstance(10000L);
 		// 10s
 		bind(Long.class).annotatedWith(Names.named("memoryFullSleepTime")).toInstance(10000L);
+		
+		// Prozentzahl an RAMusage, ab der keine Tasks mehr angenommen werden
+		bind(Long.class).annotatedWith(Names.named("minRemainingMemory")).toInstance(10L);
 		
 		// see PostConstructFeature
 		bindListener(Matchers.any(), new PostConstructFeature());

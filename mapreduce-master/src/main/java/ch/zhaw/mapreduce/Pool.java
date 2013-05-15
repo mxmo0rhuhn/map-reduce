@@ -45,12 +45,15 @@ public final class Pool {
 
 	private final long memoryFullSleepTime;
 
+	private final long minRemainingMemory;
+
 	/**
 	 * Erstellt einen neuen Pool der Aufgaben und Worker entgegen nimmt.
 	 */
 	@Inject
 	public Pool(@Named("poolExecutor") Executor workTaskAdministrator,
 			@Named("memoryFullSleepTime") long memoryFullSleepTime,
+			@Named("minRemainingMemory") long minRemainingMemory,
 			@Named("SupervisorScheduler") ScheduledExecutorService supervisorService,
 			@Named("StatisticsPrinterTimeout") long statisticsTimeout) {
 		this.workTaskAdministrator = workTaskAdministrator;
@@ -58,6 +61,7 @@ public final class Pool {
 		this.statisticsPrintTimeout = statisticsTimeout;
 		this.runtime = Runtime.getRuntime();
 		this.memoryFullSleepTime = memoryFullSleepTime;
+		this.minRemainingMemory = minRemainingMemory;
 	}
 
 	/**
@@ -83,9 +87,8 @@ public final class Pool {
 				LOG.log(Level.INFO, "Pool Worker: {0} known Worker, {1} free worker, {2} tasks",
 						new Object[] { getCurrentPoolSize(), getFreeWorkers(), taskQueue.size() });
 				LOG.log(Level.INFO,
-						"Memory: {0}% used consumed memory: {1} MB, free memory: {2} MB, max. memory {3} MB",
-						new Object[] { runtime.freeMemory() / runtime.maxMemory() * 100,
-								runtime.totalMemory() / 1024 / 1024,
+						"Memory: {0}% free, consumed memory: {1} MB, free memory: {2} MB, max. memory {3} MB",
+						new Object[] { calculateFreeRAM(), runtime.totalMemory() / 1024 / 1024,
 								runtime.freeMemory() / 1024 / 1024,
 								runtime.maxMemory() / 1024 / 1024 });
 			}
@@ -144,24 +147,36 @@ public final class Pool {
 	public boolean enqueueTask(WorkerTask task) {
 		LOG.entering(getClass().getName(), "enqueueTask", task);
 		boolean retVal = false;
-		
-		while (runtime.freeMemory() / runtime.maxMemory() * 100 < 10) {
+
+		if (calculateFreeRAM() < minRemainingMemory) {
 			try {
-				Thread.sleep(memoryFullSleepTime);
+				do {
+					Thread.sleep(memoryFullSleepTime);
+				} while (calculateFreeRAM() < minRemainingMemory);
 			} catch (InterruptedException e) {
 				// TODO jaaa hmmm is eig kein problem...
 				e.printStackTrace();
 			}
 		}
-		
-		// könnte loopen ... aber wenn das ding nicht in die queque kommt is eh was schief 
+
+		// könnte loopen ... aber wenn das ding nicht in die queque kommt is eh was schief
 		while (!retVal) {
-			retVal = taskQueue.offer(task); 
+			retVal = taskQueue.offer(task);
 		}
 		task.enqueued();
 
 		LOG.exiting(getClass().getName(), "enqueueTask", retVal);
 		return retVal;
+	}
+
+	private int calculateFreeRAM() {
+		int maxMem = (int) runtime.maxMemory();
+		if (maxMem == 0) {
+			return 100;
+		}
+		int usedMem = (int) ((int) runtime.totalMemory() - runtime.freeMemory());
+		
+		return 100 - (usedMem/maxMem * 100);
 	}
 
 	/**
@@ -187,7 +202,7 @@ public final class Pool {
 					WorkerTask task = taskQueue.take(); // blockiert bis ein Task da ist
 					Worker worker = availableWorkers.take(); // blockiert, bis ein Worker frei ist
 					workingWorkers.add(worker);
-					task.setWorker(worker);
+
 					LOG.finest("Execute Task on Worker");
 					worker.executeTask(task);
 				}
