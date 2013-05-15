@@ -12,7 +12,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
@@ -48,7 +49,7 @@ public final class Master {
 
 	private final Provider<Shuffler> shufflerProvider;
 
-	private final ExecutorService supervisorService;
+	private final ScheduledExecutorService supervisorService;
 	private final Pool pool;
 	private final String mapReduceTaskUuid;
 	private final WorkerTaskFactory workerTaskFactory;
@@ -60,7 +61,7 @@ public final class Master {
 	Master(Pool pool, WorkerTaskFactory workerTaskFactory,
 			@Named("mapReduceTaskUuid") String mapReduceTaskUuid,
 			Provider<Shuffler> shufflerProvider,
-			@Named("MasterSupervisor") ExecutorService supervisorService, 
+			@Named("SupervisorScheduler") ScheduledExecutorService supervisorService, 
 			@Named("StatisticsPrinterTimeout") long statisticsTimeout,
 			@Assisted("rescheduleStartPercentage") int rescheduleStartPercentage,
 			@Assisted("rescheduleEvery") int rescheduleEvery, @Assisted("waitTime") int waitTime) {
@@ -132,7 +133,7 @@ public final class Master {
 
 	@PostConstruct
 	public void startSupervisor() {
-		this.supervisorService.submit(new Runnable() {
+		this.supervisorService.scheduleAtFixedRate((new Runnable() {
 			@Override
 			public void run() {
 				try {
@@ -145,7 +146,7 @@ public final class Master {
 					logger.info("Master Supervisor Interrupted. Stopping"); 
 				}
 			}
-		});
+		}), statisticsPrintTimeout, statisticsPrintTimeout, TimeUnit.MILLISECONDS);
 	}
 	
 	/**

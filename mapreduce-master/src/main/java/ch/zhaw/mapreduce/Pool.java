@@ -1,11 +1,9 @@
 package ch.zhaw.mapreduce;
 
 import java.util.Iterator;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,17 +43,21 @@ public final class Pool {
 	private final Runtime runtime;
 	private final long statisticsPrintTimeout;
 
+	private final long memoryFullSleepTime;
+
 	/**
 	 * Erstellt einen neuen Pool der Aufgaben und Worker entgegen nimmt.
 	 */
 	@Inject
 	public Pool(@Named("poolExecutor") Executor workTaskAdministrator,
-			@Named("PoolSupervisor") ScheduledExecutorService supervisorService,
+			@Named("memoryFullSleepTime") long memoryFullSleepTime,
+			@Named("SupervisorScheduler") ScheduledExecutorService supervisorService,
 			@Named("StatisticsPrinterTimeout") long statisticsTimeout) {
 		this.workTaskAdministrator = workTaskAdministrator;
 		this.supervisorService = supervisorService;
 		this.statisticsPrintTimeout = statisticsTimeout;
 		this.runtime = Runtime.getRuntime();
+		this.memoryFullSleepTime = memoryFullSleepTime;
 	}
 
 	/**
@@ -75,17 +77,19 @@ public final class Pool {
 
 	@PostConstruct
 	public void startSupervisor() {
-		this.supervisorService.schedule(new Runnable() {
+		this.supervisorService.scheduleWithFixedDelay(new Runnable() {
 			@Override
 			public void run() {
+				LOG.log(Level.INFO, "Pool Worker: {0} known Worker, {1} free worker, {2} tasks",
+						new Object[] { getCurrentPoolSize(), getFreeWorkers(), taskQueue.size() });
 				LOG.log(Level.INFO,
-						"Statistics: {0} known Worker, {1} free worker, {2} tasks, consumed memory: {3} MB, free memory: {4} MB, max. memory {5} MB",
-						new Object[] { getCurrentPoolSize(), getFreeWorkers(), taskQueue.size(),
+						"Memory: {0}% used consumed memory: {1} MB, free memory: {2} MB, max. memory {3} MB",
+						new Object[] { runtime.freeMemory() / runtime.maxMemory() * 100,
 								runtime.totalMemory() / 1024 / 1024,
 								runtime.freeMemory() / 1024 / 1024,
 								runtime.maxMemory() / 1024 / 1024 });
 			}
-		}, statisticsPrintTimeout, TimeUnit.MILLISECONDS);
+		}, statisticsPrintTimeout, statisticsPrintTimeout, TimeUnit.MILLISECONDS);
 	}
 
 	public boolean isRunning() {
@@ -139,16 +143,23 @@ public final class Pool {
 	 */
 	public boolean enqueueTask(WorkerTask task) {
 		LOG.entering(getClass().getName(), "enqueueTask", task);
-
-		// runtime.totalMemory(), runtime.freeMemory(), runtime.maxMemory()
-		// while (!retVal) {
-		boolean retVal = taskQueue.offer(task);
-		if (retVal) {
-			task.enqueued();
-			// } else {
-			// wait
-			// }
+		boolean retVal = false;
+		
+		while (runtime.freeMemory() / runtime.maxMemory() * 100 < 10) {
+			try {
+				Thread.sleep(memoryFullSleepTime);
+			} catch (InterruptedException e) {
+				// TODO jaaa hmmm is eig kein problem...
+				e.printStackTrace();
+			}
 		}
+		
+		// könnte loopen ... aber wenn das ding nicht in die queque kommt is eh was schief 
+		while (!retVal) {
+			retVal = taskQueue.offer(task); 
+		}
+		task.enqueued();
+
 		LOG.exiting(getClass().getName(), "enqueueTask", retVal);
 		return retVal;
 	}
@@ -175,7 +186,7 @@ public final class Pool {
 					LOG.finest("Waiting for Task and Worker");
 					WorkerTask task = taskQueue.take(); // blockiert bis ein Task da ist
 					Worker worker = availableWorkers.take(); // blockiert, bis ein
-																			// Worker frei ist
+																// Worker frei ist
 					workingWorkers.add(worker);
 					task.setWorker(worker);
 					LOG.finest("Execute Task on Worker");
@@ -195,15 +206,15 @@ public final class Pool {
 		LOG.entering(getClass().getName(), "cleanResults", mapReduceTaskUUID);
 		Iterator<Worker> workingWorkerIterator = workingWorkers.iterator();
 		Iterator<Worker> availableWorkerIterator = availableWorkers.iterator();
-		
+
 		cleanResults(workingWorkerIterator, mapReduceTaskUUID);
 		cleanResults(availableWorkerIterator, mapReduceTaskUUID);
-		
+
 		LOG.exiting(getClass().getName(), "cleanResults");
 	}
-	
+
 	private void cleanResults(Iterator<Worker> workers, String mapReduceTaskUUID) {
-		while(workers.hasNext()) {
+		while (workers.hasNext()) {
 			workers.next().cleanAllResults(mapReduceTaskUUID);
 		}
 	}

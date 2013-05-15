@@ -4,6 +4,7 @@ import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.inject.Named;
 
@@ -43,6 +44,8 @@ public class MapReduceConfig extends AbstractModule {
 		
 		bind(String.class).annotatedWith(Names.named("plugins.property")).toInstance("mrplugins");
 		bind(Long.class).annotatedWith(Names.named("StatisticsPrinterTimeout")).toInstance(10000L);
+		// 10s
+		bind(Long.class).annotatedWith(Names.named("memoryFullSleepTime")).toInstance(10000L);
 		
 		// see PostConstructFeature
 		bindListener(Matchers.any(), new PostConstructFeature());
@@ -55,15 +58,9 @@ public class MapReduceConfig extends AbstractModule {
 	}
 	
 	@Provides
-	@Named("MasterSupervisor")
-	public ExecutorService MasterSupervisor() {
-		return Executors.newSingleThreadExecutor(new NamedThreadFactory("MasterSupervisor"));
-	}
-	
-	@Provides
-	@Named("PoolSupervisor")
-	public ExecutorService poolSupervisor() {
-		return Executors.newSingleThreadExecutor(new NamedThreadFactory("PoolSupervisor"));
+	@Named("SupervisorScheduler")
+	public ScheduledExecutorService poolSupervisor() {
+		return Executors.newScheduledThreadPool(1, new NamedThreadFactory("PoolSupervisor"));
 	}
 	
 	@Provides
