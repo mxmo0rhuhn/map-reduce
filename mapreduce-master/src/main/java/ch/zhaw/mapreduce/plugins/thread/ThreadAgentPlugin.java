@@ -16,7 +16,7 @@ public class ThreadAgentPlugin implements AgentPlugin {
 	@Override
 	public void start(Injector parent) throws PluginException {
 		Injector child = parent.createChildInjector(new ThreadConfig());
-		Integer nworkers = child.getInstance(Key.get(Integer.class, Names.named("thread.nrworkers")));
+		Integer nworkers = child.getInstance(Key.get(Integer.class, Names.named("nWorkers")));
 		Pool p = child.getInstance(Pool.class);
 		Logger log = child.getInstance(Logger.class);
 

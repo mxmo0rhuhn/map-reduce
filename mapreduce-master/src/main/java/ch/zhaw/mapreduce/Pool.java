@@ -84,7 +84,7 @@ public final class Pool {
 		this.supervisorService.scheduleWithFixedDelay(new Runnable() {
 			@Override
 			public void run() {
-				LOG.log(Level.INFO, "Pool Worker: {0} known Worker, {1} free worker, {2} tasks",
+				LOG.log(Level.INFO, "Pool: Worker: {0} known Worker, {1} free worker, {2} tasks",
 						new Object[] { getCurrentPoolSize(), getFreeWorkers(), taskQueue.size() });
 				LOG.log(Level.INFO,
 						"Memory: {0}% free, consumed memory: {1} MB, free memory: {2} MB, max. memory {3} MB",

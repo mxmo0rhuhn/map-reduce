@@ -1,5 +1,7 @@
 package ch.zhaw.mapreduce.plugins.thread;
 
+import java.io.FileInputStream;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -12,16 +14,23 @@ import com.google.inject.name.Names;
 
 public class ThreadConfig extends AbstractModule {
 	
-	public static int NWORKERS = 5;
-
 	@Override
 	protected void configure() {
 		bind(Worker.class).to(ThreadWorker.class);
-		
-		bind(Integer.class).annotatedWith(Names.named("thread.nrworkers")).toInstance(NWORKERS);
 		bind(ExecutorService.class).annotatedWith(Names.named("ThreadWorker")).toInstance(Executors.newSingleThreadExecutor());
-		
 		bind(Context.class).to(ContextImpl.class);
+		
+		int nWorkers = Runtime.getRuntime().availableProcessors() + 1;
+		Properties prop = new Properties();
+		try {
+    		prop.load(new FileInputStream("mapReduce.properties"));
+			
+    		nWorkers = Integer.parseInt(prop.getProperty("nThreadWorkers"));
+			
+		} catch (Exception e) {
+			// konnten nicht geladen werden - weiter mit oben definierten defaults
+		}
+		
+		bind(Integer.class).annotatedWith(Names.named("nWorkers")).toInstance(nWorkers);
 	}
-
 }
