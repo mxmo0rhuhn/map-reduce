@@ -1,21 +1,19 @@
 package ch.zhaw.mapreduce.plugins.thread;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 import ch.zhaw.mapreduce.Context;
-import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
+import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
@@ -32,8 +30,6 @@ public class ThreadWorker implements Worker {
 
 	private static final Logger LOG = Logger.getLogger(ThreadWorker.class.getName());
 
-	private final ConcurrentMap<String, ConcurrentMap<String, Context>> contexts = new ConcurrentHashMap<String, ConcurrentMap<String, Context>>();
-
 	/**
 	 * Aus dem Pool kommt der Worker her und dahin muss er auch wieder zurueck.
 	 */
@@ -44,7 +40,9 @@ public class ThreadWorker implements Worker {
 	 */
 	private final ExecutorService executor;
 
-	private final ContextFactory ctxFactory;
+	private final Provider<Context> ctxProvider;
+
+	private final Persistence persistence;
 
 	/**
 	 * Moegliche Tasks, die gerade von diesem Worker ausgefuehrt werden.
@@ -61,10 +59,12 @@ public class ThreadWorker implements Worker {
 	 * @param executor
 	 */
 	@Inject
-	public ThreadWorker(Pool pool, @Named("ThreadWorker") ExecutorService executor, ContextFactory ctxFactory) {
+	public ThreadWorker(Pool pool, @Named("ThreadWorker") ExecutorService executor, Provider<Context> ctxProvider,
+			Persistence persistence) {
 		this.pool = pool;
 		this.executor = executor;
-		this.ctxFactory = ctxFactory;
+		this.ctxProvider = ctxProvider;
+		this.persistence = persistence;
 	}
 
 	/**
@@ -72,28 +72,30 @@ public class ThreadWorker implements Worker {
 	 */
 	@Override
 	public void executeTask(final WorkerTask task) {
-		String mrUuid = task.getMapReduceTaskUuid();
-		String taskUuid = task.getTaskUuid();
-		final Context ctx = this.ctxFactory.createContext(mrUuid, taskUuid);
-		this.contexts.putIfAbsent(mrUuid, new ConcurrentHashMap<String, Context>());
-		ConcurrentMap<String, Context> inputs = this.contexts.get(mrUuid);
-		inputs.put(taskUuid, ctx);
+		final String taskUuid = task.getTaskUuid();
 		Future<Void> action = this.executor.submit(new Callable<Void>() {
 			@Override
 			public Void call() {
-				task.runTask(ctx);
-				// TODO das ist nur eine moegliche stelle, um den worker zurueck in den pool zu schieben. sollte das
-				// zentral geloest werden?
+				LOG.entering(getClass().getName(), "executeTask.call", task);
+				try {
+					Context ctx = ctxProvider.get();
+					task.runTask(ctx);
+					persistContext(taskUuid, ctx);
+				} catch (Exception e) {
+					LOG.log(Level.SEVERE, "Failed to run Task", e);
+					task.failed();
+				}
 				pool.workerIsFinished(ThreadWorker.this);
+				LOG.exiting(getClass().getName(), "executeTask.call");
 				return null;
 			}
 		});
-		this.tasks.put(mrUuid + taskUuid, action);
+		this.tasks.put(taskUuid, action);
 	}
 
 	@Override
-	public void stopCurrentTask(String mapReduceUUID, String taskUUID) {
-		Future<Void> task = this.tasks.get(mapReduceUUID + taskUUID);
+	public void stopCurrentTask(String taskUUID) {
+		Future<Void> task = this.tasks.get(taskUUID);
 		if (task != null) {
 			if (task.cancel(true)) {
 				// Task wurde abgebrochen
@@ -106,71 +108,15 @@ public class ThreadWorker implements Worker {
 			LOG.warning("No current Task available for this MapReduceID");
 		}
 	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public List<KeyValuePair> getMapResult(String mapReduceTaskUUID, String mapTaskUUID) {
-		ConcurrentMap<String, Context> computationCtx = this.contexts.get(mapReduceTaskUUID);
-		if (computationCtx == null) {
-			LOG.fine("MapReduceTaskUUID not found: " + mapReduceTaskUUID);
-			return Collections.emptyList();
+	
+	void persistContext(String taskUuid, Context ctx) {
+		List<KeyValuePair> mapRes = ctx.getMapResult();
+		if (mapRes != null) {
+			persistence.storeMapResults(taskUuid, mapRes);
 		}
-		Context taskCtx = computationCtx.get(mapTaskUUID);
-		if (taskCtx == null) {
-			LOG.finer("MapTaskUUID not found: " + mapTaskUUID);
-			return Collections.emptyList();
-		}
-		return taskCtx.getMapResult();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public List<String> getReduceResult(String mapReduceTaskUUID, String reduceTaskUUID) {
-		ConcurrentMap<String, Context> computationCtx = this.contexts.get(mapReduceTaskUUID);
-		if (computationCtx == null) {
-			LOG.fine("MapReduceTaskUUID not found: " + mapReduceTaskUUID);
-			return Collections.emptyList();
-		}
-		Context taskCtx = computationCtx.get(reduceTaskUUID);
-		if (taskCtx == null) {
-			LOG.finer("ReduceTaskUUID not found: " + reduceTaskUUID);
-			return Collections.emptyList();
-		}
-		return taskCtx.getReduceResult();
-	}
-
-	/** {@inheritDoc} */
-	@Override
-	public void cleanAllResults(String mapReduceTaskUUID) {
-		Map<String, Context> mrContexts = this.contexts.get(mapReduceTaskUUID);
-		if (mrContexts == null) {
-			LOG.finest("Nothing to delete for " + mapReduceTaskUUID);
-		} else {
-			for (Map.Entry<String, Context> inputs : mrContexts.entrySet()) {
-				inputs.getValue().destroy();
-			}
-		}
-		this.contexts.remove(mapReduceTaskUUID);
-	}
-
-	@Override
-	public void cleanSpecificResult(String mapReduceTaskUUID, String taskUUID) {
-		ConcurrentMap<String, Context> tasks = this.contexts.get(mapReduceTaskUUID);
-		if (tasks == null) {
-			LOG.finest("Nothing to clean for " + mapReduceTaskUUID);
-		} else {
-			Context ctx = tasks.get(taskUUID);
-			if (ctx == null) {
-				LOG.finest("Nothing to delete for " + mapReduceTaskUUID + " and " + taskUUID);
-			} else {
-				ctx.destroy();
-				tasks.remove(taskUUID);
-			}
+		List<String> redRes = ctx.getReduceResult();
+		if (redRes != null) {
+			persistence.storeReduceResults(taskUuid, redRes);
 		}
 	}
-
 }

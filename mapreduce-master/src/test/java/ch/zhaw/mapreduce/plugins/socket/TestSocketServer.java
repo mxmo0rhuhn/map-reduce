@@ -32,7 +32,7 @@ public class TestSocketServer {
 		reg.bind(SharedSocketConfig.SOCKET_RESULT_COLLECTOR_SIMON_BINDING, resultCollector);
 		
 		for (int i = 0; i < 1000000; i++) {
-			p.enqueueTask(new MapWorkerTask("mrtUuid", "tUuid" + i, pers, new TestMapInstruction(), null, "input"));
+			p.enqueueTask(new MapWorkerTask("tUuid" + i, pers, new TestMapInstruction(), null, "input"));
 		}
 	}
 

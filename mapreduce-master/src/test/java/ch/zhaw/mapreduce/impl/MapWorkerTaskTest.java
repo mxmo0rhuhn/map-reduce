@@ -6,21 +6,22 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.inject.Provider;
+
 import org.jmock.Expectations;
 import org.jmock.Sequence;
-import org.jmock.States;
 import org.jmock.auto.Auto;
 import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnitRuleMockery;
@@ -31,7 +32,6 @@ import org.junit.Test;
 
 import ch.zhaw.mapreduce.CombinerInstruction;
 import ch.zhaw.mapreduce.Context;
-import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapEmitter;
 import ch.zhaw.mapreduce.MapInstruction;
@@ -64,7 +64,7 @@ public class MapWorkerTaskTest {
 	private Context ctx;
 
 	@Mock
-	private ContextFactory ctxFactory;
+	private Provider<Context> ctxProvider;
 
 	@Mock
 	private ExecutorService execMock;
@@ -77,33 +77,26 @@ public class MapWorkerTaskTest {
 	private String input = "hello";
 
 	@Test
-	public void shouldSetMapReduceTaskUUID() {
-		MapWorkerTask task = new MapWorkerTask("uuid", inputUUID, pers, mapInstr, combInstr, input);
-		assertEquals("uuid", task.getMapReduceTaskUuid());
-	}
-
-	@Test
 	public void shouldSetMapInstruction() {
-		MapWorkerTask task = new MapWorkerTask("uuid", inputUUID, pers, mapInstr, combInstr, input);
+		MapWorkerTask task = new MapWorkerTask(inputUUID, pers, mapInstr, combInstr, input);
 		assertSame(mapInstr, task.getMapInstruction());
 	}
 
 	@Test
 	public void shouldSetCombinerInstruction() {
-		MapWorkerTask task = new MapWorkerTask("uuid", inputUUID, pers, mapInstr, combInstr, input);
+		MapWorkerTask task = new MapWorkerTask(inputUUID, pers, mapInstr, combInstr, input);
 		assertSame(combInstr, task.getCombinerInstruction());
 	}
 
 	@Test
 	public void shouldCopeWithNullCombiner() {
-		MapWorkerTask task = new MapWorkerTask("uuid", inputUUID, pers, mapInstr, null, input);
+		MapWorkerTask task = new MapWorkerTask(inputUUID, pers, mapInstr, null, input);
 		assertNull(task.getCombinerInstruction());
 	}
 
 	@Test
 	public void shouldRunMapInstruction() {
-		Executor poolExec = Executors.newSingleThreadExecutor();
-		final MapWorkerTask task = new MapWorkerTask("mrtUuid", inputUUID, pers, new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask(inputUUID, pers, new MapInstruction() {
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
 				for (String part : toDo.split(" ")) {
@@ -121,18 +114,18 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldSetInputUUID() {
-		final MapWorkerTask task = new MapWorkerTask("mrtUuid", inputUUID, pers, mapInstr, combInstr, input);
+		final MapWorkerTask task = new MapWorkerTask(inputUUID, pers, mapInstr, combInstr, input);
 		assertEquals(inputUUID, task.getTaskUuid());
 	}
 
 	@Test
 	public void shouldSetStateToFailedOnException() {
-		final MapWorkerTask task = new MapWorkerTask("mrtUuid", inputUUID, pers, mapInstr, combInstr, input);
+		final MapWorkerTask task = new MapWorkerTask(inputUUID, pers, mapInstr, combInstr, input);
 		this.mockery.checking(new Expectations() {
 			{
 				oneOf(mapInstr).map(ctx, input);
 				will(throwException(new NullPointerException()));
-				oneOf(pers).destroy("mrtUuid", inputUUID);
+				oneOf(pers).destroy(inputUUID);
 			}
 		});
 		task.runTask(ctx);
@@ -141,7 +134,7 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldSetStateToCompletedOnSuccess() {
-		final MapWorkerTask task = new MapWorkerTask("mrtUuid", inputUUID, pers, mapInstr, null, input);
+		final MapWorkerTask task = new MapWorkerTask(inputUUID, pers, mapInstr, null, input);
 		this.mockery.checking(new Expectations() {
 			{
 				oneOf(mapInstr).map(ctx, input);
@@ -153,7 +146,7 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldSetStateToInitiatedInitially() {
-		MapWorkerTask task = new MapWorkerTask("mrtUuid", inputUUID, pers, mapInstr, combInstr, input);
+		MapWorkerTask task = new MapWorkerTask(inputUUID, pers, mapInstr, combInstr, input);
 		assertEquals(State.INITIATED, task.getCurrentState());
 	}
 
@@ -164,9 +157,9 @@ public class MapWorkerTaskTest {
 		ExecutorService taskExec = Executors.newSingleThreadExecutor();
 		final Pool pool = new Pool(poolExec, execMock, 1000);
 		pool.init();
-		ThreadWorker worker = new ThreadWorker(pool, taskExec, ctxFactory);
+		ThreadWorker worker = new ThreadWorker(pool, taskExec, ctxProvider, pers);
 		pool.donateWorker(worker);
-		final MapWorkerTask task = new MapWorkerTask("mrtUuid", inputUUID, pers, new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask(inputUUID, pers, new MapInstruction() {
 
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
@@ -177,12 +170,9 @@ public class MapWorkerTaskTest {
 				}
 			}
 		}, null, input);
-		this.mockery.checking(new Expectations() {
-			{
-				oneOf(ctxFactory).createContext("mrtUuid", "inputUUID");
-				will(returnValue(ctx));
-			}
-		});
+		this.mockery.checking(new Expectations() { {
+				oneOf(ctxProvider).get(); will(returnValue(ctx));
+			} });
 		pool.enqueueTask(task);
 		Thread.yield();
 		Thread.sleep(200);
@@ -202,11 +192,11 @@ public class MapWorkerTaskTest {
 		final Pool pool = new Pool(poolExec, execMock, 1000);
 		final AtomicInteger cnt = new AtomicInteger();
 		pool.init();
-		ThreadWorker worker1 = new ThreadWorker(pool, threadExec1, ctxFactory);
+		ThreadWorker worker1 = new ThreadWorker(pool, threadExec1, ctxProvider, pers);
 		pool.donateWorker(worker1);
-		ThreadWorker worker2 = new ThreadWorker(pool, threadExec2, ctxFactory);
+		ThreadWorker worker2 = new ThreadWorker(pool, threadExec2, ctxProvider, pers);
 		pool.donateWorker(worker2);
-		final MapWorkerTask task = new MapWorkerTask("mrtUuid", inputUUID, pers, new MapInstruction() {
+		final MapWorkerTask task = new MapWorkerTask(inputUUID, pers, new MapInstruction() {
 
 			@Override
 			public void map(MapEmitter emitter, String toDo) {
@@ -222,13 +212,18 @@ public class MapWorkerTaskTest {
 		}, null, input);
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(ctxFactory).createContext("mrtUuid", "inputUUID");
-				will(returnValue(ctx));
+				oneOf(ctxProvider).get(); will(returnValue(ctx));
 				inSequence(events);
-				oneOf(pers).destroy("mrtUuid", "inputUUID");
+				oneOf(pers).destroy("inputUUID");
 				inSequence(events);
-				oneOf(ctxFactory).createContext("mrtUuid", "inputUUID");
-				will(returnValue(ctx));
+				oneOf(ctxProvider).get(); will(returnValue(ctx));
+				oneOf(ctx).getMapResult(); will(returnValue(new ArrayList<KeyValuePair>()));
+				oneOf(pers).storeMapResults(with("inputUUID"), with(aNonNull(List.class)));
+				oneOf(ctx).getReduceResult(); will(returnValue(null));
+				inSequence(events);
+				oneOf(ctx).getMapResult(); will(returnValue(new ArrayList<KeyValuePair>()));
+				oneOf(pers).storeMapResults(with("inputUUID"), with(aNonNull(List.class)));
+				oneOf(ctx).getReduceResult(); will(returnValue(null));
 			}
 		});
 		pool.enqueueTask(task);
@@ -243,7 +238,7 @@ public class MapWorkerTaskTest {
 	public void shouldBeEnqueuedAfterSubmissionToPool() {
 		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
 		pool.init();
-		final MapWorkerTask task = new MapWorkerTask("mrtuid", inputUUID, pers, mapInstr, null, input);
+		final MapWorkerTask task = new MapWorkerTask(inputUUID, pers, mapInstr, null, input);
 		this.mockery.checking(new Expectations() {
 			{
 				never(mapInstr);
@@ -255,7 +250,7 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldCombineAfterTask() {
-		final MapWorkerTask task = new MapWorkerTask("mrtuid", "inputUUID", pers, mapInstr, combInstr, "hello");
+		final MapWorkerTask task = new MapWorkerTask("inputUUID", pers, mapInstr, combInstr, "hello");
 		final List<KeyValuePair> result = Arrays.asList(new KeyValuePair[] { new KeyValuePair("hello", "1") });
 		final List<KeyValuePair> combined = Arrays.asList(new KeyValuePair[] { new KeyValuePair("hello", "2") });
 		this.mockery.checking(new Expectations() {

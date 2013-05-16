@@ -1,12 +1,12 @@
 package ch.zhaw.mapreduce.plugins.thread;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+
+import javax.inject.Provider;
 
 import org.junit.Test;
 
 import ch.zhaw.mapreduce.Context;
-import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.MapReduceConfig;
 import ch.zhaw.mapreduce.Worker;
 
@@ -16,11 +16,10 @@ import com.google.inject.Injector;
 public class ThreadConfigTest {
 
 	@Test
-	public void shouldCreateContextWithSpecifiedParametersInjected() {
+	public void ctxShouldBePrototype() {
 		Injector injector = Guice.createInjector(new MapReduceConfig(), new ThreadConfig());
-		Context ctx = injector.getInstance(ContextFactory.class).createContext("mapReduceUUID", "taskUUID");
-		assertEquals("mapReduceUUID", ctx.getMapReduceTaskUUID());
-		assertEquals("taskUUID", ctx.getTaskUUID());
+		Provider<Context> prov = injector.getProvider(Context.class);
+		assertNotSame(prov.get(), prov.get());
 	}
 	
 	@Test

@@ -124,7 +124,7 @@ public class MapReduceConfigTest {
 	@Test
 	public void shouldSetMapAndCombinerTaskToMapRunner() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapWorkerTask mapWorkerTask = factory.createMapWorkerTask("uuid", mapInstr, combInstr, input);
+		MapWorkerTask mapWorkerTask = factory.createMapWorkerTask(mapInstr, combInstr, input);
 		assertSame(mapInstr, mapWorkerTask.getMapInstruction());
 		assertSame(combInstr, mapWorkerTask.getCombinerInstruction());
 	}
@@ -132,50 +132,43 @@ public class MapReduceConfigTest {
 	@Test
 	public void shouldCopeWithNullCombinerTask() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapWorkerTask mapperTask = factory.createMapWorkerTask("uuid", mapInstr, null, input);
+		MapWorkerTask mapperTask = factory.createMapWorkerTask(mapInstr, null, input);
 		assertNotNull(mapperTask);
 	}
 
 	@Test
 	public void shouldCreatePrototypesForMapRunners() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		assertNotSame(factory.createMapWorkerTask("uuid1", mapInstr, combInstr, input),
-				factory.createMapWorkerTask("uuid2", mapInstr, combInstr, input));
+		assertNotSame(factory.createMapWorkerTask(mapInstr, combInstr, input),
+				factory.createMapWorkerTask(mapInstr, combInstr, input));
 	}
 
 	@Test
 	public void shouldSetReduceTaskToReduceRunner() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		ReduceWorkerTask reduceRunner = factory.createReduceWorkerTask("uuid", "key", reduceInstr, this.toDo);
+		ReduceWorkerTask reduceRunner = factory.createReduceWorkerTask("key", reduceInstr, this.toDo);
 		assertSame(reduceInstr, reduceRunner.getReduceInstruction());
 	}
 
 	@Test
 	public void shouldCreatePrototypesForReduceRunners() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		assertNotSame(factory.createReduceWorkerTask("uuid1", "key1", reduceInstr, toDo),
-				factory.createReduceWorkerTask("uuid2", "key2", reduceInstr, toDo));
-	}
-
-	@Test
-	public void shouldSetMapReduceUUIDToMapTask() {
-		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapWorkerTask mwt = factory.createMapWorkerTask("uuid", mapInstr, null, input);
-		assertEquals("uuid", mwt.getMapReduceTaskUuid());
+		assertNotSame(factory.createReduceWorkerTask("key1", reduceInstr, toDo),
+				factory.createReduceWorkerTask("key2", reduceInstr, toDo));
 	}
 
 	@Test
 	public void shouldSetWorkerTaskUUIDToMapTask() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapWorkerTask mwt = factory.createMapWorkerTask("uuid", mapInstr, null, input);
+		MapWorkerTask mwt = factory.createMapWorkerTask(mapInstr, null, input);
 		assertNotNull(mwt.getTaskUuid());
 	}
 
 	@Test
 	public void shouldGenerateDistinctWorkerTaskUUIDs() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapWorkerTask mwt1 = factory.createMapWorkerTask("uuid", mapInstr, null, input);
-		MapWorkerTask mwt2 = factory.createMapWorkerTask("uuid", mapInstr, null, input);
+		MapWorkerTask mwt1 = factory.createMapWorkerTask(mapInstr, null, input);
+		MapWorkerTask mwt2 = factory.createMapWorkerTask(mapInstr, null, input);
 		String uuid1 = mwt1.getTaskUuid();
 		String uuid2 = mwt2.getTaskUuid();
 		assertNotNull(uuid1);
@@ -183,22 +176,6 @@ public class MapReduceConfigTest {
 		assertFalse(uuid1.equals(uuid2));
 	}
 
-	@Test
-	public void shouldSetUUIDToReduceTask() {
-		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		ReduceWorkerTask mwt = factory.createReduceWorkerTask("uuid", "key",
-				reduceInstr, toDo);
-		assertEquals("uuid", mwt.getMapReduceTaskUuid());
-	}
-
-	@Test
-	public void shouldProvideDifferentUUIDEveryTime() {
-		Injector injector = Guice.createInjector(new MapReduceConfig());
-		Master m1 = injector.getInstance(MasterFactory.class).createMaster(1, 2, 3);
-		Master m2 = injector.getInstance(MasterFactory.class).createMaster(1, 2, 3);
-		assertFalse(m1.getMapReduceTaskUuid().equals(m2.getMapReduceTaskUuid()));
-	}
-	
 	@Test
 	public void shouldCreateMasterWithParameters() {
 		Master m = Guice.createInjector(new MapReduceConfig()).getInstance(MasterFactory.class).createMaster(1, 2, 3);

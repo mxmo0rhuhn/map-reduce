@@ -37,13 +37,12 @@ public class MapWorkerTask extends AbstractWorkerTask {
 	private final String input;
 
 	@Inject
-	public MapWorkerTask(@Assisted("mapReduceTaskUuid") String mapReduceTaskUuid,
-			@Named("taskUuid") String taskUuid, 
+	public MapWorkerTask(@Named("taskUuid") String taskUuid, 
 			Persistence persistence,
 			@Assisted MapInstruction mapInstruction,
 			@Assisted @Nullable CombinerInstruction combinerInstruction,
 			@Assisted("input") String input) {
-		super(mapReduceTaskUuid, taskUuid);
+		super(taskUuid);
 		this.persistence = persistence;
 		this.mapInstruction = mapInstruction;
 		this.combinerInstruction = combinerInstruction;
@@ -70,7 +69,7 @@ public class MapWorkerTask extends AbstractWorkerTask {
 		} catch (Exception e) {
 			LOG.log(Level.WARNING, "Instruction threw Exception", e);
 			failed();
-			this.persistence.destroy(getMapReduceTaskUuid(), getTaskUuid());
+			this.persistence.destroy(getTaskUuid());
 		}
 	}
 
@@ -93,7 +92,7 @@ public class MapWorkerTask extends AbstractWorkerTask {
 	}
 
 	public List<KeyValuePair> getResults() {
-		return this.persistence.getMap(getMapReduceTaskUuid(), getTaskUuid());
+		return this.persistence.getMapResults(getTaskUuid());
 	}
 
 	@Override
@@ -104,7 +103,7 @@ public class MapWorkerTask extends AbstractWorkerTask {
 	@Override
 	public void abort() {
 		aborted();
-		this.persistence.destroy(getMapReduceTaskUuid(), getTaskUuid());
+		this.persistence.destroy(getTaskUuid());
 	}
 
 }

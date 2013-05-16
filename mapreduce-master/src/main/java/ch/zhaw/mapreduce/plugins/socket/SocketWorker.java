@@ -1,6 +1,5 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -14,7 +13,6 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
@@ -101,19 +99,19 @@ public class SocketWorker implements Worker, SocketResultObserver {
 	 * geben den SocketWorker zurück zum Pool.
 	 */
 	@Override
-	public void resultAvailable(String mapReduceTaskUuid, String taskUuid, boolean success) {
-		LOG.entering(getClass().getName(), "resultAvailable", new Object[] { mapReduceTaskUuid, taskUuid, success });
+	public void resultAvailable(String taskUuid, boolean success) {
+		LOG.entering(getClass().getName(), "resultAvailable", new Object[] { taskUuid, success });
 		Future<WorkerTask> future = this.currentTask;
 		if (future == null) {
-			LOG.log(Level.WARNING, "Got notified for missing Task {0} {1}",
-					new Object[] { mapReduceTaskUuid, taskUuid });
+			LOG.log(Level.WARNING, "Got notified for missing Task {0}",
+					new Object[] { taskUuid });
 			return;
 		}
 		try {
 			WorkerTask task = future.get(agentTaskTriggeringTimeout, TimeUnit.MILLISECONDS);
-			if (mapReduceTaskUuid.equals(task.getMapReduceTaskUuid()) && taskUuid.equals(task.getTaskUuid())) {
-				LOG.log(Level.FINE, "Go notified for MapReduceTaskUuid={0} TaskUuid={1} Success={2}", new Object[] {
-						mapReduceTaskUuid, taskUuid, success });
+			if (taskUuid.equals(task.getTaskUuid())) {
+				LOG.log(Level.FINE, "Go notified for TaskUuid={0} Success={1}", new Object[] {
+						taskUuid, success });
 				if (success) {
 					task.completed();
 				} else {
@@ -122,12 +120,10 @@ public class SocketWorker implements Worker, SocketResultObserver {
 				this.currentTask = null;
 			} else {
 				LOG.log(Level.SEVERE,
-						"Got notification for wrong WorkerTask MapReduceTaskUuid [{0} vs {1}] TaskUuid [{2} vs {3}]",
-						new Object[] { mapReduceTaskUuid, task.getMapReduceTaskUuid(), taskUuid, task.getTaskUuid() });
+						"Got notification for wrong WorkerTask MapReduceTaskUuid [TaskUuid [{0} vs {1}]", new Object[] { taskUuid, task.getTaskUuid() });
 			}
 		} catch (TimeoutException e) {
-			LOG.log(Level.SEVERE, "Caught TimeoutException for MapReduceTaskUuid={0}, TaskUuid={1}", new Object[] {
-					mapReduceTaskUuid, taskUuid });
+			LOG.log(Level.SEVERE, "Caught TimeoutException for TaskUuid={0}", new Object[] { taskUuid });
 		} catch (Exception e) {
 			LOG.log(Level.SEVERE, "Caught Exception", e);
 		}
@@ -156,24 +152,18 @@ public class SocketWorker implements Worker, SocketResultObserver {
 
 			@Override
 			public WorkerTask call() throws Exception {
-				String mapReduceTaskUuid = workerTask.getMapReduceTaskUuid();
 				String taskUuid = workerTask.getTaskUuid();
 				AgentTask agentTask = atFactory.createAgentTask(workerTask);
-				LOG.log(Level.FINE, "Before running Task on Agent MapReduceTaskUuid={0}, TaskUuid={1}, Agent={2}",
-						new Object[] { mapReduceTaskUuid, taskUuid, agentIP });
+				LOG.log(Level.FINE, "Before running Task on Agent TaskUuid={0}, Agent={1}", new Object[] { taskUuid, agentIP });
 				AgentTaskState state = agent.runTask(agentTask); // RPC
-				LOG.log(Level.FINE, "After running Task on Agent MapReduceTaskUuid={0}, TaskUuid={1}, Agent={2}",
-						new Object[] { mapReduceTaskUuid, taskUuid, agentIP });
+				LOG.log(Level.FINE, "After running Task on Agent TaskUuid={0}, Agent={1}", new Object[] { taskUuid, agentIP });
 				switch (state.state()) {
 				case ACCEPTED:
-					LOG.log(Level.FINE, "Task Accepted by SocketAgent for MapReduceTaskUuid={0}, TaskUuid={1}",
-							new Object[] { mapReduceTaskUuid, taskUuid });
+					LOG.log(Level.FINE, "Task Accepted by SocketAgent for TaskUuid={0}", new Object[] { taskUuid });
 					workerTask.started();
-					Boolean success = resCollector.registerObserver(mapReduceTaskUuid, taskUuid, SocketWorker.this);
+					Boolean success = resCollector.registerObserver(taskUuid, SocketWorker.this);
 					if (success != null) {
-						LOG.log(Level.FINE,
-								"Result already available for MapReduceTaskUuid={0}, TaskUuid={1}, Success={2}",
-								new Object[] { mapReduceTaskUuid, taskUuid, success });
+						LOG.log(Level.FINE, "Result already available for TaskUuid={0}, Success={1}", new Object[] { taskUuid, success });
 						if (success) {
 							workerTask.completed();
 						} else {
@@ -184,8 +174,8 @@ public class SocketWorker implements Worker, SocketResultObserver {
 						// zu gehen. currentTask müsste auch auf null gesetzt werden!
 					} else {
 						LOG.log(Level.FINE,
-								"Result not available. Registered as Observer for MapReduceTaskUuid={0}, TaskUuid={1}",
-								new Object[] { mapReduceTaskUuid, taskUuid });
+								"Result not available. Registered as Observer for TaskUuid={0}",
+								new Object[] { taskUuid });
 					}
 					break;
 				case REJECTED:
@@ -203,39 +193,10 @@ public class SocketWorker implements Worker, SocketResultObserver {
 	}
 
 	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public List<String> getReduceResult(String mapReduceTaskUuid, String taskUuid) {
-		return this.resCollector.getReduceResult(mapReduceTaskUuid, taskUuid);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public List<KeyValuePair> getMapResult(String mapReduceTaskUuid, String taskUuid) {
-		return this.resCollector.getMapResult(mapReduceTaskUuid, taskUuid);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public void cleanAllResults(String mapReduceTaskUuid) {
-		this.resCollector.cleanAllResults(mapReduceTaskUuid);
-	}
-
-	@Override
-	public void cleanSpecificResult(String mapReduceTaskUuid, String taskUuid) {
-		this.resCollector.cleanResult(mapReduceTaskUuid, taskUuid);
-	}
-
-	/**
 	 * Stop den Task, der momentan grad ausgeführt wird, sodass der SocketWorker wieder für neues verfügbar ist.
 	 */
 	@Override
-	public void stopCurrentTask(String mapReduceUuid, String taskUuid) {
+	public void stopCurrentTask(String taskUuid) {
 		LOG.log(Level.FINE, "SocketWorker does not stop but just make itself available again");
 	}
 

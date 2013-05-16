@@ -39,9 +39,8 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 			oneOf(atFactory).createAgentTask(workerTask); will(returnValue(agentTask));
 			oneOf(sAgent).runTask(agentTask); will(returnValue(new AgentTaskState(State.ACCEPTED)));
 			oneOf(workerTask).started();
-			oneOf(workerTask).getMapReduceTaskUuid(); will(returnValue(mrUuid));
 			oneOf(workerTask).getTaskUuid(); will(returnValue(taskUuid));
-			oneOf(resCollector).registerObserver(mrUuid, taskUuid, sw); will(returnValue(null));
+			oneOf(resCollector).registerObserver(taskUuid, sw); will(returnValue(null));
 			then(taskRunnerState.is("runningTask"));
 		}});
 		sw.executeTask(workerTask);
@@ -60,9 +59,8 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 			oneOf(atFactory).createAgentTask(workerTask); will(returnValue(agentTask));
 			oneOf(sAgent).runTask(agentTask); will(returnValue(new AgentTaskState(State.ACCEPTED)));
 			oneOf(workerTask).started();
-			oneOf(workerTask).getMapReduceTaskUuid(); will(returnValue(mrUuid));
 			oneOf(workerTask).getTaskUuid(); will(returnValue(taskUuid));
-			oneOf(resCollector).registerObserver(mrUuid, taskUuid, sw); will(returnValue(Boolean.TRUE));
+			oneOf(resCollector).registerObserver(taskUuid, sw); will(returnValue(Boolean.TRUE));
 			oneOf(workerTask).completed();
 			then(taskRunnerState.is("runningTask"));
 		}});
@@ -82,7 +80,6 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200, schedService, 2000);
 		taskRunnerState.startsAs("beforeRunning");
 		mockery.checking(new Expectations() {{ 
-			oneOf(workerTask).getMapReduceTaskUuid(); will(returnValue(mrUuid));
 			oneOf(workerTask).getTaskUuid(); will(returnValue(taskUuid));
 			oneOf(atFactory).createAgentTask(workerTask); will(returnValue(agentTask));
 			oneOf(sAgent).runTask(agentTask); will(returnValue(new AgentTaskState(State.REJECTED)));
@@ -111,16 +108,15 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 			oneOf(atFactory).createAgentTask(workerTask); will(returnValue(agentTask));
 			oneOf(sAgent).runTask(agentTask); will(returnValue(new AgentTaskState(State.ACCEPTED)));
 			oneOf(workerTask).started();
-			atLeast(1).of(workerTask).getMapReduceTaskUuid(); will(returnValue(mrUuid));
 			atLeast(1).of(workerTask).getTaskUuid(); will(returnValue(taskUuid));
-			oneOf(resCollector).registerObserver(mrUuid, taskUuid, sw); will(returnValue(null));
+			oneOf(resCollector).registerObserver(taskUuid, sw); will(returnValue(null));
 			then(taskRunnerState.is("taskRunning"));
 			oneOf(workerTask).completed();
 			then(taskRunnerState.is("taskDone"));
 		}});
 		p.enqueueTask(workerTask);
 		sync.waitUntil(taskRunnerState.is("taskRunning"), 200);
-		sw.resultAvailable(mrUuid, taskUuid, true);
+		sw.resultAvailable(taskUuid, true);
 		sync.waitUntil(taskRunnerState.is("taskDone"), 200);
 		Thread.yield();
 		Thread.sleep(200); // geht erst nach dem task.failed aufruf in den pool, also noch kurz warten

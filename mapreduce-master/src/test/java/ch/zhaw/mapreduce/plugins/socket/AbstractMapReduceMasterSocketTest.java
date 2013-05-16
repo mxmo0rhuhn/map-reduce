@@ -5,7 +5,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.jmock.Expectations;
+import javax.inject.Provider;
+
 import org.jmock.Sequence;
 import org.jmock.api.Imposteriser;
 import org.jmock.api.ThreadingPolicy;
@@ -15,7 +16,6 @@ import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.junit.Rule;
 
 import ch.zhaw.mapreduce.Context;
-import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Worker;
@@ -54,7 +54,7 @@ public abstract class AbstractMapReduceMasterSocketTest {
 	protected Context ctx;
 	
 	@Mock
-	protected ContextFactory ctxFactory;
+	protected Provider<Context> ctxProvider;
 
 	@Mock
 	protected Persistence persistence;
@@ -91,8 +91,6 @@ public abstract class AbstractMapReduceMasterSocketTest {
 	
 	@Mock
 	protected SocketAgentResult saRes;
-
-	protected final String mrUuid = "mrtUuid";
 
 	protected final String taskUuid = "taskUuid";
 

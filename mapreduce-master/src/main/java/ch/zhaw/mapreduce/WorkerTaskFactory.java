@@ -21,16 +21,13 @@ public interface WorkerTaskFactory {
 	 * Erstellt eine neue Instanz vom MapWorkerTask mit den übergebenen Parametern. Wenn der Konstruktor der konkreten
 	 * Implemtation mehr Parameter hat als hier angegeben, werden diese von Guice injected.
 	 * 
-	 * @param mapReduceTaskUUID
-	 *            die ID der MapReduce Berechnung, zu der dieser Task gehört
 	 * @param mapInstr
 	 *            die zu verwendende MapInstruction
 	 * @param combinerInstr
 	 *            die zu verwendende CombinerInstruction
 	 * @return eine neue Instanz eines MapWorkerTask
 	 */
-	MapWorkerTask createMapWorkerTask(@Assisted("mapReduceTaskUuid") String mapReduceTaskUUID,
-									  MapInstruction mapInstruction,
+	MapWorkerTask createMapWorkerTask(MapInstruction mapInstruction,
 									  CombinerInstruction combinerInstr,
 									  @Assisted("input") String input);
 
@@ -41,16 +38,13 @@ public interface WorkerTaskFactory {
 	 * Da zwei Parameter vom Typ String sind, müssen diese in der @Assisted Annotation näher beschrieben werden. So
 	 * werden Verwechslungen vermieden.
 	 * 
-	 * @param mapReduceTaskUUID
-	 *            die ID der MapReduce Berechnung, zu der dieser Task gehört
 	 * @param key
 	 *            der Key, für den reduziert wird
 	 * @param reduceInstr
 	 *            die zu verwendenden ReduceInstruction
 	 * @return eine neue Instanz eines ReduceWorkerTask
 	 */
-	ReduceWorkerTask createReduceWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUUID,
-											@Assisted("key") String key,
+	ReduceWorkerTask createReduceWorkerTask( @Assisted("key") String key,
 											@Assisted ReduceInstruction reduceInstr,
 											@Assisted List<KeyValuePair> toDo);
 }

@@ -42,12 +42,11 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 	private final List<KeyValuePair> values;
 
 	@Inject
-	public ReduceWorkerTask(@Assisted("mapReduceTaskUUID") String mapReduceTaskUuid,
-			@Named("taskUuid") String taskUuid, Persistence persistence,
+	public ReduceWorkerTask(@Named("taskUuid") String taskUuid, Persistence persistence,
 			@Assisted ReduceInstruction reduceInstruction,
 			@Assisted("key") String key,
 			@Assisted List<KeyValuePair> inputs) {
-		super(mapReduceTaskUuid, taskUuid);
+		super(taskUuid);
 		this.key = key;
 		this.persistence = persistence;
 		this.reduceInstruction = reduceInstruction;
@@ -65,7 +64,7 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 		} catch (Exception e) {
 			LOG.log(Level.WARNING, "Instruction threw Exception", e);
 			failed();
-			this.persistence.destroy(getMapReduceTaskUuid(), getTaskUuid());
+			this.persistence.destroy(getTaskUuid());
 		}
 	}
 
@@ -79,7 +78,7 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 	}
 
 	public List<String> getResults() {
-		return this.persistence.getReduce(getMapReduceTaskUuid(), getTaskUuid());
+		return this.persistence.getReduceResults(getTaskUuid());
 	}
 
 	@Override
@@ -93,7 +92,7 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 
 	@Override
 	public void abort() {
-		this.persistence.destroy(getMapReduceTaskUuid(), getTaskUuid());
+		this.persistence.destroy(getTaskUuid());
 		aborted();
 	}
 

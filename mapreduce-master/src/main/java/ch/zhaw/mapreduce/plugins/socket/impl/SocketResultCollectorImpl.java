@@ -54,16 +54,15 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 
 	@Override
 	public void pushResult(SocketAgentResult res) {
-		String mapReduceTaskUuid = res.getMapReduceTaskUuid();
 		String taskUuid = res.getTaskUuid();
-		LOG.entering(getClass().getName(), "pushResult", new Object[] { mapReduceTaskUuid, taskUuid });
+		LOG.entering(getClass().getName(), "pushResult", new Object[] { taskUuid });
 
 		if (res.wasSuccessful()) {
 			storeResult(res);
 		} else {
 			LOG.log(Level.WARNING, "Failed to run Task on Agent", res.getException());
 		}
-		notifySocketWorker(mapReduceTaskUuid, taskUuid, res.wasSuccessful());
+		notifySocketWorker(taskUuid, res.wasSuccessful());
 
 		LOG.exiting(getClass().getName(), "pushResult");
 	}
@@ -77,33 +76,28 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 	 *         false.
 	 */
 	@Override
-	public Boolean registerObserver(String mapReduceTaskUuid, String taskUuid, SocketResultObserver observer) {
-		LOG.entering(getClass().getName(), "registerObserver", new Object[] { mapReduceTaskUuid, taskUuid, observer });
-		String key = createKey(mapReduceTaskUuid, taskUuid);
+	public Boolean registerObserver(String taskUuid, SocketResultObserver observer) {
+		LOG.entering(getClass().getName(), "registerObserver", new Object[] { taskUuid, observer });
 		ResultState newResultState = ResultState.requestedBy(observer);
-		ResultState resultState = this.results.putIfAbsent(key, newResultState);
+		ResultState resultState = this.results.putIfAbsent(taskUuid, newResultState);
 		Boolean result = null;
 		if (resultState != null) {
 			if (resultState.available()) {
-				LOG.log(Level.FINE, "Result is already available for MapReduceTaskUuid={0}, TaskUuid={1}, Success={2}",
-						new Object[] { mapReduceTaskUuid, taskUuid, resultState.successful() });
-				this.results.remove(key);
+				LOG.log(Level.FINE, "Result is already available for TaskUuid={0}, Success={1}",
+						new Object[] { taskUuid, resultState.successful() });
+				this.results.remove(taskUuid);
 				result = Boolean.valueOf(resultState.successful());
 				LOG.log(Level.FINE,
-						"Notified Observer and Removed Result from List for MapReduceTaskUuid={0}, TaskUuid={1}, Observer={2}",
-						new Object[] { mapReduceTaskUuid, taskUuid, observer });
+						"Notified Observer and Removed Result from List for TaskUuid={0}, Observer={1}",
+						new Object[] { taskUuid, observer });
 			} else if (resultState.requested()) {
-				LOG.log(Level.WARNING,
-						"Second Observer for same Result, MapReduceTaskUuid={0}, TaskUuid={1}, Replacing Observer={2} with Observer={3}",
-						new Object[] { mapReduceTaskUuid, taskUuid, resultState.requestedBy(),
-								newResultState.requestedBy() });
-				this.results.put(key, newResultState);
+				LOG.log(Level.WARNING, "Second Observer for same Result, TaskUuid={0}, Replacing Observer={1} with Observer={2}", new Object[] { taskUuid, resultState.requestedBy(), newResultState.requestedBy() });
+				this.results.put(taskUuid, newResultState);
 			} else {
 				throw new IllegalStateException("ResultState not handled: " + resultState);
 			}
 		} else {
-			LOG.log(Level.FINE, "Added Observer for MapReduceTaskUuid={0}, TaskUuid={1}, Observer={2}", new Object[] {
-					mapReduceTaskUuid, taskUuid, observer });
+			LOG.log(Level.FINE, "Added Observer for TaskUuid={0}, Observer={1}", new Object[] { taskUuid, observer });
 		}
 		LOG.exiting(getClass().getName(), "registerObserver", result);
 		return result;
@@ -116,36 +110,26 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 	 * überschrieben.
 	 * 
 	 */
-	private void notifySocketWorker(String mapReduceTaskUuid, String taskUuid, boolean wasSuccessful) {
-		LOG.entering(getClass().getName(), "notifySocketWorker", new Object[] { mapReduceTaskUuid, taskUuid,
-				wasSuccessful });
-		String key = createKey(mapReduceTaskUuid, taskUuid);
+	private void notifySocketWorker(String taskUuid, boolean wasSuccessful) {
+		LOG.entering(getClass().getName(), "notifySocketWorker", new Object[] { taskUuid, wasSuccessful });
+		String key = taskUuid;
 		ResultState newState = ResultState.resultAvailable(wasSuccessful);
 		ResultState resultState = this.results.putIfAbsent(key, newState);
 		if (null != resultState) {
 			if (resultState.requested()) {
-				LOG.log(Level.FINE, "Result was Requested MapReduceTaskUuid={0}, TaskUuid={1}", new Object[] {
-						mapReduceTaskUuid, taskUuid });
+				LOG.log(Level.FINE, "Result was Requested TaskUuid={0}", new Object[] { taskUuid });
 				SocketResultObserver observer = resultState.requestedBy();
-				observer.resultAvailable(mapReduceTaskUuid, taskUuid, wasSuccessful);
+				observer.resultAvailable(taskUuid, wasSuccessful);
 			} else {
 				this.results.put(key, newState);
-				LOG.log(Level.WARNING,
-						"Result was already Available. Replacing old State with new one for MapReduceTaskUuid={0}, TaskUuid={1}",
-						new Object[] { mapReduceTaskUuid, taskUuid });
+				LOG.log(Level.WARNING, "Result was already Available. Replacing old State with new one for TaskUuid={0}", new Object[] { taskUuid });
 			}
-			LOG.log(Level.FINE, "Removing Result from List for MapReduceTaskUuid={0}, TaskUuid={1}", new Object[] {
-					mapReduceTaskUuid, taskUuid });
+			LOG.log(Level.FINE, "Removing Result from List for TaskUuid={0}", new Object[] { taskUuid });
 			this.results.remove(key);
 		} else {
-			LOG.log(Level.FINE, "Result for MapReduceTaskUuid={0}, TaskUuid={1} now Available", new Object[] {
-					mapReduceTaskUuid, taskUuid });
+			LOG.log(Level.FINE, "Result for TaskUuid={0} now Available", new Object[] { taskUuid });
 		}
 		LOG.exiting(getClass().getName(), "notifySocketWorker");
-	}
-
-	String createKey(String mapReduceTaskUuid, String taskUuid) {
-		return mapReduceTaskUuid + '-' + taskUuid;
 	}
 
 	private void storeResult(SocketAgentResult saRes) {
@@ -153,9 +137,9 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 		if (res.isEmpty()) {
 			LOG.info("Empy Result from SocketAgent");
 		} else if (hasType(res, KeyValuePair.class)) {
-			storeMap(saRes.getMapReduceTaskUuid(), saRes.getTaskUuid(), (List<KeyValuePair>) res);
+			storeMap(saRes.getTaskUuid(), (List<KeyValuePair>) res);
 		} else if (hasType(res, String.class)) {
-			storeReduce(saRes.getMapReduceTaskUuid(), saRes.getTaskUuid(), (List<String>) res);
+			storeReduce(saRes.getTaskUuid(), (List<String>) res);
 		} else {
 			LOG.severe("Null Result from SocketAgent");
 		}
@@ -169,42 +153,16 @@ public final class SocketResultCollectorImpl implements SocketResultCollector {
 		return res != null && res.get(0).getClass().equals(klass);
 	}
 
-	void storeMap(String mapReduceTaskUuid, String taskUuid, List<KeyValuePair> res) {
-		LOG.entering(getClass().getName(), "storeMap", new Object[] { mapReduceTaskUuid, taskUuid });
-		for (KeyValuePair pair : res) {
-			String key = (String) pair.getKey();
-			String val = (String) pair.getValue();
-			this.pers.storeMap(mapReduceTaskUuid, taskUuid, key, val);
-		}
+	void storeMap(String taskUuid, List<KeyValuePair> res) {
+		LOG.entering(getClass().getName(), "storeMap", new Object[] { taskUuid });
+		this.pers.storeMapResults(taskUuid, res);
 		LOG.exiting(getClass().getName(), "storeMap");
 	}
 
-	void storeReduce(String mapReduceTaskUuid, String taskUuid, List<String> res) {
-		LOG.entering(getClass().getName(), "storeReduce", new Object[] { mapReduceTaskUuid, taskUuid });
-		for (String val : res) {
-			this.pers.storeReduce(mapReduceTaskUuid, taskUuid, val);
-		}
+	void storeReduce(String taskUuid, List<String> res) {
+		LOG.entering(getClass().getName(), "storeReduce", new Object[] { taskUuid });
+		this.pers.storeReduceResults(taskUuid, res);
 		LOG.exiting(getClass().getName(), "pushReduceResult");
-	}
-
-	@Override
-	public List<String> getReduceResult(String mapReduceTaskUuid, String taskUuid) {
-		return this.pers.getReduce(mapReduceTaskUuid, taskUuid);
-	}
-
-	@Override
-	public List<KeyValuePair> getMapResult(String mapReduceTaskUuid, String taskUuid) {
-		return this.pers.getMap(mapReduceTaskUuid, taskUuid);
-	}
-
-	@Override
-	public void cleanAllResults(String mapReduceTaskUuid) {
-		this.pers.destroy(mapReduceTaskUuid);
-	}
-
-	@Override
-	public void cleanResult(String mapReduceTaskUuid, String taskUuid) {
-		this.pers.destroy(mapReduceTaskUuid, taskUuid);
 	}
 
 	@Override

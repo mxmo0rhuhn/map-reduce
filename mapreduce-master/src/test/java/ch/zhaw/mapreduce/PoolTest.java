@@ -5,11 +5,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
+import javax.inject.Provider;
 
 import org.jmock.Expectations;
 import org.jmock.Sequence;
@@ -38,13 +42,16 @@ public class PoolTest {
 	private WorkerTask task;
 	
 	@Mock
-	private ContextFactory ctxFactory;
-	
-	@Mock
 	private Context ctx;
 	
 	@Mock
 	private ExecutorService execMock;
+	
+	@Mock
+	private Provider<Context> ctxProvider;
+	
+	@Mock
+	private Persistence persistence;
 	
 	private Executor executor = Executors.newSingleThreadExecutor();
 
@@ -94,17 +101,19 @@ public class PoolTest {
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
 		Pool p = new Pool(poolExec, execMock, 1000);
 		p.init();
-		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxFactory);
+		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxProvider, persistence);
 		p.donateWorker(worker);
 		this.mockery.checking(new Expectations() {
 			{
 				oneOf(task).enqueued();
 				inSequence(events);
-				oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrTaskUUID"));
 				oneOf(task).getTaskUuid(); will(returnValue("taskUUID"));
-				oneOf(ctxFactory).createContext("mrTaskUUID", "taskUUID"); will(returnValue(ctx));
+				oneOf(ctxProvider).get(); will(returnValue(ctx));
 				inSequence(events);
 				oneOf(task).runTask(ctx);
+				oneOf(ctx).getMapResult(); will(returnValue(null));
+				oneOf(ctx).getReduceResult(); will(returnValue(new ArrayList<String>()));
+				oneOf(persistence).storeReduceResults(with("taskUUID"), with(aNonNull(List.class)));
 			}
 		});
 
@@ -118,16 +127,18 @@ public class PoolTest {
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
 		Pool p = new Pool(poolExec, execMock, 1000);
 		p.init();
-		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxFactory);
+		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxProvider, persistence);
 		p.donateWorker(worker);
 		this.mockery.checking(new Expectations() {
 			{
 				oneOf(task).enqueued();
 				inSequence(events);
-				oneOf(task).getMapReduceTaskUuid(); will(returnValue("mrTaskUUID"));
 				oneOf(task).getTaskUuid(); will(returnValue("taskUUID"));
-				oneOf(ctxFactory).createContext("mrTaskUUID", "taskUUID"); will(returnValue(ctx));
+				oneOf(ctxProvider).get(); will(returnValue(ctx));
 				oneOf(task).runTask(ctx);
+				oneOf(ctx).getMapResult(); will(returnValue(null));
+				oneOf(ctx).getReduceResult(); will(returnValue(new ArrayList<String>()));
+				oneOf(persistence).storeReduceResults(with("taskUUID"), with(aNonNull(List.class)));
 			}
 		});
 

@@ -71,14 +71,9 @@ public class MapReduceConfig extends AbstractModule {
 	}
 	
 	@Provides
-	@Named("mapReduceTaskUuid")
-	public String getMapReduceTaskUuid() {
-		return UUID.randomUUID().toString();
-	}
-	
-	@Provides
 	@Named("taskUuid")
 	public String getWorkerTaskUuid() {
+		// TODO das wird im maste rnicht mehr verwendent! wieder einfuehren. evt via Provider<String>
 		return UUID.randomUUID().toString();
 	}
 	

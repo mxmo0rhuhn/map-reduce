@@ -4,12 +4,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import ch.zhaw.mapreduce.Context;
-import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.Worker;
-import ch.zhaw.mapreduce.impl.LocalContext;
+import ch.zhaw.mapreduce.impl.ContextImpl;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.name.Names;
 
 public class ThreadConfig extends AbstractModule {
@@ -23,7 +21,7 @@ public class ThreadConfig extends AbstractModule {
 		bind(Integer.class).annotatedWith(Names.named("thread.nrworkers")).toInstance(NWORKERS);
 		bind(ExecutorService.class).annotatedWith(Names.named("ThreadWorker")).toInstance(Executors.newSingleThreadExecutor());
 		
-		install(new FactoryModuleBuilder().implement(Context.class, LocalContext.class).build(ContextFactory.class));
+		bind(Context.class).to(ContextImpl.class);
 	}
 
 }

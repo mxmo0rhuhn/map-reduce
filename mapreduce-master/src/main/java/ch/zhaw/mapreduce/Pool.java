@@ -194,14 +194,4 @@ public final class Pool {
 		}
 
 	}
-
-	/** {@inheritDoc} */
-	public void cleanResults(String mapReduceTaskUUID) {
-		LOG.entering(getClass().getName(), "cleanResults", mapReduceTaskUUID);
-		Worker[] allWorkers = this.existingWorkers.toArray(new Worker[this.existingWorkers.size()]);
-		for (Worker worker : allWorkers) {
-			worker.cleanAllResults(mapReduceTaskUUID);
-		}
-		LOG.exiting(getClass().getName(), "cleanResults");
-	}
 }

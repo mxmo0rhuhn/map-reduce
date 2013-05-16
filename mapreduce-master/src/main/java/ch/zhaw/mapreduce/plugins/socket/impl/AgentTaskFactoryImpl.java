@@ -23,16 +23,14 @@ public class AgentTaskFactoryImpl implements AgentTaskFactory {
 	private static final Logger LOG = Logger.getLogger(AgentTaskFactoryImpl.class.getName());
 
 	/**
-	 * Wir wollen nicht jedes mal das Object neu serialisieren, daher der Cache. Der Key vom Cache setzt sich aus
-	 * MapReduceTaskUuid und Klassennamen zusammen. Der Klassenname allein reicht nicht, weil mehrere Klasse gleich
-	 * heissen könnten und die MapReduceTaskUuid allein reicht nicht, weil es je 2-3 Klasse gibt (Map, Reduce, evt.
-	 * Combiner).
+	 * Wir wollen nicht jedes mal das Object neu serialisieren, daher der Cache. Der Key vom Cache ist der HashCode von
+	 * der Instanz kombiniert mit dem Namen der Klasse (der HashCode koennte ja schlecht implementiert sein).
 	 */
-	private final ConcurrentLRUCache<String, byte[]> cache;
+	private final ConcurrentLRUCache<Integer, byte[]> cache;
 
 	@Inject
 	public AgentTaskFactoryImpl(@Named("ObjectByteCacheSize") int cacheSize) {
-		this.cache = new ConcurrentLRUCache<String, byte[]>(cacheSize, 0);
+		this.cache = new ConcurrentLRUCache<Integer, byte[]>(cacheSize, 0);
 	}
 
 	@Override
@@ -50,20 +48,17 @@ public class AgentTaskFactoryImpl implements AgentTaskFactory {
 	 * Erstellt neuen MapAgentTask basierend auf dem MapWorkerTask
 	 */
 	private AgentTask createMapAgentTask(MapWorkerTask mwt) {
-		String mrID = mwt.getMapReduceTaskUuid();
-		return new MapAgentTask(mrID, mwt.getTaskUuid(), name(mwt.getMapInstruction()), bytes(mrID,
-				mwt.getMapInstruction()), mwt.getCombinerInstruction() != null ? name(mwt.getCombinerInstruction())
-				: null, mwt.getCombinerInstruction() != null ? bytes(mrID, mwt.getCombinerInstruction()) : null,
-				mwt.getInput());
+		return new MapAgentTask(mwt.getTaskUuid(), name(mwt.getMapInstruction()), bytes(mwt.getMapInstruction()),
+				mwt.getCombinerInstruction() != null ? name(mwt.getCombinerInstruction()) : null,
+				mwt.getCombinerInstruction() != null ? bytes(mwt.getCombinerInstruction()) : null, mwt.getInput());
 	}
 
 	/**
 	 * Erstellt neuen ReduceAgentTask basierend auf dem ReduceWorkerTask
 	 */
 	private AgentTask createReduceAgentTask(ReduceWorkerTask rwt) {
-		String mrID = rwt.getMapReduceTaskUuid();
-		return new ReduceAgentTask(rwt.getMapReduceTaskUuid(), rwt.getTaskUuid(), name(rwt.getReduceInstruction()),
-				bytes(mrID, rwt.getReduceInstruction()), rwt.getInput(), rwt.getValues());
+		return new ReduceAgentTask(rwt.getTaskUuid(), name(rwt.getReduceInstruction()),
+				bytes(rwt.getReduceInstruction()), rwt.getInput(), rwt.getValues());
 	}
 
 	/**
@@ -81,13 +76,13 @@ public class AgentTaskFactoryImpl implements AgentTaskFactory {
 	 * @throws IllegalArgumentException
 	 *             wenn die klasse nicht als resouce gelesen werden kann
 	 */
-	byte[] bytes(String mapReduceTaskUuid, Object instance) {
+	byte[] bytes(Object instance) {
 		Class<?> klass = instance.getClass();
 		if (klass.isAnonymousClass() || klass.isLocalClass() || klass.isMemberClass()) {
 			throw new IllegalArgumentException("Only regular Top-Level Classes are allowed for now");
 		}
 		String className = klass.getName();
-		String cacheKey = createCacheKey(mapReduceTaskUuid, className);
+		Integer cacheKey = instance.hashCode() + className.hashCode(); // autoboxing
 		byte[] res = cache.get(cacheKey);
 		if (res == null) {
 
@@ -117,10 +112,6 @@ public class AgentTaskFactoryImpl implements AgentTaskFactory {
 			this.cache.put(cacheKey, res);
 		}
 		return res;
-	}
-
-	private static String createCacheKey(String mapReduceTaskUuid,  String className) {
-		return mapReduceTaskUuid + className;
 	}
 
 	/**

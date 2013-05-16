@@ -14,24 +14,13 @@ abstract class AbstractWorkerTask implements WorkerTask {
 
 	private static final Logger LOG = Logger.getLogger(AbstractWorkerTask.class.getName());
 
-	private final String mapReduceTaskUuid;
-
 	private final String taskUuid;
 
 	/** Der Zustand in dem sich der Worker befindet */
 	private volatile State currentState = State.INITIATED;
 
-	AbstractWorkerTask(String mapReduceTaskUuid, String taskUuid) {
-		this.mapReduceTaskUuid = mapReduceTaskUuid;
+	AbstractWorkerTask(String taskUuid) {
 		this.taskUuid = taskUuid;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public final String getMapReduceTaskUuid() {
-		return this.mapReduceTaskUuid;
 	}
 
 	/**
@@ -88,8 +77,7 @@ abstract class AbstractWorkerTask implements WorkerTask {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "[MapReduceTaskUuid=" + this.mapReduceTaskUuid + ",TaskUuid=" + this.taskUuid
-				+ ",State=" + this.currentState + "]";
+		return getClass().getSimpleName() + "[TaskUuid=" + this.taskUuid + ",State=" + this.currentState + "]";
 	}
 
 }
