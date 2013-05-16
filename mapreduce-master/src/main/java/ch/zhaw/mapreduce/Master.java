@@ -39,11 +39,11 @@ public final class Master {
 	private ReduceInstruction reduceInstruction;
 
 	// Prozentsatz der Aufgaben, die noch offen sein müssen bis rescheduled wird
-	private final int rescheduleStartPercentage;
+	private final long rescheduleStartPercentage;
 	// Alle n Warte-Durchläufe wird rescheduled
-	private final int rescheduleEvery;
+	private final long rescheduleEvery;
 	// Wartezeit in millisekunden bis in einem Durchlauf wieder die Worker angefragt werden etc
-	private final int waitTime;
+	private final long waitTime;
 
 	private Logger logger = Logger.getLogger(Master.class.getName());
 
@@ -61,8 +61,9 @@ public final class Master {
 			Provider<Shuffler> shufflerProvider,
 			@Named("supervisorScheduler") ScheduledExecutorService supervisorService, 
 			@Named("statisticsPrinterTimeout") long statisticsTimeout,
-			@Assisted("rescheduleStartPercentage") int rescheduleStartPercentage,
-			@Assisted("rescheduleEvery") int rescheduleEvery, @Assisted("waitTime") int waitTime) {
+			@Named("rescheduleStartPercentage") long rescheduleStartPercentage,
+			@Named("rescheduleEvery") long rescheduleEvery, 
+			@Named("waitTime") long waitTime) {
 		this.pool = pool;
 		this.workerTaskFactory = workerTaskFactory;
 		this.shufflerProvider = shufflerProvider;
@@ -374,17 +375,5 @@ public final class Master {
 			curKV.getValue().abort();
 		}
 		activeWorkerTasks.clear();
-	}
-
-	public int getRescheduleStartPercentage() {
-		return rescheduleStartPercentage;
-	}
-
-	public int getRescheduleEvery() {
-		return rescheduleEvery;
-	}
-
-	public int getWaitTime() {
-		return waitTime;
 	}
 }

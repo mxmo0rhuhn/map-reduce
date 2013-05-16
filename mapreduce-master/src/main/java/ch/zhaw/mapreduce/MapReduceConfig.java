@@ -36,11 +36,11 @@ public class MapReduceConfig extends AbstractModule {
 	@Override
 	protected void configure() {
 
-		// 10000L Milisekunden => 10 Sekunden
+		// 10000 Milisekunden => 10 Sekunden
 		
+		// RAM beschränkung
 		// Intervall, in dem Statistiken geladen werden
 		long StatisticsPrinterTimeout = 10000L;
-
 		// Prozentzahl an RAMusage, ab der keine Tasks mehr angenommen werden
 		long minRemainingMemory = 10L;
 		// Zeit, die die Applikation keine neuen Tasks mehr annimt, wenn der RAM "voll" ist
@@ -48,6 +48,15 @@ public class MapReduceConfig extends AbstractModule {
 
 		// Plugins, die durch den Loader geladen werden sollen
 		String plugins = "Thread";
+		
+		
+		// Rescheduling
+		// Prozentzahl an bereits erfüllten Aufgaben, bei der das Rescheduling von Tasks startet
+		long rescheduleStartPercentage = 90;
+		// Anzahl an Abfragen auf die Fertigstellung der Tasks, die vergehen muss, bis wieder Tasks rescheduled werden
+		long rescheduleEvery  = 10;
+		// Zeit in Millisekunden die gewartet wird, zwischen den einzelnen Abfragen ob Aufgaben bereits erledigt sind
+		long waitTime = 1000;
 
 		Properties prop = new Properties();
 		try {
@@ -56,7 +65,12 @@ public class MapReduceConfig extends AbstractModule {
 			StatisticsPrinterTimeout = Long.parseLong(prop.getProperty("statisticsPrinterTimeout"));
 			memoryFullSleepTime = Long.parseLong(prop.getProperty("memoryFullSleepTime"));
 			minRemainingMemory = Long.parseLong(prop.getProperty("minRemainingMemory"));
+			
 			plugins = prop.getProperty("plugins");
+			
+			rescheduleStartPercentage = Long.parseLong(prop.getProperty("rescheduleStartPercentage"));
+			rescheduleEvery = Long.parseLong(prop.getProperty("rescheduleEvery"));
+			waitTime = Long.parseLong(prop.getProperty("waitTime"));
 			
 		} catch (IOException e) {
 			// konnten nicht geladen werden - weiter mit oben definierten defaults
@@ -80,6 +94,14 @@ public class MapReduceConfig extends AbstractModule {
 
 		// Zeug das aus dem properties file entnommen wird
 		bind(String.class).annotatedWith(Names.named("plugins")).toInstance(plugins);
+		
+		bind(Long.class).annotatedWith(Names.named("rescheduleStartPercentage")).toInstance(
+				rescheduleStartPercentage);
+		bind(Long.class).annotatedWith(Names.named("rescheduleEvery")).toInstance(
+				rescheduleEvery);
+		bind(Long.class).annotatedWith(Names.named("waitTime")).toInstance(
+				waitTime);
+
 		bind(Long.class).annotatedWith(Names.named("statisticsPrinterTimeout")).toInstance(
 				StatisticsPrinterTimeout);
 		bind(Long.class).annotatedWith(Names.named("memoryFullSleepTime")).toInstance(

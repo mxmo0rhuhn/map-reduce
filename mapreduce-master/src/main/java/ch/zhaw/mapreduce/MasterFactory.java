@@ -15,15 +15,8 @@ public interface MasterFactory {
 	 * Master-Konstruktor braucht, wird per Guice aufgelöst. Alle, die dort mit Assisted annortiert sind, werden hier
 	 * übergeben.
 	 * 
-	 * @param rescheduleStartPercentage
-	 *            Prozentsatz der Aufgaben, die noch offen sein müssen bis rescheduled wird
-	 * @param rescheduleEvery
-	 *            Alle n Warte-Durchläufe wird rescheduled
-	 * @param waitTime
-	 *            Wartezeit in millisekunden bis in einem Durchlauf wieder die Worker angefragt werden etc
 	 * @return neue Instanz vom Master
 	 */
-	Master createMaster(@Assisted("rescheduleStartPercentage") int rescheduleStartPercentage,
-			@Assisted("rescheduleEvery") int rescheduleEvery, @Assisted("waitTime") int waitTime);
+	Master createMaster();
 
 }

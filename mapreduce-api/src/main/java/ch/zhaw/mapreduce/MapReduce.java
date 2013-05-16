@@ -21,13 +21,6 @@ public interface MapReduce {
 	 */
 	void stop();
 
-	// TODO
-	/**
-	 * Stellt das Verhältnis von Threads zu CPUs etc. für die derzeit relevante MapReduce
-	 * Implementation ein.
-	 */
-	// void configure();
-
 	/**
 	 * Stellt das Framework auf diese dedizierte Aufgabe ein
 	 * 
@@ -39,11 +32,9 @@ public interface MapReduce {
 	 *            eine optionale combiner Instruction, die ausgeführt werden soll
 	 * @param shuffleProcessorFactory
 	 *            Eine Factory die runnables zurückgibt, von denen jeweils einer ausgeführt wird mit den ergebnissen der shuffle Phase ausgeführt wird, sobald die shuffle Phase beendet ist.
-	 * @param Config
-	 *            Konfigurationsparameter für die Ausführung
 	 */
 	MapReduce newMRTask(MapInstruction mapInstruction, ReduceInstruction reduceInstruction,
-			CombinerInstruction combinerInstruction, ShuffleProcessorFactory shuffleProcessorFactory, Map<String, String> Config);
+			CombinerInstruction combinerInstruction, ShuffleProcessorFactory shuffleProcessorFactory);
 
 	/**
 	 * Wendet auf alle Elemente vom übergebenen Iterator (via next) den Map- und Reduce-Task an. Die
