@@ -91,7 +91,6 @@ public final class Master {
 		curState = State.MAP;
 		Map<String, KeyValuePair> mapTasks = runMap(mapInstruction, combinerInstruction, input,
 				activeTasks);
-		System.out.println("" + mapTasks.size() + " Map Tasks gestartet");
 		logger.info("MAP " + mapTasks.size() + " tasks enqueued");
 		Set<WorkerTask> mapResults = waitForWorkers(activeTasks, mapTasks);
 		logger.info("MAP done");
@@ -111,7 +110,6 @@ public final class Master {
 		curState = State.REDUCE;
 		Map<String, KeyValuePair> reduceInputs = runReduce(reduceInstruction, s.getResults(),
 				activeTasks);
-		System.out.println("" + reduceInputs.size() + " REDUCE Tasks gestartet");
 		logger.info("REDUCE " + reduceInputs.size() + " tasks enqueued");
 		Set<WorkerTask> reduceResults = waitForWorkers(activeTasks, reduceInputs);
 		logger.info("REDUCE done");
@@ -305,9 +303,6 @@ public final class Master {
 			activeWorkerTasks.removeAll(toInactiveWorkerTasks);
 
 			// Ein gewisser Prozentsatz der Aufgaben ist erfüllt
-			System.out.println("" + originalUuidToKeyValuePairUUIDInputMapping.size()
-					+ " originalUuidToKeyValuePairUUIDInputMapping groesse");
-
 			// kann zB bei ReduceTasks auftreten
 			if (originalUuidToKeyValuePairUUIDInputMapping.size() > 0) {
 				currentTaskPercentage = (doneInputUUIDs.size() * 100)
