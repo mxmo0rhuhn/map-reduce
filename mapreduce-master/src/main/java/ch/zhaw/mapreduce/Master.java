@@ -163,10 +163,11 @@ public final class Master {
 	 * @param activeTasks
 	 *            eine Liste in der alle derzeit aktiven Tasks abgelegt sind
 	 * @return Ein Mapping von UUID auf ein KeyValue Pair UUID und zugehöriger Input
+	 * @throws InterruptedException 
 	 */
 	Map<String, KeyValuePair> runMap(MapInstruction mapInstruction,
 			CombinerInstruction combinerInstruction, Iterator<String> input,
-			Set<KeyValuePair<String, WorkerTask>> activeTasks) {
+			Set<KeyValuePair<String, WorkerTask>> activeTasks) throws InterruptedException {
 
 		Map<String, KeyValuePair> uuidToInputMapping = new LinkedHashMap<String, KeyValuePair>();
 
@@ -205,10 +206,11 @@ public final class Master {
 	 * @param activeTasks
 	 *            alle gestarteten reduce Tasks
 	 * @return Alle Inputs
+	 * @throws InterruptedException 
 	 */
 	Map<String, KeyValuePair> runReduce(ReduceInstruction reduceInstruction,
 			Iterator<Map.Entry<String, List<KeyValuePair>>> shuffleResults,
-			Set<KeyValuePair<String, WorkerTask>> activeTasks) {
+			Set<KeyValuePair<String, WorkerTask>> activeTasks) throws InterruptedException {
 
 		Map<String, KeyValuePair> reduceToUuid = new LinkedHashMap<String, KeyValuePair>();
 
@@ -351,9 +353,10 @@ public final class Master {
 	 *            der Input für die Map oder Reduce Tasks
 	 * @param activeWorkerTasks
 	 *            eine Liste mit allen derzeit aktiven WorkerTasks
+	 * @throws InterruptedException 
 	 */
 	private void reschedule(Set<KeyValuePair> rescheduleInput,
-			Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks) {
+			Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks) throws InterruptedException {
 		switch (curState) {
 		case MAP:
 			for (KeyValuePair<String, String> rescheduleTodo : rescheduleInput) {

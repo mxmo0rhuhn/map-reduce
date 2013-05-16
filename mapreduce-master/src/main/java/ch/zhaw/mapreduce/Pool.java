@@ -142,21 +142,18 @@ public final class Pool {
 	}
 
 	/**
+	 * Reiht eine Aufgabe in den Pool ein
 	 * {@inheritDoc}
+	 * @throws InterruptedException 
 	 */
-	public boolean enqueueTask(WorkerTask task) {
+	public boolean enqueueTask(WorkerTask task) throws InterruptedException {
 		LOG.entering(getClass().getName(), "enqueueTask", task);
 		boolean retVal = false;
 
 		if (calculateFreeRAM() < minRemainingMemory) {
-			try {
 				do {
 					Thread.sleep(memoryFullSleepTime);
 				} while (calculateFreeRAM() < minRemainingMemory);
-			} catch (InterruptedException e) {
-				// TODO jaaa hmmm is eig kein problem...
-				e.printStackTrace();
-			}
 		}
 
 		// könnte loopen ... aber wenn das ding nicht in die queque kommt is eh was schief
