@@ -1,13 +1,13 @@
 package ch.zhaw.mapreduce;
 
-import java.util.List;
+import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,7 +20,7 @@ import javax.inject.Singleton;
 /**
  * Implementation des Pools mit lokalen Threads auf dem jeweiligen PC
  * 
- * @author Max, Desiree Sacher
+ * @author Max, Sacher
  * 
  */
 @Singleton
@@ -28,35 +28,40 @@ public final class Pool {
 
 	private static final Logger LOG = Logger.getLogger(Pool.class.getName());
 
-	private final List<Worker> existingWorkers = new CopyOnWriteArrayList<Worker>();
-
 	// Liste mit allen Workern
-	private final Queue<Worker> workingWorker = new ConcurrentLinkedQueue<Worker>();
+	private final Queue<Worker> workingWorkers = new ConcurrentLinkedQueue<Worker>();
 
 	// Liste mit allen Workern, die Arbeit übernehmen können.
-	private final BlockingQueue<Worker> availableWorkerBlockingQueue = new LinkedBlockingQueue<Worker>();
+	private final BlockingQueue<Worker> availableWorkers = new LinkedBlockingQueue<Worker>();
 
 	// Liste mit aller Arbeit, die von Workern übernommen werden kann.
 	private final BlockingQueue<WorkerTask> taskQueue = new LinkedBlockingQueue<WorkerTask>();
 
 	private final AtomicBoolean isRunning = new AtomicBoolean();
-
 	private final Executor workTaskAdministrator;
-
-	private final ExecutorService supervisorService;
+	private final ScheduledExecutorService supervisorService;
 	private final Runtime runtime;
 	private final long statisticsPrintTimeout;
+
+	private final long memoryFullSleepTime;
+
+	private final long minRemainingMemory;
 
 	/**
 	 * Erstellt einen neuen Pool der Aufgaben und Worker entgegen nimmt.
 	 */
 	@Inject
 	public Pool(@Named("poolExecutor") Executor workTaskAdministrator,
-			@Named("PoolSupervisor") ExecutorService supervisorService, @Named("StatisticsPrinterTimeout") long statisticsTimeout) {
+			@Named("memoryFullSleepTime") long memoryFullSleepTime,
+			@Named("minRemainingMemory") long minRemainingMemory,
+			@Named("supervisorScheduler") ScheduledExecutorService supervisorService,
+			@Named("statisticsPrinterTimeout") long statisticsTimeout) {
 		this.workTaskAdministrator = workTaskAdministrator;
 		this.supervisorService = supervisorService;
 		this.statisticsPrintTimeout = statisticsTimeout;
 		this.runtime = Runtime.getRuntime();
+		this.memoryFullSleepTime = memoryFullSleepTime;
+		this.minRemainingMemory = minRemainingMemory;
 	}
 
 	/**
@@ -76,20 +81,18 @@ public final class Pool {
 
 	@PostConstruct
 	public void startSupervisor() {
-		this.supervisorService.submit(new Runnable() {
+		this.supervisorService.scheduleWithFixedDelay(new Runnable() {
 			@Override
 			public void run() {
-				try {
-					while (true) {
-						LOG.log(Level.INFO, "Statistics: {0} known Worker, {1} free worker, {2} tasks, consumed memory: {3} MB, free memory: {4} MB, max. memory {5} MB", new Object[] { getCurrentPoolSize(), getFreeWorkers(), taskQueue.size(), runtime.totalMemory()/1024/1024 , runtime.freeMemory()/1024/1024, runtime.maxMemory()/1024/1024});
-					    
-						Thread.sleep(statisticsPrintTimeout);
-					}
-				} catch (InterruptedException ie) {
-					LOG.info("Pool Supervisor Interrupted. Stopping"); 
-				}
+				LOG.log(Level.INFO, "Pool Worker: {0} known Worker, {1} free worker, {2} tasks",
+						new Object[] { getCurrentPoolSize(), getFreeWorkers(), taskQueue.size() });
+				LOG.log(Level.INFO,
+						"Memory: {0}% free, consumed memory: {1} MB, free memory: {2} MB, max. memory {3} MB",
+						new Object[] { calculateFreeRAM(), runtime.totalMemory() / 1024 / 1024,
+								runtime.freeMemory() / 1024 / 1024,
+								runtime.maxMemory() / 1024 / 1024 });
 			}
-		});
+		}, statisticsPrintTimeout, statisticsPrintTimeout, TimeUnit.MILLISECONDS);
 	}
 
 	public boolean isRunning() {
@@ -100,30 +103,28 @@ public final class Pool {
 	 * {@inheritDoc} Der Wert ist optimistisch - kann veraltet sein.
 	 */
 	public int getCurrentPoolSize() {
-		return existingWorkers.size();
+		return workingWorkers.size() + availableWorkers.size();
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public int getFreeWorkers() {
-		return availableWorkerBlockingQueue.size();
+		return availableWorkers.size();
 	}
-	
+
 	/**
-	 * Diese Methode wird augerufen, wenn ein Worker nicht mehr zum Ausführen von Tasks zur Verfügung stehen soll.
+	 * Diese Methode wird augerufen, wenn ein Worker nicht mehr zum Ausführen von Tasks zur
+	 * Verfügung stehen soll.
 	 */
 	public void iDied(Worker deadWorker) {
 		LOG.entering(getClass().getName(), "iDied", deadWorker);
 		// wir versuchen einfach zu löschen, falls er existiert
-		if (this.availableWorkerBlockingQueue.remove(deadWorker)) {
-			LOG.log(Level.INFO, "Removed {0} from availableWorkers", new Object[]{deadWorker});
+		if (this.availableWorkers.remove(deadWorker)) {
+			LOG.log(Level.INFO, "Removed {0} from availableWorkers", new Object[] { deadWorker });
 		}
-		if (this.workingWorker.remove(deadWorker)) {
-			LOG.log(Level.INFO, "Removed {0} from workingWorker", new Object[]{deadWorker});
-		}
-		if(this.existingWorkers.remove(deadWorker)) {
-			LOG.log(Level.INFO, "Removed {0} from existingWorkers", new Object[]{deadWorker});
+		if (this.workingWorkers.remove(deadWorker)) {
+			LOG.log(Level.INFO, "Removed {0} from workingWorker", new Object[] { deadWorker });
 		}
 		LOG.exiting(getClass().getName(), "iDied");
 	}
@@ -133,30 +134,46 @@ public final class Pool {
 	 */
 	public void workerIsFinished(Worker finishedWorker) {
 		LOG.entering(getClass().getName(), "workerIsFinished", finishedWorker);
-		if (!workingWorker.remove(finishedWorker)) {
+		if (!workingWorkers.remove(finishedWorker)) {
 			LOG.warning("Worker was not working before");
 		}
-		availableWorkerBlockingQueue.add(finishedWorker);
+		availableWorkers.add(finishedWorker);
 		LOG.exiting(getClass().getName(), "workerIsFinished");
 	}
 
 	/**
+	 * Reiht eine Aufgabe in den Pool ein
 	 * {@inheritDoc}
+	 * @throws InterruptedException 
 	 */
-	public boolean enqueueTask(WorkerTask task) {
+	public boolean enqueueTask(WorkerTask task) throws InterruptedException {
 		LOG.entering(getClass().getName(), "enqueueTask", task);
-	
-//		runtime.totalMemory(), runtime.freeMemory(), runtime.maxMemory()
-//		while (!retVal) {
-		boolean retVal = taskQueue.offer(task);
-		if(retVal) {
-			task.enqueued();
-//		} else {
-//			wait
-//		}
+		boolean retVal = false;
+
+		if (calculateFreeRAM() < minRemainingMemory) {
+				do {
+					Thread.sleep(memoryFullSleepTime);
+				} while (calculateFreeRAM() < minRemainingMemory);
 		}
+
+		// könnte loopen ... aber wenn das ding nicht in die queque kommt is eh was schief
+		while (!retVal) {
+			retVal = taskQueue.offer(task);
+		}
+		task.enqueued();
+
 		LOG.exiting(getClass().getName(), "enqueueTask", retVal);
 		return retVal;
+	}
+
+	private int calculateFreeRAM() {
+		int maxMem = (int) runtime.maxMemory();
+		if (maxMem == 0) {
+			return 100;
+		}
+		int usedMem = (int) ((int) runtime.totalMemory() - runtime.freeMemory());
+		
+		return 100 - Math.round(((usedMem/maxMem) * 100));
 	}
 
 	/**
@@ -164,8 +181,7 @@ public final class Pool {
 	 */
 	public boolean donateWorker(Worker newWorker) {
 		LOG.entering(getClass().getName(), "donateWorker", newWorker);
-		this.existingWorkers.add(newWorker);
-		boolean retVal = availableWorkerBlockingQueue.offer(newWorker);
+		boolean retVal = availableWorkers.offer(newWorker);
 		LOG.exiting(getClass().getName(), "donateWorker", retVal);
 		return retVal;
 	}
@@ -181,8 +197,9 @@ public final class Pool {
 				while (true) {
 					LOG.finest("Waiting for Task and Worker");
 					WorkerTask task = taskQueue.take(); // blockiert bis ein Task da ist
-					Worker worker = availableWorkerBlockingQueue.take(); // blockiert, bis ein Worker frei ist
-					workingWorker.add(worker);
+					Worker worker = availableWorkers.take(); // blockiert, bis ein Worker frei ist
+					workingWorkers.add(worker);
+
 					LOG.finest("Execute Task on Worker");
 					worker.executeTask(task);
 				}

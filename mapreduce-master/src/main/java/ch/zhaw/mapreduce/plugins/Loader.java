@@ -20,20 +20,19 @@ public final class Loader {
 
 	private static final Logger LOG = Logger.getLogger(Loader.class.getName());
 
-	private final String propName;
+	private final String plugins;
 
 	@Inject
-	public Loader(@Named("plugins.property") String propName) {
-		this.propName = propName;
+	public Loader(@Named("plugins") String plugins) {
+		this.plugins = plugins;
 	}
 
 	public List<AgentPlugin> loadPlugins() {
-		String props = System.getProperty(propName);
-		if (props == null) {
+		if (plugins == null) {
 			LOG.warning("No plugins found");
 			return Collections.emptyList();
 		}
-		String[] pluginNames = props.split(",");
+		String[] pluginNames = plugins.split(",");
 		return loadClasses(pluginNames);
 	}
 

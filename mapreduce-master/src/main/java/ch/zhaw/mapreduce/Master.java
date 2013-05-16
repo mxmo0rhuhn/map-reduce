@@ -12,6 +12,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
@@ -47,7 +49,7 @@ public final class Master {
 
 	private final Provider<Shuffler> shufflerProvider;
 
-	private final ExecutorService supervisorService;
+	private final ScheduledExecutorService supervisorService;
 	private final Pool pool;
 	private final WorkerTaskFactory workerTaskFactory;
 	private final ExecutorService executorPool = Executors.newCachedThreadPool();
@@ -55,8 +57,11 @@ public final class Master {
 	private volatile int currentTaskPercentage;
 
 	@Inject
-	Master(Pool pool, WorkerTaskFactory workerTaskFactory, Provider<Shuffler> shufflerProvider, @Named("MasterSupervisor") ExecutorService supervisorService,
-			@Named("StatisticsPrinterTimeout") long statisticsTimeout,
+	Master(Pool pool, WorkerTaskFactory workerTaskFactory,
+			@Named("mapReduceTaskUuid") String mapReduceTaskUuid,
+			Provider<Shuffler> shufflerProvider,
+			@Named("supervisorScheduler") ScheduledExecutorService supervisorService, 
+			@Named("statisticsPrinterTimeout") long statisticsTimeout,
 			@Assisted("rescheduleStartPercentage") int rescheduleStartPercentage,
 			@Assisted("rescheduleEvery") int rescheduleEvery, @Assisted("waitTime") int waitTime) {
 		this.pool = pool;
@@ -85,6 +90,7 @@ public final class Master {
 		logger.info("MAP started");
 		curState = State.MAP;
 		Map<String, KeyValuePair> mapTasks = runMap(mapInstruction, combinerInstruction, input, activeTasks);
+		System.out.println("" + mapTasks.size() + " Map Tasks gestartet");
 		logger.info("MAP " + mapTasks.size() + " tasks enqueued");
 		Set<WorkerTask> mapResults = waitForWorkers(activeTasks, mapTasks);
 		logger.info("MAP done");
@@ -103,6 +109,7 @@ public final class Master {
 		logger.info("REDUCE started");
 		curState = State.REDUCE;
 		Map<String, KeyValuePair> reduceInputs = runReduce(reduceInstruction, s.getResults(), activeTasks);
+		System.out.println("" + reduceInputs.size() + " REDUCE Tasks gestartet");
 		logger.info("REDUCE " + reduceInputs.size() + " tasks enqueued");
 		Set<WorkerTask> reduceResults = waitForWorkers(activeTasks, reduceInputs);
 		logger.info("REDUCE done");
@@ -120,7 +127,7 @@ public final class Master {
 
 	@PostConstruct
 	public void startSupervisor() {
-		this.supervisorService.submit(new Runnable() {
+		this.supervisorService.scheduleAtFixedRate((new Runnable() {
 			@Override
 			public void run() {
 				try {
@@ -133,7 +140,7 @@ public final class Master {
 					logger.info("Master Supervisor Interrupted. Stopping");
 				}
 			}
-		});
+		}), statisticsPrintTimeout, statisticsPrintTimeout, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -149,9 +156,16 @@ public final class Master {
 	 * @param activeTasks
 	 *            eine Liste in der alle derzeit aktiven Tasks abgelegt sind
 	 * @return Ein Mapping von UUID auf ein KeyValue Pair UUID und zugehöriger Input
+	 * @throws InterruptedException 
 	 */
+<<<<<<< HEAD
 	Map<String, KeyValuePair> runMap(MapInstruction mapInstruction, CombinerInstruction combinerInstruction,
 			Iterator<String> input, Set<KeyValuePair<String, WorkerTask>> activeTasks) {
+=======
+	Map<String, KeyValuePair> runMap(MapInstruction mapInstruction,
+			CombinerInstruction combinerInstruction, Iterator<String> input,
+			Set<KeyValuePair<String, WorkerTask>> activeTasks) throws InterruptedException {
+>>>>>>> 9484bf1e5e820457e67c65622b7756bad6cec8a3
 
 		Map<String, KeyValuePair> uuidToInputMapping = new LinkedHashMap<String, KeyValuePair>();
 
@@ -188,10 +202,11 @@ public final class Master {
 	 * @param activeTasks
 	 *            alle gestarteten reduce Tasks
 	 * @return Alle Inputs
+	 * @throws InterruptedException 
 	 */
 	Map<String, KeyValuePair> runReduce(ReduceInstruction reduceInstruction,
 			Iterator<Map.Entry<String, List<KeyValuePair>>> shuffleResults,
-			Set<KeyValuePair<String, WorkerTask>> activeTasks) {
+			Set<KeyValuePair<String, WorkerTask>> activeTasks) throws InterruptedException {
 
 		Map<String, KeyValuePair> reduceToUuid = new LinkedHashMap<String, KeyValuePair>();
 
@@ -295,7 +310,15 @@ public final class Master {
 			activeWorkerTasks.removeAll(toInactiveWorkerTasks);
 
 			// Ein gewisser Prozentsatz der Aufgaben ist erfüllt
-			currentTaskPercentage = (doneInputUUIDs.size() * 100) / originalUuidToKeyValuePairUUIDInputMapping.size();
+			System.out.println("" + originalUuidToKeyValuePairUUIDInputMapping.size() + " originalUuidToKeyValuePairUUIDInputMapping groesse");
+			
+			// kann zB bei ReduceTasks auftreten
+			if(originalUuidToKeyValuePairUUIDInputMapping.size() > 0) {
+				currentTaskPercentage = (doneInputUUIDs.size() * 100) / originalUuidToKeyValuePairUUIDInputMapping.size();
+			} else {
+				currentTaskPercentage = 0;
+			}
+			
 			if (currentTaskPercentage >= rescheduleStartPercentage) {
 
 				if (rescheduleCounter >= rescheduleEvery) {
@@ -322,8 +345,14 @@ public final class Master {
 	 *            der Input für die Map oder Reduce Tasks
 	 * @param activeWorkerTasks
 	 *            eine Liste mit allen derzeit aktiven WorkerTasks
+	 * @throws InterruptedException 
 	 */
+<<<<<<< HEAD
 	private void reschedule(Set<KeyValuePair> rescheduleInput, Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks) {
+=======
+	private void reschedule(Set<KeyValuePair> rescheduleInput,
+			Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks) throws InterruptedException {
+>>>>>>> 9484bf1e5e820457e67c65622b7756bad6cec8a3
 		switch (curState) {
 		case MAP:
 			for (KeyValuePair<String, String> rescheduleTodo : rescheduleInput) {
