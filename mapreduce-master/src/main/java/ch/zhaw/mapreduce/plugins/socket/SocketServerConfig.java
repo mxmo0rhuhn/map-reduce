@@ -1,6 +1,8 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -43,15 +45,15 @@ public class SocketServerConfig extends AbstractModule {
 		
 		// ResultCleaner
 		bind(ResultCleanerTask.class).asEagerSingleton();
-		bind(Long.class).annotatedWith(Names.named("AvailableResultTimeToLive")).toInstance(longProp("AvailableResultTimeToLive", 1*MINUTE));
-		bind(Long.class).annotatedWith(Names.named("RequestedResultTimeToLive")).toInstance(longProp("RequestedResultTimeToLive", 10*MINUTE));
-		bind(Long.class).annotatedWith(Names.named("SocketResultCleanupSchedulingDelay")).toInstance(longProp("SocketResultCleanupSchedulingDelay", MINUTE));
+		bind(Long.class).annotatedWith(Names.named("AvailableResultTimeToLive")).toInstance(longProp("availableResultTimeToLive", 1*MINUTE));
+		bind(Long.class).annotatedWith(Names.named("RequestedResultTimeToLive")).toInstance(longProp("requestedResultTimeToLive", 10*MINUTE));
+		bind(Long.class).annotatedWith(Names.named("SocketResultCleanupSchedulingDelay")).toInstance(longProp("socketResultCleanupSchedulingDelay", MINUTE));
 		
 		// SocketWorker
 		bind(AgentTaskFactory.class).to(AgentTaskFactoryImpl.class);
-		bind(Integer.class).annotatedWith(Names.named("ObjectByteCacheSize")).toInstance(intProp("ObjectByteCacheSize", 30));
-		bind(Long.class).annotatedWith(Names.named("AgentTaskTriggeringTimeout")).toInstance(longProp("AgentTaskTriggeringTimeout", 2*SECOND));
-		bind(Long.class).annotatedWith(Names.named("AgentPingerDelay")).toInstance(longProp("AgentPingerDelay",5*SECOND));
+		bind(Integer.class).annotatedWith(Names.named("ObjectByteCacheSize")).toInstance(intProp("objectByteCacheSize", 30));
+		bind(Long.class).annotatedWith(Names.named("AgentTaskTriggeringTimeout")).toInstance(longProp("agentTaskTriggeringTimeout", 2*SECOND));
+		bind(Long.class).annotatedWith(Names.named("AgentPingerDelay")).toInstance(longProp("agentPingerDelay",5*SECOND));
 		install(new FactoryModuleBuilder().implement(Worker.class, SocketWorker.class).build(SocketWorkerFactory.class));
 
 		try {
@@ -86,16 +88,24 @@ public class SocketServerConfig extends AbstractModule {
 	long longProp(String name) { return longProp(name, null); }
 	
 	long longProp(String name, Long def) {
-		String propVal = System.getProperty(name);
 		long retVal;
-		if (propVal != null) {
-			retVal = Long.parseLong(propVal);
-		} else if (def == null)	{
-			addError("System Property " + name + " is required");
-			return -1;
-		} else {
-			retVal = def; // autoboxing
+		
+		Properties prop = new Properties();
+		try {
+    		prop.load(new FileInputStream("mapReduce.properties"));
+			
+    		retVal = Integer.parseInt(prop.getProperty(name));
+			
+		} catch (Exception e) {
+			// konnten nicht geladen werden - weiter mit oben definierten defaults
+			if (def == null)	{
+				addError("System Property " + name + " is required");
+				return -1;
+			} else {
+				retVal = def; // autoboxing
+			}
 		}
+
 		LOG.log(Level.CONFIG, "{0}={1}", new Object[] { name, retVal });
 		return retVal;
 	}
