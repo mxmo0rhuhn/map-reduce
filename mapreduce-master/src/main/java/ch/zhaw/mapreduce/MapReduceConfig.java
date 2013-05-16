@@ -53,7 +53,7 @@ public class MapReduceConfig extends AbstractModule {
 		try {
     		prop.load(new FileInputStream("mapReduce.properties"));
 			
-			StatisticsPrinterTimeout = Long.parseLong(prop.getProperty("StatisticsPrinterTimeout"));
+			StatisticsPrinterTimeout = Long.parseLong(prop.getProperty("statisticsPrinterTimeout"));
 			memoryFullSleepTime = Long.parseLong(prop.getProperty("memoryFullSleepTime"));
 			minRemainingMemory = Long.parseLong(prop.getProperty("minRemainingMemory"));
 			plugins = prop.getProperty("plugins");
@@ -80,7 +80,7 @@ public class MapReduceConfig extends AbstractModule {
 
 		// Zeug das aus dem properties file entnommen wird
 		bind(String.class).annotatedWith(Names.named("plugins")).toInstance(plugins);
-		bind(Long.class).annotatedWith(Names.named("StatisticsPrinterTimeout")).toInstance(
+		bind(Long.class).annotatedWith(Names.named("statisticsPrinterTimeout")).toInstance(
 				StatisticsPrinterTimeout);
 		bind(Long.class).annotatedWith(Names.named("memoryFullSleepTime")).toInstance(
 				memoryFullSleepTime);
@@ -98,7 +98,7 @@ public class MapReduceConfig extends AbstractModule {
 	}
 
 	@Provides
-	@Named("SupervisorScheduler")
+	@Named("supervisorScheduler")
 	public ScheduledExecutorService poolSupervisor() {
 		return Executors.newScheduledThreadPool(1, new NamedThreadFactory("PoolSupervisor"));
 	}

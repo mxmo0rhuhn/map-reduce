@@ -54,8 +54,8 @@ public final class Pool {
 	public Pool(@Named("poolExecutor") Executor workTaskAdministrator,
 			@Named("memoryFullSleepTime") long memoryFullSleepTime,
 			@Named("minRemainingMemory") long minRemainingMemory,
-			@Named("SupervisorScheduler") ScheduledExecutorService supervisorService,
-			@Named("StatisticsPrinterTimeout") long statisticsTimeout) {
+			@Named("supervisorScheduler") ScheduledExecutorService supervisorService,
+			@Named("statisticsPrinterTimeout") long statisticsTimeout) {
 		this.workTaskAdministrator = workTaskAdministrator;
 		this.supervisorService = supervisorService;
 		this.statisticsPrintTimeout = statisticsTimeout;
@@ -173,7 +173,7 @@ public final class Pool {
 		}
 		int usedMem = (int) ((int) runtime.totalMemory() - runtime.freeMemory());
 		
-		return 100 - (usedMem/maxMem * 100);
+		return 100 - Math.round(((usedMem/maxMem) * 100));
 	}
 
 	/**
