@@ -17,12 +17,11 @@ public class MapTaskRunnerTest extends AbstractClientSocketMapReduceTest {
 
 	@Test
 	public void shouldCallFailureFactoryMethodOnException() {
-		MapTaskRunner mrt = new MapTaskRunner(mrtUuid, taskUuid, mapInstr, combInstr, mapInput, ctxFactory);
+		MapTaskRunner mrt = new MapTaskRunner(taskUuid, mapInstr, combInstr, mapInput, ctxProvider);
 		final RuntimeException e = new RuntimeException();
 		mockery.checking(new Expectations() {
 			{
-				oneOf(ctxFactory).createContext(mrtUuid, taskUuid);
-				will(returnValue(ctx));
+				oneOf(ctxProvider).get(); will(returnValue(ctx));
 				oneOf(mapInstr).map(ctx, mapInput);
 				oneOf(ctx).getMapResult();
 				oneOf(combInstr).combine(with(aNonNull(Iterator.class)));
@@ -30,7 +29,6 @@ public class MapTaskRunnerTest extends AbstractClientSocketMapReduceTest {
 			}
 		});
 		TaskResult res = mrt.runTask();
-		assertEquals(mrtUuid, res.getMapReduceTaskUuid());
 		assertEquals(taskUuid, res.getTaskUuid());
 		assertTrue(res instanceof MapTaskResult);
 		assertFalse(res.wasSuccessful());
@@ -39,19 +37,16 @@ public class MapTaskRunnerTest extends AbstractClientSocketMapReduceTest {
 
 	@Test
 	public void shouldCallSuccessFactoryMethodOnRegularCall() {
-		MapTaskRunner mrt = new MapTaskRunner(mrtUuid, taskUuid, mapInstr, combInstr, mapInput, ctxFactory);
+		MapTaskRunner mrt = new MapTaskRunner(taskUuid, mapInstr, combInstr, mapInput, ctxProvider);
 		mockery.checking(new Expectations() {
 			{
-				oneOf(ctxFactory).createContext(mrtUuid, taskUuid);
-				will(returnValue(ctx));
+				oneOf(ctxProvider).get(); will(returnValue(ctx));
 				oneOf(mapInstr).map(ctx, mapInput);
 				oneOf(ctx).getMapResult();
-				oneOf(combInstr).combine(with(aNonNull(Iterator.class)));
-				will(returnValue(mapResult));
+				oneOf(combInstr).combine(with(aNonNull(Iterator.class))); will(returnValue(mapResult));
 			}
 		});
 		TaskResult res = mrt.runTask();
-		assertEquals(mrtUuid, res.getMapReduceTaskUuid());
 		assertEquals(taskUuid, res.getTaskUuid());
 		assertTrue(res instanceof MapTaskResult);
 		assertTrue(res.wasSuccessful());
@@ -60,18 +55,15 @@ public class MapTaskRunnerTest extends AbstractClientSocketMapReduceTest {
 
 	@Test
 	public void shouldCallFailureFactoryMethodOnExceptionWitoutCombiner() {
-		MapTaskRunner mrt = new MapTaskRunner(mrtUuid, taskUuid, mapInstr, null, mapInput, ctxFactory);
+		MapTaskRunner mrt = new MapTaskRunner(taskUuid, mapInstr, null, mapInput, ctxProvider);
 		mockery.checking(new Expectations() {
 			{
-				oneOf(ctxFactory).createContext(mrtUuid, taskUuid);
-				will(returnValue(ctx));
+				oneOf(ctxProvider).get(); will(returnValue(ctx));
 				oneOf(mapInstr).map(ctx, mapInput);
-				oneOf(ctx).getMapResult();
-				will(returnValue(mapResult));
+				oneOf(ctx).getMapResult(); will(returnValue(mapResult));
 			}
 		});
 		TaskResult res = mrt.runTask();
-		assertEquals(mrtUuid, res.getMapReduceTaskUuid());
 		assertEquals(taskUuid, res.getTaskUuid());
 		assertTrue(res instanceof MapTaskResult);
 		assertTrue(res.wasSuccessful());

@@ -11,20 +11,20 @@ import ch.zhaw.mapreduce.plugins.socket.InvalidAgentTaskException;
 
 public class TaskRunnerFactoryImplTest extends AbstractClientSocketMapReduceTest {
 
-	private final MapAgentTask mapAgentTaskWithCombiner = new MapAgentTask(mrtUuid, taskUuid, miName, mi, ciName, ci,
+	private final MapAgentTask mapAgentTaskWithCombiner = new MapAgentTask(taskUuid, miName, mi, ciName, ci,
 			mapInput);
 
-	private final MapAgentTask mapAgentTaskWithoutCombiner = new MapAgentTask(mrtUuid, taskUuid, miName, mi, null,
+	private final MapAgentTask mapAgentTaskWithoutCombiner = new MapAgentTask(taskUuid, miName, mi, null,
 			null, mapInput);
 
-	private final ReduceAgentTask reduceAgentTask = new ReduceAgentTask(mrtUuid, taskUuid, riName, ri, reduceKey, reduceValues);
+	private final ReduceAgentTask reduceAgentTask = new ReduceAgentTask(taskUuid, riName, ri, reduceKey, reduceValues);
 
 	@Test
 	public void shouldCreateMapTaskRunnerForMapAgentTask() throws InvalidAgentTaskException {
 		TaskRunnerFactoryImpl f = new TaskRunnerFactoryImpl(mtrFactory, rtrFactory);
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(mtrFactory).createMapTaskRunner(with(mrtUuid), with(taskUuid),
+				oneOf(mtrFactory).createMapTaskRunner(with(taskUuid),
 						with(aNonNull(MapInstruction.class)), with(aNonNull(CombinerInstruction.class)), with(mapInput));
 			}
 		});
@@ -36,7 +36,7 @@ public class TaskRunnerFactoryImplTest extends AbstractClientSocketMapReduceTest
 		TaskRunnerFactoryImpl f = new TaskRunnerFactoryImpl(mtrFactory, rtrFactory);
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(mtrFactory).createMapTaskRunner(with(mrtUuid), with(taskUuid),
+				oneOf(mtrFactory).createMapTaskRunner(with(taskUuid),
 						with(aNonNull(MapInstruction.class)), with(aNull(CombinerInstruction.class)), with(mapInput));
 			}
 		});
@@ -48,7 +48,7 @@ public class TaskRunnerFactoryImplTest extends AbstractClientSocketMapReduceTest
 		TaskRunnerFactoryImpl f = new TaskRunnerFactoryImpl(mtrFactory, rtrFactory);
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(rtrFactory).createReduceTaskRunner(with(mrtUuid), with(taskUuid),
+				oneOf(rtrFactory).createReduceTaskRunner(with(taskUuid),
 						with(aNonNull(ReduceInstruction.class)), with(reduceKey), with(reduceValues));
 			}
 		});

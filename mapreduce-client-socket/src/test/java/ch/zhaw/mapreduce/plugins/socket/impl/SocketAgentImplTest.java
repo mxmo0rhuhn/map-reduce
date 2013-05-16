@@ -52,7 +52,6 @@ public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 				taskRunTimeout);
 		mockery.checking(new Expectations() {
 			{
-				exactly(2).of(aTask).getMapReduceTaskUuid();
 				exactly(2).of(aTask).getTaskUuid();
 				exactly(2).of(trFactory).createTaskRunner(aTask);
 				will(returnValue(taskRunner));
@@ -75,21 +74,17 @@ public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 		pusherState.startsAs("blockForResult");
 		mockery.checking(new Expectations() {
 			{
-				oneOf(aTask).getMapReduceTaskUuid();
-				will(returnValue(mrtUuid));
 				oneOf(aTask).getTaskUuid();
 				will(returnValue(taskUuid));
 				oneOf(trFactory).createTaskRunner(aTask);
 				will(returnValue(taskRunner));
 				oneOf(taskRunner).runTask();
 				will(returnValue(taskResult));
-				oneOf(sarFactory).createFromTaskResult(mrtUuid, taskUuid, taskResult);
+				oneOf(sarFactory).createFromTaskResult(taskUuid, taskResult);
 				will(returnValue(saResult));
 				oneOf(resCollector).pushResult(saResult);
 				then(pusherState.is("pushedResult"));
 				inSequence(events);
-				oneOf(aTask).getMapReduceTaskUuid();
-				will(returnValue(mrtUuid));
 				oneOf(aTask).getTaskUuid();
 				will(returnValue(taskUuid));
 				oneOf(trFactory).createTaskRunner(aTask);
@@ -114,16 +109,10 @@ public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 		pusherState.startsAs("blockForResult");
 		mockery.checking(new Expectations() {
 			{
-				oneOf(aTask).getMapReduceTaskUuid();
-				will(returnValue(mrtUuid));
-				oneOf(aTask).getTaskUuid();
-				will(returnValue(taskUuid));
-				oneOf(trFactory).createTaskRunner(aTask);
-				will(returnValue(taskRunner));
-				oneOf(taskRunner).runTask();
-				will(returnValue(taskResult));
-				oneOf(sarFactory).createFromTaskResult(mrtUuid, taskUuid, taskResult);
-				will(returnValue(saResult));
+				oneOf(aTask).getTaskUuid(); will(returnValue(taskUuid));
+				oneOf(trFactory).createTaskRunner(aTask); will(returnValue(taskRunner));
+				oneOf(taskRunner).runTask(); will(returnValue(taskResult));
+				oneOf(sarFactory).createFromTaskResult(taskUuid, taskResult); will(returnValue(saResult));
 				then(pusherState.is("createdResult"));
 				oneOf(resCollector).pushResult(saResult);
 				then(pusherState.is("pushedResult"));
@@ -144,16 +133,10 @@ public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 		pusherState.startsAs("blockForResult");
 		mockery.checking(new Expectations() {
 			{
-				oneOf(aTask).getMapReduceTaskUuid();
-				will(returnValue(mrtUuid));
-				oneOf(aTask).getTaskUuid();
-				will(returnValue(taskUuid));
-				oneOf(trFactory).createTaskRunner(aTask);
-				will(returnValue(taskRunner));
-				oneOf(taskRunner).runTask();
-				will(throwException(new RuntimeException()));
-				oneOf(sarFactory).createFromException(with(mrtUuid), with(taskUuid), with(aNonNull(Exception.class)));
-				will(returnValue(saResult));
+				oneOf(aTask).getTaskUuid(); will(returnValue(taskUuid));
+				oneOf(trFactory).createTaskRunner(aTask); will(returnValue(taskRunner));
+				oneOf(taskRunner).runTask(); will(throwException(new RuntimeException()));
+				oneOf(sarFactory).createFromException(with(taskUuid), with(aNonNull(Exception.class))); will(returnValue(saResult));
 				then(pusherState.is("createdResult"));
 				oneOf(resCollector).pushResult(saResult);
 				then(pusherState.is("pushedResult"));

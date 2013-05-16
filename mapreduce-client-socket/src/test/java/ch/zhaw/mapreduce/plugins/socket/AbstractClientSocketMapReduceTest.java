@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
+import javax.inject.Provider;
+
 import org.jmock.Sequence;
 import org.jmock.api.ThreadingPolicy;
 import org.jmock.auto.Auto;
@@ -16,7 +18,6 @@ import org.junit.Rule;
 
 import ch.zhaw.mapreduce.CombinerInstruction;
 import ch.zhaw.mapreduce.Context;
-import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.ReduceInstruction;
@@ -63,7 +64,7 @@ public abstract class AbstractClientSocketMapReduceTest {
 	protected Context ctx;
 
 	@Mock
-	protected ContextFactory ctxFactory;
+	protected Provider<Context> ctxProvider;
 
 	@Mock
 	protected AgentTask aTask;
@@ -112,8 +113,6 @@ public abstract class AbstractClientSocketMapReduceTest {
 	protected final String clientIp = "123.234.124.234";
 
 	protected List<KeyValuePair> mapResult = Arrays.asList(new KeyValuePair("key1", "val1"));
-
-	protected final String mrtUuid = "mrtUuid";
 
 	protected final String taskUuid = "taskUuid";
 

@@ -24,7 +24,7 @@ public class SocketClientConfigTest extends AbstractClientSocketMapReduceTest {
 	public void shouldCreateMapTaskRunner() {
 		MapTaskRunnerFactory fac = Guice.createInjector(new SocketClientConfig(resCollector, 1)).getInstance(
 				MapTaskRunnerFactory.class);
-		MapTaskRunner run = fac.createMapTaskRunner(mrtUuid, taskUuid, mapInstr, combInstr, mapInput);
+		MapTaskRunner run = fac.createMapTaskRunner(taskUuid, mapInstr, combInstr, mapInput);
 		assertNotNull(run);
 	}
 
@@ -32,7 +32,7 @@ public class SocketClientConfigTest extends AbstractClientSocketMapReduceTest {
 	public void shouldCreateReduceTaskRunner() {
 		ReduceTaskRunnerFactory fac = Guice.createInjector(new SocketClientConfig(resCollector, 1)).getInstance(
 				ReduceTaskRunnerFactory.class);
-		ReduceTaskRunner run = fac.createReduceTaskRunner(mrtUuid, taskUuid, redInstr, reduceKey, reduceValues);
+		ReduceTaskRunner run = fac.createReduceTaskRunner(taskUuid, redInstr, reduceKey, reduceValues);
 		assertNotNull(run);
 	}
 
@@ -56,10 +56,9 @@ public class SocketClientConfigTest extends AbstractClientSocketMapReduceTest {
 				will(returnValue(mapResult));
 			}
 		});
-		SocketAgentResult sar = fac.createFromTaskResult(mrtUuid, taskUuid, taskResult);
+		SocketAgentResult sar = fac.createFromTaskResult(taskUuid, taskResult);
 		assertNotNull(sar);
 		assertNull(sar.getException());
-		assertEquals(mrtUuid, sar.getMapReduceTaskUuid());
 		assertEquals(taskUuid, sar.getTaskUuid());
 		assertEquals(mapResult, sar.getResult());
 	}
@@ -77,10 +76,9 @@ public class SocketClientConfigTest extends AbstractClientSocketMapReduceTest {
 				will(returnValue(e));
 			}
 		});
-		SocketAgentResult sar = fac.createFromTaskResult(mrtUuid, taskUuid, taskResult);
+		SocketAgentResult sar = fac.createFromTaskResult(taskUuid, taskResult);
 		assertNotNull(sar);
 		assertNull(sar.getResult());
-		assertEquals(mrtUuid, sar.getMapReduceTaskUuid());
 		assertEquals(taskUuid, sar.getTaskUuid());
 		assertEquals(e, sar.getException());
 	}
@@ -90,10 +88,9 @@ public class SocketClientConfigTest extends AbstractClientSocketMapReduceTest {
 		SocketAgentResultFactory fac = Guice.createInjector(new SocketClientConfig(resCollector, 1)).getInstance(
 				SocketAgentResultFactory.class);
 		Exception e = new Exception();
-		SocketAgentResult sar = fac.createFromException(mrtUuid, taskUuid, e);
+		SocketAgentResult sar = fac.createFromException(taskUuid, e);
 		assertNotNull(sar);
 		assertNull(sar.getResult());
-		assertEquals(mrtUuid, sar.getMapReduceTaskUuid());
 		assertEquals(taskUuid, sar.getTaskUuid());
 		assertEquals(e, sar.getException());
 	}

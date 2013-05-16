@@ -10,8 +10,7 @@ import com.google.inject.assistedinject.Assisted;
 
 public interface ReduceTaskRunnerFactory {
 
-	ReduceTaskRunner createReduceTaskRunner(@Assisted("mapReduceTaskUuid") String mapReduceTaskUuid,
-			@Assisted("taskUuid") String taskUuid, ReduceInstruction redInstr, @Assisted("key") String key,
-			List<KeyValuePair> values);
+	ReduceTaskRunner createReduceTaskRunner(@Assisted("taskUuid") String taskUuid, ReduceInstruction redInstr,
+			@Assisted("key") String key, List<KeyValuePair> values);
 
 }

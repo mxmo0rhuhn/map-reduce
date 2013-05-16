@@ -88,7 +88,7 @@ public class SocketAgentImpl implements SocketAgent {
 	 * Der Task, der gerade ausgeführt werden soll wird in diese Queue gesteckt um dann vom Result-Pusher wieder
 	 * herausgenommen zu werden. Double-Ended-Queue: wir füllen vorne rein und nehmen hinten raus.
 	 */
-	private final BlockingDeque<KeyValuePair<TaskID, Future<TaskResult>>> tasks = new LinkedBlockingDeque<KeyValuePair<TaskID, Future<TaskResult>>>(
+	private final BlockingDeque<KeyValuePair<String, Future<TaskResult>>> tasks = new LinkedBlockingDeque<KeyValuePair<String, Future<TaskResult>>>(
 			MAX_CONCURRENT_TASKS);
 
 	@Inject
@@ -115,31 +115,30 @@ public class SocketAgentImpl implements SocketAgent {
 				try {
 					while (true) {
 						LOG.fine("Waiting For Next Task in Queue");
-						KeyValuePair<TaskID, Future<TaskResult>> pair = tasks.pollLast(RESULT_PUSHER_CYCLE_TIMEOUT, TimeUnit.MILLISECONDS);
+						KeyValuePair<String, Future<TaskResult>> pair = tasks.pollLast(RESULT_PUSHER_CYCLE_TIMEOUT, TimeUnit.MILLISECONDS);
 						if (pair == null) {
 							LOG.log(Level.INFO, "Waited for {0} ms. Run {1} Tasks so far.", new Object[] {
 									RESULT_PUSHER_CYCLE_TIMEOUT, runTasks.get() });
 							continue;
 						}
-						TaskID taskID = pair.getKey();
 						Future<TaskResult> task = pair.getValue();
+						String taskUuid = pair.getKey();
 						LOG.log(Level.FINE, "Took Task from Queue. Now waiting for its Completion {0}",
-								new Object[] { taskID });
+								new Object[] { taskUuid });
 
 						SocketAgentResult saResult;
 						try {
 							TaskResult result = task.get(taskRunTimeout, TimeUnit.MILLISECONDS);
-							LOG.log(Level.INFO, "Task ran Fine {0}", taskID);
-							saResult = sarFactory.createFromTaskResult(taskID.mapReduceTaskUuid, taskID.taskUuid,
-									result);
+							LOG.log(Level.INFO, "Task ran Fine {0}", taskUuid);
+							saResult = sarFactory.createFromTaskResult(taskUuid, result);
 						} catch (TimeoutException e) {
 							LOG.info("Task not completed within Timeout: " + taskRunTimeout);
 							// timeout abgelaufen, tasks soll nicht weiter ausgeführt werden
-							saResult = sarFactory.createFromException(taskID.mapReduceTaskUuid, taskID.taskUuid, e);
+							saResult = sarFactory.createFromException(taskUuid, e);
 							task.cancel(true);
 						} catch (Exception e) {
 							LOG.log(Level.WARNING, "Task threw Exception", e);
-							saResult = sarFactory.createFromException(taskID.mapReduceTaskUuid, taskID.taskUuid, e);
+							saResult = sarFactory.createFromException(taskUuid, e);
 						} finally {
 							runTasks.incrementAndGet();
 						}
@@ -172,9 +171,8 @@ public class SocketAgentImpl implements SocketAgent {
 	 */
 	@Override
 	public AgentTaskState runTask(final AgentTask agentTask) {
-		String mrUuid = agentTask.getMapReduceTaskUuid();
 		String taskUuid = agentTask.getTaskUuid();
-		LOG.entering(getClass().getName(), "runTask", new Object[] { mrUuid, taskUuid });
+		LOG.entering(getClass().getName(), "runTask", new Object[] { taskUuid });
 
 		AgentTaskState state;
 		try {
@@ -185,8 +183,7 @@ public class SocketAgentImpl implements SocketAgent {
 					return runner.runTask();
 				};
 			});
-			TaskID taskID = new TaskID(mrUuid, taskUuid);
-			if (this.tasks.offerFirst(new KeyValuePair<TaskID, Future<TaskResult>>(taskID, task))) {
+			if (this.tasks.offerFirst(new KeyValuePair<String, Future<TaskResult>>(taskUuid, task))) {
 				state = new AgentTaskState(ACCEPTED);
 				LOG.info("Accepted Task for Execution");
 			} else {
@@ -199,7 +196,7 @@ public class SocketAgentImpl implements SocketAgent {
 			LOG.log(Level.SEVERE, "Failed to Schedule Task", e);
 			state = new AgentTaskState(REJECTED, e.getMessage());
 		}
-		LOG.log(Level.FINER, "RETURN State={0}, TaskID={1}", new Object[]{state, new TaskID(mrUuid, taskUuid)});
+		LOG.log(Level.FINER, "RETURN State={0}, TaskUuid={1}", new Object[]{state, taskUuid});
 		return state;
 	}
 
@@ -214,21 +211,6 @@ public class SocketAgentImpl implements SocketAgent {
 	@Override
 	public String toString() {
 		return "SocketAgentImpl [ClientIP=" + this.clientIp + "]";
-	}
-
-	private static class TaskID {
-		final String mapReduceTaskUuid;
-		final String taskUuid;
-
-		TaskID(String mapReduceTaskUuid, String taskUuid) {
-			this.mapReduceTaskUuid = mapReduceTaskUuid;
-			this.taskUuid = taskUuid;
-		}
-
-		@Override
-		public String toString() {
-			return "TaskID [MapReduceTaskUuid=" + this.mapReduceTaskUuid + ",TaskUuid=" + this.taskUuid + "]";
-		}
 	}
 
 	@Override

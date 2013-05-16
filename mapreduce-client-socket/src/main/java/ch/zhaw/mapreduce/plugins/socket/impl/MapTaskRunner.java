@@ -5,10 +5,10 @@ import java.util.logging.Logger;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 import ch.zhaw.mapreduce.CombinerInstruction;
 import ch.zhaw.mapreduce.Context;
-import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.plugins.socket.TaskResult;
@@ -26,8 +26,6 @@ public final class MapTaskRunner implements TaskRunner {
 
 	private static final Logger LOG = Logger.getLogger(MapTaskRunner.class.getName());
 
-	private final String mapReduceTaskUuid;
-
 	private final String taskUuid;
 
 	private final MapInstruction mapInstr;
@@ -37,18 +35,17 @@ public final class MapTaskRunner implements TaskRunner {
 
 	private final String input;
 
-	private final ContextFactory ctxFactory;
+	private final Provider<Context> ctxProvider;
 
 	@Inject
-	MapTaskRunner(@Assisted("mapReduceTaskUuid") String mapReduceTaskUuid, @Assisted("taskUuid") String taskUuid,
+	MapTaskRunner(@Assisted("taskUuid") String taskUuid,
 			@Assisted MapInstruction mapInstr, @Assisted @Nullable CombinerInstruction combInstr,
-			@Assisted("input") String input, ContextFactory ctxFactory) {
-		this.mapReduceTaskUuid = mapReduceTaskUuid;
+			@Assisted("input") String input, Provider<Context> ctxProvider) {
 		this.taskUuid = taskUuid;
 		this.mapInstr = mapInstr;
 		this.combInstr = combInstr;
 		this.input = input;
-		this.ctxFactory = ctxFactory;
+		this.ctxProvider = ctxProvider;
 	}
 
 	/**
@@ -58,7 +55,7 @@ public final class MapTaskRunner implements TaskRunner {
 	public TaskResult runTask() {
 		LOG.entering(MapTaskRunner.class.getName(), "runTask");
 		// TODO ineffizient. impliziert das postconstructfeature, welches per reflection zeugs macht
-		Context ctx = this.ctxFactory.createContext(this.mapReduceTaskUuid, this.taskUuid);
+		Context ctx = this.ctxProvider.get();
 		try {
 			// Mappen
 			this.mapInstr.map(ctx, input);
@@ -68,12 +65,11 @@ public final class MapTaskRunner implements TaskRunner {
 			if (this.combInstr != null) {
 				mapResult = this.combInstr.combine(mapResult.iterator());
 			}
-			return new MapTaskResult(this.mapReduceTaskUuid, this.taskUuid, mapResult);
+			return new MapTaskResult(this.taskUuid, mapResult);
 		} catch (Exception e) {
-			return new MapTaskResult(this.mapReduceTaskUuid, this.taskUuid, e);
+			return new MapTaskResult(this.taskUuid, e);
 		} finally {
 			LOG.exiting(MapTaskRunner.class.getName(), "runTask");
 		}
 	}
-
 }

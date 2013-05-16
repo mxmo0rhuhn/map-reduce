@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
+import javax.inject.Provider;
 
 import ch.zhaw.mapreduce.Context;
-import ch.zhaw.mapreduce.ContextFactory;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.plugins.socket.TaskResult;
@@ -24,8 +24,6 @@ public final class ReduceTaskRunner implements TaskRunner {
 
 	private static final Logger LOG = Logger.getLogger(ReduceTaskRunner.class.getName());
 
-	private final String mapReduceTaskUuid;
-
 	private final String taskUuid;
 
 	private final ReduceInstruction redInstr;
@@ -34,18 +32,17 @@ public final class ReduceTaskRunner implements TaskRunner {
 
 	private final List<KeyValuePair> values;
 
-	private final ContextFactory ctxFactory;
+	private final Provider<Context> ctxProvider;
 
 	@Inject
-	ReduceTaskRunner(@Assisted("mapReduceTaskUuid") String mapReduceTaskUuid, @Assisted("taskUuid") String taskUuid,
+	ReduceTaskRunner(@Assisted("taskUuid") String taskUuid,
 			@Assisted ReduceInstruction redInstr, @Assisted("key") String key, @Assisted List<KeyValuePair> values,
-			ContextFactory ctxFactory) {
-		this.mapReduceTaskUuid = mapReduceTaskUuid;
+			Provider<Context> ctxProvider) {
 		this.taskUuid = taskUuid;
 		this.redInstr = redInstr;
 		this.key = key;
 		this.values = values;
-		this.ctxFactory = ctxFactory;
+		this.ctxProvider = ctxProvider;
 	}
 
 	/**
@@ -54,12 +51,12 @@ public final class ReduceTaskRunner implements TaskRunner {
 	@Override
 	public TaskResult runTask() {
 		LOG.entering(getClass().getName(), "runTask");
-		Context ctx = this.ctxFactory.createContext(this.mapReduceTaskUuid, this.taskUuid);
+		Context ctx = this.ctxProvider.get();
 		try {
 			this.redInstr.reduce(ctx, this.key, this.values.iterator());
-			return new ReduceTaskResult(this.mapReduceTaskUuid, this.taskUuid, ctx.getReduceResult());
+			return new ReduceTaskResult(this.taskUuid, ctx.getReduceResult());
 		} catch (Exception e) {
-			return new ReduceTaskResult(this.mapReduceTaskUuid, this.taskUuid, e);
+			return new ReduceTaskResult(this.taskUuid, e);
 		} finally {
 			LOG.exiting(getClass().getName(), "runTask");
 		}

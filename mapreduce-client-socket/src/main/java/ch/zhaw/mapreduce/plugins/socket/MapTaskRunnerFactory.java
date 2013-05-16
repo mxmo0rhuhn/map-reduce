@@ -8,8 +8,7 @@ import com.google.inject.assistedinject.Assisted;
 
 public interface MapTaskRunnerFactory {
 
-	MapTaskRunner createMapTaskRunner(@Assisted("mapReduceTaskUuid") String mapReduceTaskUuid,
-			@Assisted("taskUuid") String taskUuid, MapInstruction mapInstr, CombinerInstruction combInstr,
-			@Assisted("input") String input);
+	MapTaskRunner createMapTaskRunner(@Assisted("taskUuid") String taskUuid, MapInstruction mapInstr,
+			CombinerInstruction combInstr, @Assisted("input") String input);
 
 }

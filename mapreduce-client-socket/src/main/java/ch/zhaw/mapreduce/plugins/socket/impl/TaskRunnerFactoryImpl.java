@@ -62,13 +62,13 @@ public final class TaskRunnerFactoryImpl implements TaskRunnerFactory {
 				combInstr = loadClass(mt.getCombinerInstructionName(), mt.getCombinerInstruction(),
 						CombinerInstruction.class);
 			}
-			return this.mtrFactory.createMapTaskRunner(mt.getMapReduceTaskUuid(), mt.getTaskUuid(), mapInstr,
+			return this.mtrFactory.createMapTaskRunner(mt.getTaskUuid(), mapInstr,
 					combInstr, mt.getInput());
 		} else if (task instanceof ReduceAgentTask) {
 			ReduceAgentTask rt = (ReduceAgentTask) task;
 			ReduceInstruction redInstr = loadClass(rt.getReduceInstructionName(), rt.getReduceInstruction(),
 					ReduceInstruction.class);
-			return this.rtrFactory.createReduceTaskRunner(rt.getMapReduceTaskUuid(), rt.getTaskUuid(), redInstr,
+			return this.rtrFactory.createReduceTaskRunner(rt.getTaskUuid(), redInstr,
 					rt.getKey(), rt.getValues());
 		} else {
 			throw new InvalidAgentTaskException("Cannot Handle: " + task);

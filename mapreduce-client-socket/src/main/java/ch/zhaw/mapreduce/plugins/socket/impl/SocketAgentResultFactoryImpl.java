@@ -7,17 +7,17 @@ import ch.zhaw.mapreduce.plugins.socket.TaskResult;
 public class SocketAgentResultFactoryImpl implements SocketAgentResultFactory {
 
 	@Override
-	public SocketAgentResult createFromTaskResult(String mapReduceTaskUuid, String taskUuid, TaskResult result) {
+	public SocketAgentResult createFromTaskResult(String taskUuid, TaskResult result) {
 		if (result.wasSuccessful()) {
-			return new SocketAgentResultImpl(mapReduceTaskUuid, taskUuid, result.getResult());
+			return new SocketAgentResultImpl(taskUuid, result.getResult());
 		} else {
-			return new SocketAgentResultImpl(mapReduceTaskUuid, taskUuid, result.getException());
+			return new SocketAgentResultImpl(taskUuid, result.getException());
 		}
 	}
 
 	@Override
-	public SocketAgentResult createFromException(String mapReduceTaskUuid, String taskUuid, Exception e) {
-		return new SocketAgentResultImpl(mapReduceTaskUuid, taskUuid, e);
+	public SocketAgentResult createFromException(String taskUuid, Exception e) {
+		return new SocketAgentResultImpl(taskUuid, e);
 	}
 
 }

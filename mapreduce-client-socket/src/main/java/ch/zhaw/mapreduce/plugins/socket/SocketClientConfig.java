@@ -9,11 +9,8 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 
 import ch.zhaw.mapreduce.Context;
-import ch.zhaw.mapreduce.ContextFactory;
-import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.PostConstructFeature;
-import ch.zhaw.mapreduce.impl.InMemoryPersistence;
-import ch.zhaw.mapreduce.impl.LocalContext;
+import ch.zhaw.mapreduce.impl.ContextImpl;
 import ch.zhaw.mapreduce.plugins.socket.impl.MapTaskRunner;
 import ch.zhaw.mapreduce.plugins.socket.impl.NamedThreadFactory;
 import ch.zhaw.mapreduce.plugins.socket.impl.ReduceTaskRunner;
@@ -47,15 +44,14 @@ public final class SocketClientConfig extends AbstractModule {
 		install(new SharedSocketConfig());
 		bindListener(Matchers.any(), new PostConstructFeature());
 		
-		bind(Persistence.class).to(InMemoryPersistence.class);
 		bind(TaskRunnerFactory.class).to(TaskRunnerFactoryImpl.class);
 		bind(SocketAgentResultFactory.class).to(SocketAgentResultFactoryImpl.class);
 		bind(SocketResultCollector.class).toInstance(this.resCollector);
+		bind(Context.class).to(ContextImpl.class);
 
 		bind(Long.class).annotatedWith(Names.named("taskRunTimeout")).toInstance(sysProp("taskRunTimeout", DEFAULT_TASK_RUN_TIMEOUT));
 
 		install(new FactoryModuleBuilder().implement(SocketAgent.class, SocketAgentImpl.class).build(SocketAgentFactory.class));
-		install(new FactoryModuleBuilder().implement(Context.class, LocalContext.class).build(ContextFactory.class));
 		install(new FactoryModuleBuilder().implement(TaskRunner.class, MapTaskRunner.class).build(MapTaskRunnerFactory.class));
 		install(new FactoryModuleBuilder().implement(TaskRunner.class, ReduceTaskRunner.class).build(ReduceTaskRunnerFactory.class));
 	}
