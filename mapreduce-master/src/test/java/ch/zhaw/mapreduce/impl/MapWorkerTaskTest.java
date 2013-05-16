@@ -155,7 +155,7 @@ public class MapWorkerTaskTest {
 		ExecutorService poolExec = Executors.newSingleThreadExecutor();
 		final CyclicBarrier barrier = new CyclicBarrier(2);
 		ExecutorService taskExec = Executors.newSingleThreadExecutor();
-		final Pool pool = new Pool(poolExec, execMock, 1000);
+		final Pool pool = new Pool(Executors.newSingleThreadExecutor(), 1, 2, Executors.newSingleThreadScheduledExecutor(), 1);
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, taskExec, ctxProvider, pers);
 		pool.donateWorker(worker);
@@ -185,11 +185,10 @@ public class MapWorkerTaskTest {
 	}
 
 	@Test
-	public void shouldBeAbleToRerunTests() {
-		ExecutorService poolExec = Executors.newSingleThreadExecutor();
+	public void shouldBeAbleToRerunTests() throws Exception {
 		ExactCommandExecutor threadExec1 = new ExactCommandExecutor(1);
 		ExactCommandExecutor threadExec2 = new ExactCommandExecutor(1);
-		final Pool pool = new Pool(poolExec, execMock, 1000);
+		final Pool pool = new Pool(Executors.newSingleThreadExecutor(), 1, 2, Executors.newSingleThreadScheduledExecutor(), 1);
 		final AtomicInteger cnt = new AtomicInteger();
 		pool.init();
 		ThreadWorker worker1 = new ThreadWorker(pool, threadExec1, ctxProvider, pers);
@@ -235,8 +234,8 @@ public class MapWorkerTaskTest {
 	}
 
 	@Test
-	public void shouldBeEnqueuedAfterSubmissionToPool() {
-		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
+	public void shouldBeEnqueuedAfterSubmissionToPool() throws Exception {
+		final Pool pool = new Pool(Executors.newSingleThreadExecutor(), 1, 2, Executors.newSingleThreadScheduledExecutor(), 1);
 		pool.init();
 		final MapWorkerTask task = new MapWorkerTask(inputUUID, pers, mapInstr, null, input);
 		this.mockery.checking(new Expectations() {

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Provider;
@@ -47,13 +48,16 @@ public class ThreadWorkerTest {
 
 	@Mock
 	private ExecutorService execMock;
+	
+	@Mock
+	private ScheduledExecutorService sExec;
 
 	@Test
 	public void shouldGoBackToPool() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
-		pool.init();
-		final ThreadWorker worker = new ThreadWorker(pool, exec, ctxProvider, pers);
+		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, sExec, 1);
+		p.init();
+		final ThreadWorker worker = new ThreadWorker(p, exec, ctxProvider, pers);
 		this.mockery.checking(new Expectations() {
 			{
 				oneOf(task).getTaskUuid();
@@ -63,22 +67,22 @@ public class ThreadWorkerTest {
 				oneOf(task).runTask(ctx);
 				oneOf(ctx).getMapResult();
 				will(returnValue(new ArrayList<KeyValuePair>()));
-				oneOf(pers).storeMapResults(with("taskUuid"), with(aNonNull(List.class)));
+				oneOf(pers).storeMapResults(with("taskUuid"), with(aNonNull(List.class))); will(returnValue(true));
 				oneOf(ctx).getReduceResult();
 				will(returnValue(null));
 			}
 		});
 		worker.executeTask(task);
 		exec.waitForExpectedTasks(200, TimeUnit.MILLISECONDS);
-		assertEquals(1, pool.getFreeWorkers());
+		assertEquals(1, p.getFreeWorkers());
 	}
 
 	@Test
 	public void shouldPersistReduceResultOnly() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
-		pool.init();
-		final ThreadWorker worker = new ThreadWorker(pool, exec, ctxProvider, pers);
+		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, sExec, 1);
+		p.init();
+		final ThreadWorker worker = new ThreadWorker(p, exec, ctxProvider, pers);
 		this.mockery.checking(new Expectations() {
 			{
 				oneOf(task).getTaskUuid();
@@ -90,20 +94,20 @@ public class ThreadWorkerTest {
 				will(returnValue(null));
 				oneOf(ctx).getReduceResult();
 				will(returnValue(new ArrayList<String>()));
-				oneOf(pers).storeReduceResults(with("taskUuid"), with(aNonNull(List.class)));
+				oneOf(pers).storeReduceResults(with("taskUuid"), with(aNonNull(List.class))); will(returnValue(true));
 			}
 		});
 		worker.executeTask(task);
 		exec.waitForExpectedTasks(200, TimeUnit.MILLISECONDS);
-		assertEquals(1, pool.getFreeWorkers());
+		assertEquals(1, p.getFreeWorkers());
 	}
 
 	@Test
 	public void shouldSetTaskToFailedOnException() throws Exception  {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool pool = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
-		pool.init();
-		final ThreadWorker worker = new ThreadWorker(pool, exec, ctxProvider, pers);
+		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, sExec, 1);
+		p.init();
+		final ThreadWorker worker = new ThreadWorker(p, exec, ctxProvider, pers);
 		this.mockery.checking(new Expectations() {
 			{
 				oneOf(task).getTaskUuid(); will(returnValue("taskUuid"));

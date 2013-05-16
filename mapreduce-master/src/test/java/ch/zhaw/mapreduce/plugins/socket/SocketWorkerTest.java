@@ -31,7 +31,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 	public void shoudlRunTask() throws Exception {
 		allowGetIp();
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
-		Pool p = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
+		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, schedService, 1);
 		p.init();
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200, schedService, 2000);
 		taskRunnerState.startsAs("beforeRunning");
@@ -51,7 +51,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 	public void shouldSetToCompleteImmediately() throws Exception {
 		allowGetIp();
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
-		Pool p = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
+		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, schedService, 1);
 		p.init();
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200, schedService, 2000);
 		taskRunnerState.startsAs("beforeRunning");
@@ -75,7 +75,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 	public void shouldGoBackToPoolIfTaskIsRejected() throws Exception {
 		allowGetIp();
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
-		Pool p = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
+		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, schedService, 1);
 		p.init();
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200, schedService, 2000);
 		taskRunnerState.startsAs("beforeRunning");
@@ -97,7 +97,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 	public void shouldGoBackToPoolWhenTaskIsFinished() throws Exception {
 		allowGetIp();
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
-		Pool p = new Pool(Executors.newSingleThreadExecutor(), execMock, 1000);
+		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, schedService, 1);
 		p.init();
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200, schedService, 2000);
 		p.donateWorker(sw);

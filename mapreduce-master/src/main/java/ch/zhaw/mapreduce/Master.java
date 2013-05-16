@@ -58,7 +58,6 @@ public final class Master {
 
 	@Inject
 	Master(Pool pool, WorkerTaskFactory workerTaskFactory,
-			@Named("mapReduceTaskUuid") String mapReduceTaskUuid,
 			Provider<Shuffler> shufflerProvider,
 			@Named("supervisorScheduler") ScheduledExecutorService supervisorService, 
 			@Named("statisticsPrinterTimeout") long statisticsTimeout,
@@ -158,14 +157,9 @@ public final class Master {
 	 * @return Ein Mapping von UUID auf ein KeyValue Pair UUID und zugehöriger Input
 	 * @throws InterruptedException 
 	 */
-<<<<<<< HEAD
-	Map<String, KeyValuePair> runMap(MapInstruction mapInstruction, CombinerInstruction combinerInstruction,
-			Iterator<String> input, Set<KeyValuePair<String, WorkerTask>> activeTasks) {
-=======
 	Map<String, KeyValuePair> runMap(MapInstruction mapInstruction,
 			CombinerInstruction combinerInstruction, Iterator<String> input,
 			Set<KeyValuePair<String, WorkerTask>> activeTasks) throws InterruptedException {
->>>>>>> 9484bf1e5e820457e67c65622b7756bad6cec8a3
 
 		Map<String, KeyValuePair> uuidToInputMapping = new LinkedHashMap<String, KeyValuePair>();
 
@@ -347,12 +341,8 @@ public final class Master {
 	 *            eine Liste mit allen derzeit aktiven WorkerTasks
 	 * @throws InterruptedException 
 	 */
-<<<<<<< HEAD
-	private void reschedule(Set<KeyValuePair> rescheduleInput, Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks) {
-=======
 	private void reschedule(Set<KeyValuePair> rescheduleInput,
 			Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks) throws InterruptedException {
->>>>>>> 9484bf1e5e820457e67c65622b7756bad6cec8a3
 		switch (curState) {
 		case MAP:
 			for (KeyValuePair<String, String> rescheduleTodo : rescheduleInput) {

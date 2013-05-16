@@ -80,7 +80,7 @@ public class ThreadWorker implements Worker {
 				try {
 					Context ctx = ctxProvider.get();
 					task.runTask(ctx);
-					persistContext(taskUuid, ctx);
+					persistContext(task, taskUuid, ctx);
 				} catch (Exception e) {
 					LOG.log(Level.SEVERE, "Failed to run Task", e);
 					task.failed();
@@ -109,14 +109,18 @@ public class ThreadWorker implements Worker {
 		}
 	}
 	
-	void persistContext(String taskUuid, Context ctx) {
+	void persistContext(WorkerTask task, String taskUuid, Context ctx) {
 		List<KeyValuePair> mapRes = ctx.getMapResult();
 		if (mapRes != null) {
-			persistence.storeMapResults(taskUuid, mapRes);
+			if(!persistence.storeMapResults(taskUuid, mapRes)) {
+				task.failed();
+			}
 		}
 		List<String> redRes = ctx.getReduceResult();
 		if (redRes != null) {
-			persistence.storeReduceResults(taskUuid, redRes);
+			if(!persistence.storeReduceResults(taskUuid, redRes)) {
+				task.failed();
+			}
 		}
 	}
 }

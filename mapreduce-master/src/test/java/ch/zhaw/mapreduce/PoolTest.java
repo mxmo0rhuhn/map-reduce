@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -54,10 +55,12 @@ public class PoolTest {
 	private Persistence persistence;
 	
 	private Executor executor = Executors.newSingleThreadExecutor();
+	
+	private ScheduledExecutorService sExec = Executors.newSingleThreadScheduledExecutor();
 
 	@Test
 	public void shouldHaveZeroInitialWorker() {
-		Pool p = new Pool(executor, execMock, 1000);
+		Pool p = new Pool(executor, 1, 2, sExec, 1);
 		p.init();
 		assertEquals(0, p.getCurrentPoolSize());
 		assertEquals(0, p.getFreeWorkers());
@@ -65,7 +68,7 @@ public class PoolTest {
 
 	@Test
 	public void shouldHaveOneWorker() {
-		Pool p = new Pool(executor, execMock, 1000);
+		Pool p = new Pool(executor, 1, 2, sExec, 1);
 		p.init();
 		p.donateWorker(worker);
 		assertEquals(1, p.getCurrentPoolSize());
@@ -76,7 +79,7 @@ public class PoolTest {
 	public void shouldHaveTwoWorker() {
 		Worker w1 = this.mockery.mock(Worker.class, "w1");
 		Worker w2 = this.mockery.mock(Worker.class, "w2");
-		Pool p = new Pool(executor, execMock, 1000);
+		Pool p = new Pool(executor, 1, 2, sExec, 1);
 		p.init();
 		p.donateWorker(w1);
 		p.donateWorker(w2);
@@ -86,7 +89,7 @@ public class PoolTest {
 
 	@Test(expected = IllegalStateException.class)
 	public void shouldNotBeAbleToInitTwice() {
-		Pool p = new Pool(this.executor, execMock, 1000);
+		Pool p = new Pool(executor, 1, 2, sExec, 1);
 		try {
 			p.init(); // first time must work
 		} catch (IllegalStateException ise) {
@@ -99,7 +102,7 @@ public class PoolTest {
 	public void shouldExecuteWork() throws InterruptedException {
 		final Executor poolExec = Executors.newSingleThreadExecutor();
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
-		Pool p = new Pool(poolExec, execMock, 1000);
+		Pool p = new Pool(executor, 1, 2, sExec, 1);
 		p.init();
 		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxProvider, persistence);
 		p.donateWorker(worker);
@@ -122,10 +125,9 @@ public class PoolTest {
 	}
 
 	@Test
-	public void workerShouldBeFreeAgainAfterwards() {
-		final Executor poolExec = Executors.newSingleThreadExecutor();
+	public void workerShouldBeFreeAgainAfterwards() throws InterruptedException {
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
-		Pool p = new Pool(poolExec, execMock, 1000);
+		Pool p = new Pool(executor, 1, 2, sExec, 1);
 		p.init();
 		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxProvider, persistence);
 		p.donateWorker(worker);
@@ -158,14 +160,14 @@ public class PoolTest {
 				return ts[0];
 			}
 		});
-		Pool pool = new Pool(exec, execMock, 1000);
-		pool.init();
-		assertTrue(pool.isRunning());
+		Pool p = new Pool(exec, 1, 2, sExec, 1);
+		p.init();
+		assertTrue(p.isRunning());
 		Thread.sleep(200);
 		ts[0].interrupt();
 		Thread.yield();
 		Thread.sleep(200);
-		assertFalse(pool.isRunning());
+		assertFalse(p.isRunning());
 	}
 
 }
