@@ -11,8 +11,6 @@ import ch.zhaw.mapreduce.KeyValuePair;
 
 public class ReduceAgentTaskTest {
 	
-	private final String mrUuid = "mrtUuid";
-	
 	private final String taskUuid = "taskUuid";
 	
 	private final String riName = "ri";
@@ -25,8 +23,7 @@ public class ReduceAgentTaskTest {
 	
 	@Test
 	public void shouldCorrectlyAssignParameters() {
-		ReduceAgentTask mat = new ReduceAgentTask(mrUuid, taskUuid, riName, ri, key, vals);
-		assertEquals(mrUuid, mat.getMapReduceTaskUuid());
+		ReduceAgentTask mat = new ReduceAgentTask(taskUuid, riName, ri, key, vals);
 		assertEquals(taskUuid, mat.getTaskUuid());
 		assertEquals(riName, mat.getReduceInstructionName());
 		assertEquals(ri, mat.getReduceInstruction());

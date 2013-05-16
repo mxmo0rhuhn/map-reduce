@@ -31,6 +31,10 @@ public interface SocketAgent {
 	 */
 	String getIp();
 
+	/**
+	 * Wird vom Server periodisch ausgeführt um zu prüfen, ob die Verbindung zum Agenten noch existiert.
+	 * @return
+	 */
 	String ping();
 
 }

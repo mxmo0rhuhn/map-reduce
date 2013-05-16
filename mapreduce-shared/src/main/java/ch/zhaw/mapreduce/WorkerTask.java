@@ -43,13 +43,6 @@ public interface WorkerTask {
 	String getTaskUuid();
 
 	/**
-	 * Liefert die MapReduceTask ID zu der dieser Task gehoert
-	 * 
-	 * @return die MapReduceTask ID zu der dieser Task gehoert
-	 */
-	String getMapReduceTaskUuid();
-
-	/**
 	 * Gibt den von diesem Worker bearbeiteten Input zurück
 	 * @return
 	 */

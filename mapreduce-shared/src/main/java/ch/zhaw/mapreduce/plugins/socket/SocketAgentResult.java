@@ -5,8 +5,6 @@ import java.util.List;
 
 public interface SocketAgentResult extends Serializable {
 
-	String getMapReduceTaskUuid();
-
 	String getTaskUuid();
 
 	boolean wasSuccessful();

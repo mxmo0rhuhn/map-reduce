@@ -1,14 +1,10 @@
 package ch.zhaw.mapreduce.plugins.socket.impl;
 
-import static org.junit.Assert.*;
-
-import java.util.Arrays;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
 public class MapAgentTaskTest {
-	
-	private final String mrUuid = "mrtUuid";
 	
 	private final String taskUuid = "taskUuid";
 	
@@ -24,8 +20,7 @@ public class MapAgentTaskTest {
 	
 	@Test
 	public void shouldCorrectlyAssignParameters() {
-		MapAgentTask mat = new MapAgentTask(mrUuid, taskUuid, miName, mi, ciName, ci, input);
-		assertEquals(mrUuid, mat.getMapReduceTaskUuid());
+		MapAgentTask mat = new MapAgentTask(taskUuid, miName, mi, ciName, ci, input);
 		assertEquals(taskUuid, mat.getTaskUuid());
 		assertEquals(miName, mat.getMapInstructionName());
 		assertEquals(mi, mat.getMapInstruction());

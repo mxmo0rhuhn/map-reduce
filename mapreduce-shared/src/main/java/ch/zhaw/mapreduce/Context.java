@@ -54,19 +54,4 @@ public interface Context extends MapEmitter, ReduceEmitter {
 	 *             wenn diese Berechnung gestoppt wurde
 	 */
 	void replaceMapResult(List<KeyValuePair> afterCombining) throws ComputationStoppedException;
-
-	/** 
-	 * Dieser Kontext wird nichtmehr gebraucht und kann zerstört werden
-	 */
-	void destroy();
-
-	/**
-	 * @return die BerechungsID / MapReduceTaskUUID zu der dieser Task gehört, der zu diesem Context gehört
-	 */
-	String getMapReduceTaskUUID();
-	
-	/**
-	 * @return die ID vom Task, der zu diesem Context gehört
-	 */
-	String getTaskUUID();
 }

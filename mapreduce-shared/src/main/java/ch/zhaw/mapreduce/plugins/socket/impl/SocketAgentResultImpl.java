@@ -8,32 +8,24 @@ public final class SocketAgentResultImpl implements SocketAgentResult {
 
 	private static final long serialVersionUID = -5674131321896450221L;
 
-	private final String mapReduceTaskUuid;
-
 	private final String taskUuid;
 
 	private final List<?> result;
 
 	private final Exception exception;
 
-	SocketAgentResultImpl(String mapReduceTaskUuid, String taskUuid, Exception exception) {
-		this(mapReduceTaskUuid, taskUuid, null, exception);
+	SocketAgentResultImpl(String taskUuid, Exception exception) {
+		this(taskUuid, null, exception);
 	}
 
-	SocketAgentResultImpl(String mapReduceTaskUuid, String taskUuid, List<?> result) {
-		this(mapReduceTaskUuid, taskUuid, result, null);
+	SocketAgentResultImpl(String taskUuid, List<?> result) {
+		this(taskUuid, result, null);
 	}
 
-	private SocketAgentResultImpl(String mapReduceTaskUuid, String taskUuid, List<?> result, Exception exception) {
-		this.mapReduceTaskUuid = mapReduceTaskUuid;
+	private SocketAgentResultImpl(String taskUuid, List<?> result, Exception exception) {
 		this.taskUuid = taskUuid;
 		this.result = result;
 		this.exception = exception;
-	}
-
-	@Override
-	public String getMapReduceTaskUuid() {
-		return this.mapReduceTaskUuid;
 	}
 
 	@Override

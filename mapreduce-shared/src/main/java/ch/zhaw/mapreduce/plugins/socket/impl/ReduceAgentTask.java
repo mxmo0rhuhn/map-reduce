@@ -17,8 +17,6 @@ public final class ReduceAgentTask implements AgentTask {
 
 	private static final long serialVersionUID = -1795450051047132175L;
 	
-	private final String mapReduceTaskUuid;
-	
 	private final String taskUuid;
 	
 	private final String riName;
@@ -30,22 +28,13 @@ public final class ReduceAgentTask implements AgentTask {
 	private final List<KeyValuePair> values;
 
 	@Inject
-	ReduceAgentTask(String mapReduceTaskUuid, String taskUuid, String riName, byte[] ri, String key,
+	ReduceAgentTask(String taskUuid, String riName, byte[] ri, String key,
 			List<KeyValuePair> values) {
-		this.mapReduceTaskUuid = mapReduceTaskUuid;
 		this.taskUuid = taskUuid;
 		this.riName = riName;
 		this.ri = ri;
 		this.key = key;
 		this.values = values;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public String getMapReduceTaskUuid() {
-		return this.mapReduceTaskUuid;
 	}
 
 	/**

@@ -15,8 +15,6 @@ public final class MapAgentTask implements AgentTask {
 
 	private static final long serialVersionUID = -4656085734200620211L;
 
-	private final String mapReduceTaskUuid;
-
 	private final String taskUuid;
 
 	private final String mapInstructionName;
@@ -35,23 +33,14 @@ public final class MapAgentTask implements AgentTask {
 
 	private final String input;
 
-	MapAgentTask(String mapReduceTaskUuid, String taskUuid, String mapInstructionName, byte[] mapInstruction,
+	MapAgentTask(String taskUuid, String mapInstructionName, byte[] mapInstruction,
 			@Nullable String combinerInstructionName, @Nullable byte[] combinerInstruction, String input) {
-		this.mapReduceTaskUuid = mapReduceTaskUuid;
 		this.taskUuid = taskUuid;
 		this.mapInstructionName = mapInstructionName;
 		this.mapInstruction = mapInstruction;
 		this.combinerInstructionName = combinerInstructionName;
 		this.combinerInstruction = combinerInstruction;
 		this.input = input;
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public String getMapReduceTaskUuid() {
-		return mapReduceTaskUuid;
 	}
 
 	/**

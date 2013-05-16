@@ -21,82 +21,53 @@ public interface Persistence {
 	/**
 	 * Speichert ein Resultat von einer Berechnung.
 	 * 
-	 * @param mrUuid
-	 *            die MapReduceID
 	 * @param taskUuid
 	 *            die ID vom Input für die Berechnung, die zu diesem Resultat geführt hat
 	 * @param key
 	 *            der Schlüssel für diese Berechnung
 	 * @param value
 	 *            der Wert dieser Berechnung
+	 * @return true, wenn das speichern funktioniert hat, sonst false
 	 */
-	void storeMap(String mrUuid, String taskUuid, String key, String value);
+	boolean storeMapResults(String taskUuid, List<KeyValuePair> mapResults);
 
 	/**
 	 * Speichert ein Resultat von einer Berechnung.
 	 * 
-	 * @param mrUuid
-	 *            die MapReduceID
 	 * @param taskUuid
 	 *            die ID vom Input für die Berechnung, die zu diesem Resultat geführt hat
 	 * @param result
 	 *            das Resultat dieser Berechnung
+	 * @return true, wenn das speichern funktioniert hat, sonst false
 	 */
-	void storeReduce(String mrUuid, String taskUuid, String result);
+	boolean storeReduceResults(String taskUuid, List<String> results);
 
 	/**
 	 * Liefert das gespeicherte Resultat einer Reduce-Berechnung (Instruction) für diese MapReduceTaskID und Input-ID.
 	 * 
-	 * @param mrUuid
-	 *            die MapReduceID
 	 * @param taskUuid
 	 *            die ID vom Input für die Berechnung, die zu diesem Resultat geführt hat
 	 * @return das gespeicherte Resultat falls vorhanden, sonst null
 	 */
-	List<String> getReduce(String mrUuid, String taskUuid);
+	List<String> getReduceResults(String taskUuid);
 
 	/**
 	 * Liefert die gespeicherten Resultate einer Map-Berechnung (Instruction) für diese MapReduceTaskID und Input-ID.
 	 * 
-	 * @param mrUuid
-	 *            die MapReduceID
 	 * @param taskUuid
 	 *            die ID vom Input für die Berechnung, die zu diesem Resultat geführt hat
 	 * @return die gespeicherten Resultate falls vorhanden, sonst null
 	 */
-	List<KeyValuePair> getMap(String mrUuid, String taskUuid);
-
-	/**
-	 * Ersetzt das Map-Zswischen-Resultat falls vorhanden. Dies ist notwendig, wenn das Resultat einer Map-Berechnung
-	 * durch die Combiner Instruction zusammengefasst wird.
-	 * 
-	 * @param mrUuid
-	 *            die MapReduceID
-	 * @param taskUuid
-	 *            die ID vom Input für die Berechnung, die zu diesem Resultat geführt hat
-	 * @param afterCombining
-	 *            das kombiniert Resultat der Map-Berechnung.
-	 * @throws IllegalArgumentException
-	 *             falls kein Resultat für diese MapReduceID/inputUuid Kombination existiert
-	 */
-	void replaceMap(String mrUuid, String taskUuid, List<KeyValuePair> afterCombining)
-			throws IllegalArgumentException;
+	List<KeyValuePair> getMapResults(String taskUuid);
 
 	/**
 	 * Löscht das Resultat dieser MapReduce Berechnung für diese Input ID.
 	 * 
-	 * @param mrUuid
-	 *            die MapReduceID
 	 * @param taskUuid
 	 *            die ID vom Input für die Berechnung, die zu diesem Resultat geführt hat
 	 * @throws IllegalArgumentException
 	 *             falls kein Resultat für diese MapReduceID/inputUuid Kombination existiert
 	 */
-	void destroy(String mrUuid, String taskUuid) throws IllegalArgumentException;
-
-	/**
-	 * Löscht alle Resultate für diese MapReduceTaskUuid
-	 */
-	void destroy(String mapReduceTaskUuid);
+	boolean destroy(String taskUuid) throws IllegalArgumentException;
 
 }

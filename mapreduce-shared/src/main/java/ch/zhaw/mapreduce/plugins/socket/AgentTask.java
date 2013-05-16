@@ -13,11 +13,6 @@ import java.io.Serializable;
 public interface AgentTask extends Serializable {
 
 	/**
-	 * Globale Berechungs UUID
-	 */
-	public abstract String getMapReduceTaskUuid();
-
-	/**
 	 * UUID von diesem Task
 	 */
 	public abstract String getTaskUuid();
