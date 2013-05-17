@@ -100,7 +100,6 @@ public class PoolTest {
 
 	@Test
 	public void shouldExecuteWork() throws InterruptedException {
-		final Executor poolExec = Executors.newSingleThreadExecutor();
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
 		Pool p = new Pool(executor, 1, 2, sExec, 1);
 		p.init();
@@ -116,7 +115,7 @@ public class PoolTest {
 				oneOf(task).runTask(ctx);
 				oneOf(ctx).getMapResult(); will(returnValue(null));
 				oneOf(ctx).getReduceResult(); will(returnValue(new ArrayList<String>()));
-				oneOf(persistence).storeReduceResults(with("taskUUID"), with(aNonNull(List.class)));
+				oneOf(persistence).storeReduceResults(with("taskUUID"), with(aNonNull(List.class))); will(returnValue(true));
 			}
 		});
 
@@ -140,7 +139,7 @@ public class PoolTest {
 				oneOf(task).runTask(ctx);
 				oneOf(ctx).getMapResult(); will(returnValue(null));
 				oneOf(ctx).getReduceResult(); will(returnValue(new ArrayList<String>()));
-				oneOf(persistence).storeReduceResults(with("taskUUID"), with(aNonNull(List.class)));
+				oneOf(persistence).storeReduceResults(with("taskUUID"), with(aNonNull(List.class))); will(returnValue(true));
 			}
 		});
 

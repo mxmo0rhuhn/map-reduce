@@ -3,10 +3,8 @@ package ch.zhaw.mapreduce.impl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -16,7 +14,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Provider;
 
@@ -25,7 +22,6 @@ import org.jmock.Sequence;
 import org.jmock.auto.Auto;
 import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnitRuleMockery;
-import org.jmock.lib.concurrent.ExactCommandExecutor;
 import org.jmock.lib.concurrent.Synchroniser;
 import org.junit.Rule;
 import org.junit.Test;
@@ -182,55 +178,6 @@ public class MapWorkerTaskTest {
 		} catch (TimeoutException te) {
 			fail("should return immediately");
 		}
-	}
-
-	@Test
-	public void shouldBeAbleToRerunTests() throws Exception {
-		ExactCommandExecutor threadExec1 = new ExactCommandExecutor(1);
-		ExactCommandExecutor threadExec2 = new ExactCommandExecutor(1);
-		final Pool pool = new Pool(Executors.newSingleThreadExecutor(), 1, 2, Executors.newSingleThreadScheduledExecutor(), 1);
-		final AtomicInteger cnt = new AtomicInteger();
-		pool.init();
-		ThreadWorker worker1 = new ThreadWorker(pool, threadExec1, ctxProvider, pers);
-		pool.donateWorker(worker1);
-		ThreadWorker worker2 = new ThreadWorker(pool, threadExec2, ctxProvider, pers);
-		pool.donateWorker(worker2);
-		final MapWorkerTask task = new MapWorkerTask(inputUUID, pers, new MapInstruction() {
-
-			@Override
-			public void map(MapEmitter emitter, String toDo) {
-				if (cnt.get() == 0) {
-					cnt.incrementAndGet();
-					throw new NullPointerException();
-				} else if (cnt.get() == 1) {
-					// successful
-				} else {
-					throw new NullPointerException();
-				}
-			}
-		}, null, input);
-		this.mockery.checking(new Expectations() {
-			{
-				oneOf(ctxProvider).get(); will(returnValue(ctx));
-				inSequence(events);
-				oneOf(pers).destroy("inputUUID");
-				inSequence(events);
-				oneOf(ctxProvider).get(); will(returnValue(ctx));
-				oneOf(ctx).getMapResult(); will(returnValue(new ArrayList<KeyValuePair>()));
-				oneOf(pers).storeMapResults(with("inputUUID"), with(aNonNull(List.class)));
-				oneOf(ctx).getReduceResult(); will(returnValue(null));
-				inSequence(events);
-				oneOf(ctx).getMapResult(); will(returnValue(new ArrayList<KeyValuePair>()));
-				oneOf(pers).storeMapResults(with("inputUUID"), with(aNonNull(List.class)));
-				oneOf(ctx).getReduceResult(); will(returnValue(null));
-			}
-		});
-		pool.enqueueTask(task);
-		assertTrue(threadExec1.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
-		assertEquals(State.FAILED, task.getCurrentState());
-		pool.enqueueTask(task);
-		assertTrue(threadExec2.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
-		assertEquals(State.COMPLETED, task.getCurrentState());
 	}
 
 	@Test

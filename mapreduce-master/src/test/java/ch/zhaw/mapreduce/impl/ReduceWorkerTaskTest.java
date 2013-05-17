@@ -168,55 +168,6 @@ public class ReduceWorkerTaskTest {
 	}
 
 	@Test
-	public void shouldBeAbleToRerunTests() throws Exception {
-		ExactCommandExecutor threadExec1 = new ExactCommandExecutor(1);
-		ExactCommandExecutor threadExec2 = new ExactCommandExecutor(1);
-		final Pool pool = new Pool(Executors.newSingleThreadExecutor(), 1, 2, Executors.newSingleThreadScheduledExecutor(), 1);
-		final AtomicInteger cnt = new AtomicInteger();
-		pool.init();
-		ThreadWorker worker1 = new ThreadWorker(pool, threadExec1, ctxProvider, pers);
-		pool.donateWorker(worker1);
-		ThreadWorker worker2 = new ThreadWorker(pool, threadExec2, ctxProvider, pers);
-		pool.donateWorker(worker2);
-		final ReduceWorkerTask task = new ReduceWorkerTask(taskUUID, pers, new ReduceInstruction() {
-			
-			@Override
-			public void reduce(ReduceEmitter emitter, String key, Iterator<KeyValuePair> values) {
-				if (cnt.get() == 0) {
-					cnt.incrementAndGet();
-					throw new NullPointerException();
-				} else if (cnt.get() == 1) {
-					// successful
-				} else {
-					throw new NullPointerException();
-				}
-			}
-		}, key, keyVals);
-		this.mockery.checking(new Expectations() {
-			{
-				oneOf(ctxProvider).get(); will(returnValue(ctx));
-				inSequence(events);
-				oneOf(pers).destroy(taskUUID);
-				inSequence(events);
-				oneOf(ctxProvider).get(); will(returnValue(ctx));
-				oneOf(ctx).getReduceResult(); will(returnValue(new ArrayList<String>()));
-				oneOf(pers).storeReduceResults(with(taskUUID), with(aNonNull(List.class)));
-				oneOf(ctx).getMapResult(); will(returnValue(null));
-				inSequence(events);
-				oneOf(ctx).getReduceResult(); will(returnValue(new ArrayList<String>()));
-				oneOf(pers).storeReduceResults(with(taskUUID), with(aNonNull(List.class)));
-				oneOf(ctx).getMapResult(); will(returnValue(null));
-			}
-		});
-		pool.enqueueTask(task);
-		assertTrue(threadExec1.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
-		assertEquals(State.FAILED, task.getCurrentState());
-		pool.enqueueTask(task);
-		assertTrue(threadExec2.waitForExpectedTasks(100, TimeUnit.MILLISECONDS));
-		assertEquals(State.COMPLETED, task.getCurrentState());
-	}
-
-	@Test
 	public void shouldBeEnqueuedAfterSubmissionToPool() throws Exception {
 		final Pool pool = new Pool(Executors.newSingleThreadExecutor(), 1, 2, Executors.newSingleThreadScheduledExecutor(), 1);
 		pool.init();

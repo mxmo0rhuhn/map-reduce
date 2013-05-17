@@ -161,15 +161,13 @@ public final class Master {
 		// reiht für jeden Input - Teil einen MapWorkerTask in den Pool ein
 		while (input.hasNext()) {
 
-			String mapTaskUuid = UUID.randomUUID().toString();
+
 			String todo = input.next();
-			uuidToInputMapping
-					.put(mapTaskUuid, new KeyValuePair<String, String>(mapTaskUuid, todo));
+			MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapInstruction, combinerInstruction, todo);
+			String taskUuid = mapTask.getTaskUuid();
+			uuidToInputMapping.put(taskUuid, new KeyValuePair<String, String>(taskUuid, todo));
 
-			MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapInstruction,
-					combinerInstruction, todo);
-
-			activeTasks.add(new KeyValuePair<String, WorkerTask>(mapTaskUuid, mapTask));
+			activeTasks.add(new KeyValuePair<String, WorkerTask>(taskUuid, mapTask));
 			pool.enqueueTask(mapTask);
 		}
 		return uuidToInputMapping;
@@ -207,9 +205,7 @@ public final class Master {
 			KeyValuePair<String, List<KeyValuePair>> curInput = new KeyValuePair<String, List<KeyValuePair>>(
 					curKeyValuePairs.getKey(), curKeyValuePairs.getValue());
 
-			String reduceTaskUuid = UUID.randomUUID().toString();
-			ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(
-					curInput.getKey(), reduceInstruction, curInput.getValue());
+			ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(curInput.getKey(), reduceInstruction, curInput.getValue());
 
 			activeTasks.add(new KeyValuePair<String, WorkerTask>(curInput.getKey(), reduceTask));
 			pool.enqueueTask(reduceTask);
@@ -346,23 +342,18 @@ public final class Master {
 		case MAP:
 			for (KeyValuePair<String, String> rescheduleTodo : rescheduleInput) {
 
-				MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapInstruction,
-						combinerInstruction, rescheduleTodo.getValue());
+				MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapInstruction, combinerInstruction, rescheduleTodo.getValue());
 
-				activeWorkerTasks.add(new KeyValuePair<String, WorkerTask>(rescheduleTodo.getKey(),
-						mapTask));
+				activeWorkerTasks.add(new KeyValuePair<String, WorkerTask>(rescheduleTodo.getKey(), mapTask));
 				pool.enqueueTask(mapTask);
 			}
 			break;
 		case REDUCE:
 			for (KeyValuePair<String, List<KeyValuePair>> rescheduleTodo : rescheduleInput) {
-				String reduceTaskUuid = UUID.randomUUID().toString();
 
-				ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(
-						rescheduleTodo.getKey(), reduceInstruction, rescheduleTodo.getValue());
+				ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(rescheduleTodo.getKey(), reduceInstruction, rescheduleTodo.getValue());
 
-				activeWorkerTasks.add(new KeyValuePair<String, WorkerTask>(rescheduleTodo.getKey(),
-						reduceTask));
+				activeWorkerTasks.add(new KeyValuePair<String, WorkerTask>(rescheduleTodo.getKey(), reduceTask));
 				pool.enqueueTask(reduceTask);
 			}
 

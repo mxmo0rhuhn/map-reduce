@@ -64,7 +64,7 @@ public class CurrentMapReduceImplementation implements MapReduce {
 		this.combinerInstruction = combinerInstruction;
 		this.shuffleProcessorFactory = shuffleProcessorFactory;
 
-		this.master = currentMRConfig.getInstance(MasterFactory.class).createMaster();
+		this.master = currentMRConfig.getInstance(Master.class);
 		return this;
 	}
 

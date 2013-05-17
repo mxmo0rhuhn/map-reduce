@@ -28,7 +28,7 @@ public class ResultCleanerTaskTest extends AbstractMapReduceMasterSocketTest {
 			oneOf(resCollector).getResultStates();
 			oneOf(iter).next(); will(returnValue(entry));
 			oneOf(entry).getValue(); will(returnValue(state));
-			oneOf(entry).getKey();
+			allowing(entry).getKey();
 			oneOf(iter).remove();
 		}});
 		int availableTtl = 1;
@@ -44,7 +44,7 @@ public class ResultCleanerTaskTest extends AbstractMapReduceMasterSocketTest {
 			oneOf(resCollector).getResultStates();
 			oneOf(iter).next(); will(returnValue(entry));
 			oneOf(entry).getValue(); will(returnValue(state));
-			oneOf(entry).getKey();
+			allowing(entry).getKey();
 		}});
 		int availableTtl = 10000;
 		int requestedTtl = 1;

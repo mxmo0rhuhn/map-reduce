@@ -36,9 +36,9 @@ public class PerformanceTest {
 
 
 		// wie viele Strings sollen erstellt werden
-		int inputs = (int) Math.pow(10, 2);
+		int inputs = (int) Math.pow(1, 2);
 		// wie lang soll jeder einzelne sein?
-		int chunkSize = (int) Math.pow(10, 2);
+		int chunkSize = (int) Math.pow(1, 2);
 
 		long start = System.currentTimeMillis();
 		Map<String, List<String>> results = master.runComputation(mapInstr, null, redInstr, null, generateIterator(inputs, chunkSize));
