@@ -1,6 +1,5 @@
 package ch.zhaw.mapreduce;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
@@ -49,7 +48,7 @@ public class MapReduceConfigTest {
 
 	@Test
 	public void shouldDefineBindingForMaster() {
-		assertNotNull(Guice.createInjector(new MapReduceConfig()).getInstance(MasterFactory.class).createMaster(1, 2, 3));
+		assertNotNull(Guice.createInjector(new MapReduceConfig()).getInstance(Master.class));
 	}
 
 	@Test
@@ -176,11 +175,4 @@ public class MapReduceConfigTest {
 		assertFalse(uuid1.equals(uuid2));
 	}
 
-	@Test
-	public void shouldCreateMasterWithParameters() {
-		Master m = Guice.createInjector(new MapReduceConfig()).getInstance(MasterFactory.class).createMaster(1, 2, 3);
-		assertEquals(1, m.getRescheduleStartPercentage());
-		assertEquals(2, m.getRescheduleEvery());
-		assertEquals(3, m.getWaitTime());
-	}
 }

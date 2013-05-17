@@ -1,9 +1,7 @@
 package ch.zhaw.mapreduce.plugins;
 
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
@@ -27,16 +25,12 @@ public final class Loader {
 		this.plugins = plugins;
 	}
 
-	public List<AgentPlugin> loadPlugins() {
-		if (plugins == null) {
-			LOG.warning("No plugins found");
-			return Collections.emptyList();
-		}
+	public List<AgentPlugin> loadPlugins() throws PluginException {
 		String[] pluginNames = plugins.split(",");
 		return loadClasses(pluginNames);
 	}
 
-	private List<AgentPlugin> loadClasses(String[] pluginNames) {
+	private List<AgentPlugin> loadClasses(String[] pluginNames) throws PluginException {
 		List<AgentPlugin> instances = new LinkedList<AgentPlugin>();
 		for (String pluginName : pluginNames) {
 			AgentPlugin plugin = instantiate(pluginName);
@@ -55,15 +49,14 @@ public final class Loader {
 	 * @param pluginName
 	 * @return
 	 */
-	private AgentPlugin instantiate(String pluginName) {
+	private AgentPlugin instantiate(String pluginName) throws PluginException {
 		String baseName = Loader.class.getPackage().getName();
 		String className = String.format("%s.%s.%sAgentPlugin", baseName, pluginName.toLowerCase(), pluginName);
 		try {
 			Class<AgentPlugin> klass = (Class<AgentPlugin>) Class.forName(className);
 			return klass.newInstance();
 		} catch (Exception e) {
-			LOG.log(Level.SEVERE, "Failed to load Plugin " + className, e);
-			return null;
+			throw new PluginException(e);
 		}
 	}
 }
