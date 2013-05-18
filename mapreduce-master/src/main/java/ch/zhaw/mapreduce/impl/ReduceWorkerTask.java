@@ -40,9 +40,10 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 	 * Der zu reduzierende Input
 	 */
 	private final List<KeyValuePair> values;
-
+	
 	@Inject
-	public ReduceWorkerTask(@Named("taskUuid") String taskUuid, Persistence persistence,
+	public ReduceWorkerTask(@Named("taskUuid") String taskUuid,
+			@Assisted Persistence persistence,
 			@Assisted ReduceInstruction reduceInstruction,
 			@Assisted("key") String key,
 			@Assisted List<KeyValuePair> inputs) {
