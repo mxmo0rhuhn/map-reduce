@@ -38,7 +38,7 @@ public class MapWorkerTask extends AbstractWorkerTask {
 
 	@Inject
 	public MapWorkerTask(@Named("taskUuid") String taskUuid, 
-			Persistence persistence,
+			@Assisted Persistence persistence,
 			@Assisted MapInstruction mapInstruction,
 			@Assisted @Nullable CombinerInstruction combinerInstruction,
 			@Assisted("input") String input) {
