@@ -1,5 +1,6 @@
 package ch.zhaw.mapreduce.plugins.thread;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
@@ -16,6 +17,8 @@ import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
+import ch.zhaw.mapreduce.impl.MapWorkerTask;
+import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 
 import com.google.inject.name.Named;
 
@@ -106,13 +109,20 @@ public class ThreadWorker implements Worker {
 	}
 	
 	void completeTask(WorkerTask task, Context ctx) {
-		List<KeyValuePair> mapRes = ctx.getMapResult();
-		if (mapRes != null) {
+		if (task instanceof MapWorkerTask) {
+			List<KeyValuePair> mapRes = ctx.getMapResult();
+			if (mapRes == null) {
+				mapRes = Collections.emptyList();
+			}
 			task.successful(mapRes);
-		}
-		List<String> redRes = ctx.getReduceResult();
-		if (redRes != null) {
+		} else if (task instanceof ReduceWorkerTask) {
+			List<String> redRes = ctx.getReduceResult();
+			if (redRes == null) {
+				redRes = Collections.emptyList();
+			}
 			task.successful(redRes);
+		} else {
+			throw new IllegalArgumentException("Unrecognized WorkerTask: " + task.getClass().getName());
 		}
 	}
 }

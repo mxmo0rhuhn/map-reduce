@@ -5,8 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -100,7 +98,6 @@ public class PoolTest {
 
 	@Test
 	public void shouldExecuteWork() throws InterruptedException {
-		final List<String> redRes = Arrays.asList(new String[]{"res1", "res2"});
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
 		Pool p = new Pool(executor, 1, 2, sExec, 1);
 		p.init();
@@ -114,10 +111,8 @@ public class PoolTest {
 				oneOf(ctxProvider).get(); will(returnValue(ctx));
 				inSequence(events);
 				oneOf(task).started();
-				oneOf(task).runTask(ctx);
-				oneOf(ctx).getMapResult(); will(returnValue(null));
-				oneOf(ctx).getReduceResult(); will(returnValue(redRes));
-				oneOf(task).successful(with(redRes));
+				oneOf(task).runTask(ctx); will(throwException(new RuntimeException()));
+				oneOf(task).fail();
 			}
 		});
 
