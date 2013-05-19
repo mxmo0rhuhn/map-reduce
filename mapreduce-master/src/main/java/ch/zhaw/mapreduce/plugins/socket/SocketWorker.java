@@ -116,7 +116,7 @@ public class SocketWorker implements Worker, SocketResultObserver {
 					task.successful(result.getResult());
 				} else {
 					LOG.log(Level.WARNING, "Task has failed on Agent", result.getException());
-					task.failed();
+					task.fail();
 				}
 				this.currentTask = null;
 			} else {
@@ -169,7 +169,7 @@ public class SocketWorker implements Worker, SocketResultObserver {
 							workerTask.successful(result.getResult());
 						} else {
 							LOG.log(Level.WARNING, "Task Failed on Agent", result.getException());
-							workerTask.failed();
+							workerTask.fail();
 						}
 						pool.workerIsFinished(SocketWorker.this);
 						// TODO gefährlich und wahrscheinlich falsch. unklar definierter zeitpunkt um in den pool zurück
@@ -182,7 +182,7 @@ public class SocketWorker implements Worker, SocketResultObserver {
 					break;
 				case REJECTED:
 					LOG.warning("Task Rejected by SocketAgent: " + state.msg());
-					workerTask.failed();
+					workerTask.fail();
 					pool.workerIsFinished(SocketWorker.this);
 					break;
 				default:

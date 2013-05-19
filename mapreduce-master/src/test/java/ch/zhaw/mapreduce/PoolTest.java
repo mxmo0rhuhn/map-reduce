@@ -5,7 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -100,10 +100,11 @@ public class PoolTest {
 
 	@Test
 	public void shouldExecuteWork() throws InterruptedException {
+		final List<String> redRes = Arrays.asList(new String[]{"res1", "res2"});
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
 		Pool p = new Pool(executor, 1, 2, sExec, 1);
 		p.init();
-		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxProvider, persistence);
+		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxProvider);
 		p.donateWorker(worker);
 		this.mockery.checking(new Expectations() {
 			{
@@ -112,41 +113,26 @@ public class PoolTest {
 				oneOf(task).getTaskUuid(); will(returnValue("taskUUID"));
 				oneOf(ctxProvider).get(); will(returnValue(ctx));
 				inSequence(events);
+				oneOf(task).started();
 				oneOf(task).runTask(ctx);
 				oneOf(ctx).getMapResult(); will(returnValue(null));
-				oneOf(ctx).getReduceResult(); will(returnValue(new ArrayList<String>()));
-				oneOf(persistence).storeReduceResults(with("taskUUID"), with(aNonNull(List.class))); will(returnValue(true));
+				oneOf(ctx).getReduceResult(); will(returnValue(redRes));
+				oneOf(task).successful(with(redRes));
 			}
 		});
 
 		p.enqueueTask(task);
 		assertTrue(threadExec.waitForExpectedTasks(300, TimeUnit.MILLISECONDS));
 	}
-
+	
 	@Test
-	public void workerShouldBeFreeAgainAfterwards() throws InterruptedException {
-		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
-		Pool p = new Pool(executor, 1, 2, sExec, 1);
-		p.init();
-		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxProvider, persistence);
-		p.donateWorker(worker);
-		this.mockery.checking(new Expectations() {
-			{
-				oneOf(task).enqueued();
-				inSequence(events);
-				oneOf(task).getTaskUuid(); will(returnValue("taskUUID"));
-				oneOf(ctxProvider).get(); will(returnValue(ctx));
-				oneOf(task).runTask(ctx);
-				oneOf(ctx).getMapResult(); will(returnValue(null));
-				oneOf(ctx).getReduceResult(); will(returnValue(new ArrayList<String>()));
-				oneOf(persistence).storeReduceResults(with("taskUUID"), with(aNonNull(List.class))); will(returnValue(true));
-			}
-		});
-
+	public void shouldBeFreeAgain() {
+		Pool p = new Pool(executor, 1, 2, sExec, 1); p.init();
+		assertEquals(0, p.getFreeWorkers());
+		assertEquals(0, p.getCurrentPoolSize());
+		p.workerIsFinished(worker);
 		assertEquals(1, p.getFreeWorkers());
-		p.enqueueTask(task);
-		assertTrue(threadExec.waitForExpectedTasks(300, TimeUnit.MILLISECONDS));
-		assertEquals(1, p.getFreeWorkers());
+		assertEquals(1, p.getCurrentPoolSize());
 	}
 
 	@Test

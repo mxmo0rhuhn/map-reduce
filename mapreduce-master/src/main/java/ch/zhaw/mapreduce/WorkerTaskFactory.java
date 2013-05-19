@@ -45,8 +45,8 @@ public interface WorkerTaskFactory {
 	 *            die zu verwendenden ReduceInstruction
 	 * @return eine neue Instanz eines ReduceWorkerTask
 	 */
-	ReduceWorkerTask createReduceWorkerTask(@Assisted("key") String key,
-											ReduceInstruction reduceInstr,
+	ReduceWorkerTask createReduceWorkerTask( ReduceInstruction reduceInstr,
+											@Assisted("key") String key,
 											List<KeyValuePair> toDo,
 											Persistence persistence);
 }

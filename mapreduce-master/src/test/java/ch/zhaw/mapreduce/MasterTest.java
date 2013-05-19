@@ -27,7 +27,7 @@ public class MasterTest {
 	public void shouldCreateMaster() throws Exception {
 		Pool pool = new Pool(Executors.newScheduledThreadPool(1), 1, 2, Executors.newSingleThreadScheduledExecutor(), 1000);
 		pool.init();
-		Master m = new Master(pool, wtFactory, sProvider, pProvider, Executors.newSingleThreadScheduledExecutor(), 1L, 1, 2, 3);
+		//Master m = new Master(pool, wtFactory, sProvider, pProvider, Executors.newSingleThreadScheduledExecutor(), 1L, 1, 2, 3);
 	}
 
 }

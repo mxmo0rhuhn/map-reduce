@@ -24,8 +24,6 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 
 	private static final Logger LOG = Logger.getLogger(ReduceWorkerTask.class.getName());
 
-	private final Persistence persistence;
-
 	/**
 	 * Fuer diesen Key wollen wir reduzieren
 	 */
@@ -40,16 +38,13 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 	 * Der zu reduzierende Input
 	 */
 	private final List<KeyValuePair> values;
-	
+
 	@Inject
-	public ReduceWorkerTask(@Named("taskUuid") String taskUuid,
-			@Assisted Persistence persistence,
-			@Assisted ReduceInstruction reduceInstruction,
-			@Assisted("key") String key,
+	public ReduceWorkerTask(@Named("taskUuid") String taskUuid, @Assisted Persistence persistence,
+			@Assisted ReduceInstruction reduceInstruction, @Assisted("key") String key,
 			@Assisted List<KeyValuePair> inputs) {
-		super(taskUuid);
+		super(taskUuid, persistence);
 		this.key = key;
-		this.persistence = persistence;
 		this.reduceInstruction = reduceInstruction;
 		this.values = inputs;
 	}
@@ -57,16 +52,7 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 	/** {@inheritDoc} */
 	@Override
 	public void runTask(Context ctx) {
-		started();
-
-		try {
-			this.reduceInstruction.reduce(ctx, key, values.iterator());
-			completed();
-		} catch (Exception e) {
-			LOG.log(Level.WARNING, "Instruction threw Exception", e);
-			failed();
-			this.persistence.destroy(getTaskUuid());
-		}
+		this.reduceInstruction.reduce(ctx, key, values.iterator());
 	}
 
 	/**
@@ -76,10 +62,6 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 	 */
 	public ReduceInstruction getReduceInstruction() {
 		return this.reduceInstruction;
-	}
-
-	public List<String> getResults() {
-		return this.persistence.getReduceResults(getTaskUuid());
 	}
 
 	@Override
@@ -93,17 +75,18 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 
 	@Override
 	public void abort() {
-		this.persistence.destroy(getTaskUuid());
+		this.persistence.destroyReduce(getTaskUuid());
 		aborted();
 	}
 
 	@Override
 	public void successful(List<?> result) {
 		if (result != null && !result.isEmpty()) {
-			List<String> typedResult;
 			try {
-				typedResult = (List<String>) result;
-				this.persistence.storeReduceResults(getTaskUuid(), typedResult);
+				@SuppressWarnings("unchecked")
+				// try-catch
+				List<String> typedResult = (List<String>) result;
+				this.persistence.storeReduceResults(getTaskUuid(), getInput(), typedResult);
 				completed();
 			} catch (ClassCastException e) {
 				LOG.log(Level.SEVERE, "Wrong type for MapTask", e);
@@ -111,6 +94,12 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 				return;
 			}
 		}
+	}
+
+	@Override
+	public void fail() {
+		failed();
+		this.persistence.destroyReduce(getTaskUuid());
 	}
 
 }

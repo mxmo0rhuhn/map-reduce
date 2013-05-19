@@ -1,6 +1,7 @@
 package ch.zhaw.mapreduce;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 
@@ -40,25 +41,21 @@ public interface Persistence {
 	 *            das Resultat dieser Berechnung
 	 * @return true, wenn das speichern funktioniert hat, sonst false
 	 */
-	boolean storeReduceResults(String taskUuid, List<String> results);
+	boolean storeReduceResults(String taskUuid, String key, List<String> results);
 
 	/**
 	 * Liefert das gespeicherte Resultat einer Reduce-Berechnung (Instruction) für diese MapReduceTaskID und Input-ID.
 	 * 
-	 * @param taskUuid
-	 *            die ID vom Input für die Berechnung, die zu diesem Resultat geführt hat
 	 * @return das gespeicherte Resultat falls vorhanden, sonst null
 	 */
-	List<String> getReduceResults(String taskUuid);
+	Map<String, List<String>> getReduceResults();
 
 	/**
 	 * Liefert die gespeicherten Resultate einer Map-Berechnung (Instruction) für diese MapReduceTaskID und Input-ID.
 	 * 
-	 * @param taskUuid
-	 *            die ID vom Input für die Berechnung, die zu diesem Resultat geführt hat
 	 * @return die gespeicherten Resultate falls vorhanden, sonst null
 	 */
-	List<KeyValuePair> getMapResults(String taskUuid);
+	List<KeyValuePair> getMapResults();
 
 	/**
 	 * Löscht das Resultat dieser MapReduce Berechnung für diese Input ID.
@@ -68,6 +65,21 @@ public interface Persistence {
 	 * @throws IllegalArgumentException
 	 *             falls kein Resultat für diese MapReduceID/inputUuid Kombination existiert
 	 */
-	boolean destroy(String taskUuid) throws IllegalArgumentException;
+	boolean destroyMap(String taskUuid);
+
+	/**
+	 * Löscht das Resultat dieser MapReduce Berechnung für diese Input ID.
+	 * 
+	 * @param taskUuid
+	 *            die ID vom Input für die Berechnung, die zu diesem Resultat geführt hat
+	 * @throws IllegalArgumentException
+	 *             falls kein Resultat für diese MapReduceID/inputUuid Kombination existiert
+	 */
+	boolean destroyReduce(String taskUuid);
+
+	/**
+	 * Löscht alle gespeicherten Resultate.
+	 */
+	boolean suicide();
 
 }

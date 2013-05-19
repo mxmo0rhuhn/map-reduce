@@ -57,19 +57,16 @@ public class ThreadWorkerTest {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
 		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, sExec, 1);
 		p.init();
-		final ThreadWorker worker = new ThreadWorker(p, exec, ctxProvider, pers);
+		final ThreadWorker worker = new ThreadWorker(p, exec, ctxProvider);
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(task).getTaskUuid();
-				will(returnValue("taskUuid"));
-				oneOf(ctxProvider).get();
-				will(returnValue(ctx));
+				oneOf(task).getTaskUuid(); will(returnValue("taskUuid"));
+				oneOf(task).started();
+				oneOf(ctxProvider).get(); will(returnValue(ctx));
 				oneOf(task).runTask(ctx);
-				oneOf(ctx).getMapResult();
-				will(returnValue(new ArrayList<KeyValuePair>()));
-				oneOf(pers).storeMapResults(with("taskUuid"), with(aNonNull(List.class))); will(returnValue(true));
-				oneOf(ctx).getReduceResult();
-				will(returnValue(null));
+				oneOf(ctx).getMapResult(); will(returnValue(new ArrayList<KeyValuePair>()));
+				oneOf(ctx).getReduceResult(); will(returnValue(null));
+				oneOf(task).successful(with(aNonNull(List.class)));
 			}
 		});
 		worker.executeTask(task);
@@ -82,19 +79,16 @@ public class ThreadWorkerTest {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
 		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, sExec, 1);
 		p.init();
-		final ThreadWorker worker = new ThreadWorker(p, exec, ctxProvider, pers);
+		final ThreadWorker worker = new ThreadWorker(p, exec, ctxProvider);
 		this.mockery.checking(new Expectations() {
 			{
-				oneOf(task).getTaskUuid();
-				will(returnValue("taskUuid"));
-				oneOf(ctxProvider).get();
-				will(returnValue(ctx));
+				oneOf(task).getTaskUuid(); will(returnValue("taskUuid"));
+				oneOf(task).started();
+				oneOf(ctxProvider).get(); will(returnValue(ctx));
 				oneOf(task).runTask(ctx);
-				oneOf(ctx).getMapResult();
-				will(returnValue(null));
-				oneOf(ctx).getReduceResult();
-				will(returnValue(new ArrayList<String>()));
-				oneOf(pers).storeReduceResults(with("taskUuid"), with(aNonNull(List.class))); will(returnValue(true));
+				oneOf(ctx).getMapResult(); will(returnValue(null));
+				oneOf(ctx).getReduceResult(); will(returnValue(new ArrayList<String>()));
+				oneOf(task).successful(with(aNonNull(List.class)));
 			}
 		});
 		worker.executeTask(task);
@@ -107,13 +101,14 @@ public class ThreadWorkerTest {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
 		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, sExec, 1);
 		p.init();
-		final ThreadWorker worker = new ThreadWorker(p, exec, ctxProvider, pers);
+		final ThreadWorker worker = new ThreadWorker(p, exec, ctxProvider);
 		this.mockery.checking(new Expectations() {
 			{
 				oneOf(task).getTaskUuid(); will(returnValue("taskUuid"));
+				oneOf(task).started();
 				oneOf(ctxProvider).get(); will(returnValue(ctx));
 				oneOf(task).runTask(ctx); will(throwException(new RuntimeException()));
-				oneOf(task).failed();
+				oneOf(task).fail();
 			}
 		});
 		worker.executeTask(task);

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import ch.zhaw.mapreduce.KeyValuePair;
@@ -25,8 +26,8 @@ import com.google.inject.Injector;
 public class PerformanceTest {
 
 	@Test
+	@Ignore
 	public void countRandomCharacters() throws Exception {
-		System.setProperty("mrplugins", "Thread");
 		Injector injector = Guice.createInjector(new MapReduceConfig());
 		Master master = injector.getInstance(Master.class);
 		Loader pluginLoader = injector.getInstance(Loader.class);
@@ -36,13 +37,13 @@ public class PerformanceTest {
 
 
 		// wie viele Strings sollen erstellt werden
-		int inputs = (int) Math.pow(1, 2);
+		int inputs = (int) Math.pow(10, 2);
 		// wie lang soll jeder einzelne sein?
-		int chunkSize = (int) Math.pow(1, 2);
+		int chunkSize = (int) Math.pow(10, 2);
 
-		long start = System.currentTimeMillis();
+		// long start = System.currentTimeMillis();
 		Map<String, List<String>> results = master.runComputation(mapInstr, null, redInstr, null, generateIterator(inputs, chunkSize));
-		long time = System.currentTimeMillis() - start;
+		//long time = System.currentTimeMillis() - start;
 		// System.out.println("Time: " + time /*+ ", Results: " + results*/);
 		int sum = 0;
 		for (Map.Entry<String, List<String>> entry : results.entrySet()) {

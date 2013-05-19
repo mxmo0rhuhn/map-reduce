@@ -115,32 +115,6 @@ public class MapWorkerTaskTest {
 	}
 
 	@Test
-	public void shouldSetStateToFailedOnException() {
-		final MapWorkerTask task = new MapWorkerTask(inputUUID, pers, mapInstr, combInstr, input);
-		this.mockery.checking(new Expectations() {
-			{
-				oneOf(mapInstr).map(ctx, input);
-				will(throwException(new NullPointerException()));
-				oneOf(pers).destroy(inputUUID);
-			}
-		});
-		task.runTask(ctx);
-		assertEquals(State.FAILED, task.getCurrentState());
-	}
-
-	@Test
-	public void shouldSetStateToCompletedOnSuccess() {
-		final MapWorkerTask task = new MapWorkerTask(inputUUID, pers, mapInstr, null, input);
-		this.mockery.checking(new Expectations() {
-			{
-				oneOf(mapInstr).map(ctx, input);
-			}
-		});
-		task.runTask(ctx);
-		assertEquals(State.COMPLETED, task.getCurrentState());
-	}
-
-	@Test
 	public void shouldSetStateToInitiatedInitially() {
 		MapWorkerTask task = new MapWorkerTask(inputUUID, pers, mapInstr, combInstr, input);
 		assertEquals(State.INITIATED, task.getCurrentState());
@@ -148,12 +122,11 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldBeInProgressWhileRunning() throws InterruptedException, BrokenBarrierException {
-		ExecutorService poolExec = Executors.newSingleThreadExecutor();
 		final CyclicBarrier barrier = new CyclicBarrier(2);
 		ExecutorService taskExec = Executors.newSingleThreadExecutor();
 		final Pool pool = new Pool(Executors.newSingleThreadExecutor(), 1, 2, Executors.newSingleThreadScheduledExecutor(), 1);
 		pool.init();
-		ThreadWorker worker = new ThreadWorker(pool, taskExec, ctxProvider, pers);
+		ThreadWorker worker = new ThreadWorker(pool, taskExec, ctxProvider);
 		pool.donateWorker(worker);
 		final MapWorkerTask task = new MapWorkerTask(inputUUID, pers, new MapInstruction() {
 

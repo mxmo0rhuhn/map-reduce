@@ -13,7 +13,6 @@ import javax.inject.Provider;
 
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
-import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
 import ch.zhaw.mapreduce.WorkerTask;
@@ -42,8 +41,6 @@ public class ThreadWorker implements Worker {
 
 	private final Provider<Context> ctxProvider;
 
-	private final Persistence persistence;
-
 	/**
 	 * Moegliche Tasks, die gerade von diesem Worker ausgefuehrt werden.
 	 * 
@@ -59,12 +56,10 @@ public class ThreadWorker implements Worker {
 	 * @param executor
 	 */
 	@Inject
-	public ThreadWorker(Pool pool, @Named("ThreadWorker") ExecutorService executor, Provider<Context> ctxProvider,
-			Persistence persistence) {
+	public ThreadWorker(Pool pool, @Named("ThreadWorker") ExecutorService executor, Provider<Context> ctxProvider) {
 		this.pool = pool;
 		this.executor = executor;
 		this.ctxProvider = ctxProvider;
-		this.persistence = persistence;
 	}
 
 	/**
@@ -77,13 +72,14 @@ public class ThreadWorker implements Worker {
 			@Override
 			public Void call() {
 				LOG.entering(getClass().getName(), "executeTask.call", task);
+				task.started();
 				try {
 					Context ctx = ctxProvider.get();
 					task.runTask(ctx);
-					persistContext(task, taskUuid, ctx);
+					completeTask(task, ctx);
 				} catch (Exception e) {
 					LOG.log(Level.SEVERE, "Failed to run Task", e);
-					task.failed();
+					task.fail();
 				}
 				pool.workerIsFinished(ThreadWorker.this);
 				LOG.exiting(getClass().getName(), "executeTask.call");
@@ -109,18 +105,14 @@ public class ThreadWorker implements Worker {
 		}
 	}
 	
-	void persistContext(WorkerTask task, String taskUuid, Context ctx) {
+	void completeTask(WorkerTask task, Context ctx) {
 		List<KeyValuePair> mapRes = ctx.getMapResult();
 		if (mapRes != null) {
-			if(!persistence.storeMapResults(taskUuid, mapRes)) {
-				task.failed();
-			}
+			task.successful(mapRes);
 		}
 		List<String> redRes = ctx.getReduceResult();
 		if (redRes != null) {
-			if(!persistence.storeReduceResults(taskUuid, redRes)) {
-				task.failed();
-			}
+			task.successful(redRes);
 		}
 	}
 }

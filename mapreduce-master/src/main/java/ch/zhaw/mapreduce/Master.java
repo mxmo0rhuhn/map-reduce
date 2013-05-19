@@ -1,19 +1,16 @@
 package ch.zhaw.mapreduce;
 
-import java.util.Collection;
-
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.PostConstruct;
@@ -26,27 +23,10 @@ import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 
 public final class Master {
 
-	public enum State {
-		NONE, MAP, SHUFFLE, REDUCE
-	}
+	private static final Logger LOG = Logger.getLogger(Master.class.getName());
 
-	private State curState = State.NONE;
+	private final Shuffler shuffler;
 
-	private MapInstruction mapInstruction;
-	private CombinerInstruction combinerInstruction;
-	private ReduceInstruction reduceInstruction;
-
-	// Prozentsatz der Aufgaben, die noch offen sein müssen bis rescheduled wird
-	private final long rescheduleStartPercentage;
-	// Alle n Warte-Durchläufe wird rescheduled
-	private final long rescheduleEvery;
-	// Wartezeit in millisekunden bis in einem Durchlauf wieder die Worker angefragt werden etc
-	private final long waitTime;
-
-	private Logger logger = Logger.getLogger(Master.class.getName());
-
-	private final Provider<Shuffler> shufflerProvider;
-	
 	private final Provider<Persistence> persistenceProvider;
 
 	private final ScheduledExecutorService supervisorService;
@@ -57,77 +37,16 @@ public final class Master {
 	private volatile int currentTaskPercentage;
 
 	@Inject
-	Master(Pool pool, WorkerTaskFactory workerTaskFactory, Provider<Shuffler> shufflerProvider, Provider<Persistence> persistenceProvider,
+	Master(Pool pool, WorkerTaskFactory workerTaskFactory, Shuffler shuffler,
+			Provider<Persistence> persistenceProvider,
 			@Named("supervisorScheduler") ScheduledExecutorService supervisorService,
-			@Named("statisticsPrinterTimeout") long statisticsTimeout,
-			@Named("rescheduleStartPercentage") long rescheduleStartPercentage,
-			@Named("rescheduleEvery") long rescheduleEvery, @Named("waitTime") long waitTime) {
+			@Named("statisticsPrinterTimeout") long statisticsTimeout) {
 		this.pool = pool;
 		this.workerTaskFactory = workerTaskFactory;
-		this.shufflerProvider = shufflerProvider;
+		this.shuffler = shuffler;
 		this.persistenceProvider = persistenceProvider;
 		this.supervisorService = supervisorService;
 		this.statisticsPrintTimeout = statisticsTimeout;
-
-		this.rescheduleStartPercentage = rescheduleStartPercentage;
-		this.rescheduleEvery = rescheduleEvery;
-		this.waitTime = waitTime;
-	}
-
-	public Map<String, List<String>> runComputation(final MapInstruction mapInstruction,
-			final CombinerInstruction combinerInstruction,
-			final ReduceInstruction reduceInstruction,
-			ShuffleProcessorFactory shuffleProcessorFactory, Iterator<String> input)
-			throws InterruptedException {
-		this.mapInstruction = mapInstruction;
-		this.combinerInstruction = combinerInstruction;
-		this.reduceInstruction = reduceInstruction;
-		
-		// für sämtliche tasks einer berechnung muss die gleiche persistence verwendet werden!
-		Persistence pers = this.persistenceProvider.get();
-
-		// Alle gerade in der ausführung befindlichen Worker Tasks
-		Set<KeyValuePair<String, WorkerTask>> activeTasks = new LinkedHashSet<KeyValuePair<String, WorkerTask>>();
-
-		// MAP
-		// Alle derzeitigen aufgaben die ausgeführt werden
-		logger.info("MAP started");
-		curState = State.MAP;
-		Map<String, KeyValuePair> mapTasks = runMap(mapInstruction, combinerInstruction, input,
-				activeTasks, pers);
-		logger.info("MAP " + mapTasks.size() + " tasks enqueued");
-		Set<WorkerTask> mapResults = waitForWorkers(activeTasks, mapTasks, pers);
-		logger.info("MAP done");
-
-		// SHUFFLE
-		logger.info("SHUFFLE started");
-		curState = State.SHUFFLE;
-		Shuffler s = createShuffler(mapResults);
-		logger.info("SHUFFLE done");
-
-		if (shuffleProcessorFactory != null) {
-			executorPool.execute(shuffleProcessorFactory.getNewRunnable(s.getResults()));
-		}
-
-		// REDUCE
-		logger.info("REDUCE started");
-		curState = State.REDUCE;
-		Map<String, KeyValuePair> reduceInputs = runReduce(reduceInstruction, s.getResults(),
-				activeTasks, pers);
-		logger.info("REDUCE " + reduceInputs.size() + " tasks enqueued");
-		Set<WorkerTask> reduceResults = waitForWorkers(activeTasks, reduceInputs, pers);
-		logger.info("REDUCE done");
-
-		// Collecting results
-		logger.info("Collecting results started");
-		curState = State.NONE;
-		Map<String, List<String>> results = collectResults(reduceResults);
-		logger.info("Collected " + results.size() + " results");
-
-		// TODO wenn die persistence einen scope von einer berechnung haette, koennte man hier
-		// einfach die persistence
-		// entfernen. sonst sammeln wir da momentan alle resultate..
-		return results;
 	}
 
 	@PostConstruct
@@ -135,242 +54,169 @@ public final class Master {
 		this.supervisorService.scheduleAtFixedRate((new Runnable() {
 			@Override
 			public void run() {
-				logger.info("Master: " + currentTaskPercentage + " % Tasks processed");
+				LOG.info("Master: " + currentTaskPercentage + " % Tasks processed");
 			}
 		}), statisticsPrintTimeout, statisticsPrintTimeout, TimeUnit.MILLISECONDS);
 	}
 
-	/**
-	 * Erstellt für jeden Teil des Inputs eine UUID und ein Mapping auf den input und führt danach
-	 * jeweils einen WorkerTask mit diesem input aus
-	 * 
-	 * @param mapInstruction
-	 *            die Map Anweisung die berechnet werden soll
-	 * @param combinerInstruction
-	 *            ggf die Combine Instruction, die vor der Rückgabe des Ergebnisses ausgeführt
-	 *            werden soll
-	 * @param input
-	 *            iterator über alle Input Teile
-	 * @param activeTasks
-	 *            eine Liste in der alle derzeit aktiven Tasks abgelegt sind
-	 * @return Ein Mapping von UUID auf ein KeyValue Pair UUID und zugehöriger Input
-	 * @throws InterruptedException
-	 */
-	Map<String, KeyValuePair> runMap(MapInstruction mapInstruction,
-			CombinerInstruction combinerInstruction, Iterator<String> input,
-			Set<KeyValuePair<String, WorkerTask>> activeTasks, Persistence pers) throws InterruptedException {
+	public Map<String, List<String>> runComputation(final MapInstruction mapInstruction,
+			final CombinerInstruction combinerInstruction, final ReduceInstruction reduceInstruction,
+			ShuffleProcessorFactory afterShuffleHook, Iterator<String> inputs) throws InterruptedException {
 
-		Map<String, KeyValuePair> uuidToInputMapping = new LinkedHashMap<String, KeyValuePair>();
+		// für sämtliche tasks einer berechnung muss die gleiche persistence verwendet werden!
+		Persistence pers = this.persistenceProvider.get();
 
-		// reiht für jeden Input - Teil einen MapWorkerTask in den Pool ein
-		while (input.hasNext()) {
+		LOG.info("Start Triggering Map Tasks");
+		List<MapWorkerTask> mapTasks = triggerMapTasks(mapInstruction, combinerInstruction, inputs, pers);
+		LOG.info("Done Triggering Map Tasks");
 
+		LOG.info("Start Joining and Rescheduling Map Tasks");
+		joinAndRescheduleMap(mapTasks);
+		LOG.info("Done Joining and Rescheduling Map Tasks");
 
-			String todo = input.next();
-			MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapInstruction, combinerInstruction, todo, pers);
-			String taskUuid = mapTask.getTaskUuid();
-			uuidToInputMapping.put(taskUuid, new KeyValuePair<String, String>(taskUuid, todo));
+		LOG.info("Retrieve all Map Results from Persistence");
+		List<KeyValuePair> mapResults = pers.getMapResults();
 
-			activeTasks.add(new KeyValuePair<String, WorkerTask>(taskUuid, mapTask));
-			pool.enqueueTask(mapTask);
+		LOG.info("Shuffle all Map Results");
+		Map<String, List<KeyValuePair>> shuffledResults = shuffler.shuffle(mapResults);
+		LOG.info("Done shuffling Map Results");
+
+		if (afterShuffleHook != null) {
+			LOG.info("Running AfterShuffleHook with Exector");
+			executorPool.execute(afterShuffleHook.getNewRunnable(shuffledResults.entrySet().iterator()));
+		} else {
+			LOG.info("No AfterShuffleHook");
 		}
-		return uuidToInputMapping;
-	}
 
-	Shuffler createShuffler(Collection<WorkerTask> mapResults) {
-		Shuffler s = shufflerProvider.get();
-		for (WorkerTask task : mapResults) {
-			MapWorkerTask mapTask = (MapWorkerTask) task;
-			for (KeyValuePair<String, String> curKeyValuePair : mapTask.getResults()) {
-				s.put(curKeyValuePair.getKey(), curKeyValuePair.getValue());
-			}
-		}
-		return s;
-	}
+		LOG.info("Start Triggering Reduce Tasks");
+		List<ReduceWorkerTask> reduceTasks = triggerReduceTasks(reduceInstruction, shuffledResults, pers);
+		LOG.info("Done Triggering Reduce Tasks");
 
-	/**
-	 * 
-	 * @param reduceInstruction
-	 * @param shuffleResults
-	 * @param activeTasks
-	 *            alle gestarteten reduce Tasks
-	 * @return Alle Inputs
-	 * @throws InterruptedException
-	 */
-	Map<String, KeyValuePair> runReduce(ReduceInstruction reduceInstruction,
-			Iterator<Map.Entry<String, List<KeyValuePair>>> shuffleResults,
-			Set<KeyValuePair<String, WorkerTask>> activeTasks, Persistence pers) throws InterruptedException {
+		LOG.info("Start Joining and Rescheduling Reduce Tasks");
+		joinAndRescheduleReduce(reduceTasks);
+		LOG.info("Done Joining and Rescheduling Reduce Tasks");
 
-		Map<String, KeyValuePair> reduceToUuid = new LinkedHashMap<String, KeyValuePair>();
+		LOG.info("Retrieve all Reduce Results from Persistence");
+		Map<String, List<String>> results = pers.getReduceResults();
 
-		// reiht für jeden Input - Teil einen MapWorkerTask in den Pool ein
-		while (shuffleResults.hasNext()) {
-			Map.Entry<String, List<KeyValuePair>> curKeyValuePairs = shuffleResults.next();
-			KeyValuePair<String, List<KeyValuePair>> curInput = new KeyValuePair<String, List<KeyValuePair>>(
-					curKeyValuePairs.getKey(), curKeyValuePairs.getValue());
+		LOG.info("Kill Persistence");
+		pers.suicide();
 
-			ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(curInput.getKey(), reduceInstruction, curInput.getValue(), pers);
-
-			activeTasks.add(new KeyValuePair<String, WorkerTask>(curInput.getKey(), reduceTask));
-			pool.enqueueTask(reduceTask);
-			reduceToUuid.put(curInput.getKey(), curInput);
-		}
-		return reduceToUuid;
-	}
-
-	/**
-	 * Sammelt alle results aus den fertiggestellten Reduce WorkerTasks
-	 * 
-	 * @param reduceResults
-	 *            ein Set mit fertiggestellten Reduce Tasks
-	 * @return
-	 */
-	Map<String, List<String>> collectResults(Set<WorkerTask> reduceResults) {
-		Map<String, List<String>> resultStructure = new HashMap<String, List<String>>();
-		for (WorkerTask task : reduceResults) {
-			ReduceWorkerTask reduceTask = (ReduceWorkerTask) task;
-			for (String value : reduceTask.getResults()) {
-				// Input ist bei Reduce Task der Key und bei Map task der wirkliche Input string
-				String input = reduceTask.getInput();
-				if (!resultStructure.containsKey(input)) {
-					resultStructure.put(input, new LinkedList<String>());
-				}
-				List<String> entries = resultStructure.get(input);
-				entries.add(value);
-			}
-		}
-		return resultStructure;
-	}
-
-	/**
-	 * Wartet auf die gegebenen Worker und führt ab einem gewissen Schwellwert die verbleibenden
-	 * Inputwerte redundant aus.
-	 * 
-	 * @param activeWorkerTasks
-	 *            die derzeit aktiven WorkerTasks
-	 * @param uuidToKeyValuePairUUIDInputMapping
-	 *            ein Mapping von InputUUID auf KeyValuePairs aus &lt;InputUUID, Input&gt;
-	 * @return gibt ein Set mit wirklich ausgeführten Workern zurück
-	 * @throws InterruptedException
-	 */
-	private Set<WorkerTask> waitForWorkers(Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks,
-			Map<String, KeyValuePair> originalUuidToKeyValuePairUUIDInputMapping, Persistence pers)
-			throws InterruptedException {
-
-		Map<String, KeyValuePair> remainingUuidMapping = new HashMap<String, KeyValuePair>(
-				originalUuidToKeyValuePairUUIDInputMapping);
-		Set<WorkerTask> results = new LinkedHashSet<WorkerTask>();
-		Set<KeyValuePair> rescheduleInput = new LinkedHashSet<KeyValuePair>();
-		Set<String> doneInputUUIDs = new LinkedHashSet<String>();
-
-		int rescheduleCounter = 0;
-		List<WorkerTask> toInactiveWorkerTasks = new LinkedList<WorkerTask>();
-
-		// Fragt alle Tasks an ob sie bereits erledigt sind - bis sie erledigt sind ...
-		do {
-			Thread.sleep(waitTime);
-			// Schauen welche Tasks noch ausstehend sind
-			for (KeyValuePair<String, WorkerTask> task : activeWorkerTasks) {
-				switch (task.getValue().getCurrentState()) {
-				case COMPLETED:
-					logger.finer("Task completed");
-
-					// nur übernehmen, wenn Aufgabe nicht bereits erledigt wurde
-					if (!doneInputUUIDs.contains(task.getKey())) {
-						results.add(task.getValue());
-						doneInputUUIDs.add(task.getKey());
-						remainingUuidMapping.remove(task.getKey());
-					}
-					toInactiveWorkerTasks.add(task.getValue());
-
-					break;
-				case FAILED:
-				case ABORTED:
-					logger.finer("Task failed");
-					toInactiveWorkerTasks.add(task.getValue());
-					rescheduleInput.add(remainingUuidMapping.get(task.getKey()));
-
-					break;
-				case INPROGRESS:
-				case ENQUEUED:
-				case INITIATED:
-					logger.finest("Task in progress");
-					break;
-				default:
-					throw new IllegalStateException(task.getValue().getCurrentState().toString());
-				}
-			}
-			activeWorkerTasks.removeAll(toInactiveWorkerTasks);
-
-			// Ein gewisser Prozentsatz der Aufgaben ist erfüllt
-			// kann zB bei ReduceTasks auftreten
-			if (originalUuidToKeyValuePairUUIDInputMapping.size() > 0) {
-				currentTaskPercentage = (doneInputUUIDs.size() * 100)
-						/ originalUuidToKeyValuePairUUIDInputMapping.size();
-			} else {
-				currentTaskPercentage = 0;
-			}
-
-			if (currentTaskPercentage >= rescheduleStartPercentage) {
-
-				if (rescheduleCounter >= rescheduleEvery) {
-					rescheduleInput.addAll(remainingUuidMapping.values());
-					logger.info("Reschedule workers has started for " + remainingUuidMapping.size()
-							+ " Workers");
-					rescheduleCounter = 0;
-				} else {
-					rescheduleCounter++;
-				}
-			}
-
-			// TODO Max: logging hier mit sinnvollen angaben (z.B. Anzahl reschedulbarer Tasks)
-			reschedule(rescheduleInput, activeWorkerTasks, pers);
-
-		} while (!remainingUuidMapping.isEmpty());
-		stopAndCleanTasks(activeWorkerTasks);
 		return results;
 	}
 
-	/**
-	 * Startet, abhängig von der derzeitigen Phase des Masters Map oder reduce Tasks
-	 * 
-	 * @param rescheduleInput
-	 *            der Input für die Map oder Reduce Tasks
-	 * @param activeWorkerTasks
-	 *            eine Liste mit allen derzeit aktiven WorkerTasks
-	 * @throws InterruptedException
-	 */
-	private void reschedule(Set<KeyValuePair> rescheduleInput,
-			Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks, Persistence pers) throws InterruptedException {
-		switch (curState) {
-		case MAP:
-			for (KeyValuePair<String, String> rescheduleTodo : rescheduleInput) {
-
-				MapWorkerTask mapTask = workerTaskFactory.createMapWorkerTask(mapInstruction, combinerInstruction, rescheduleTodo.getValue(), pers);
-
-				activeWorkerTasks.add(new KeyValuePair<String, WorkerTask>(rescheduleTodo.getKey(), mapTask));
-				pool.enqueueTask(mapTask);
-			}
-			break;
-		case REDUCE:
-			for (KeyValuePair<String, List<KeyValuePair>> rescheduleTodo : rescheduleInput) {
-
-				ReduceWorkerTask reduceTask = workerTaskFactory.createReduceWorkerTask(rescheduleTodo.getKey(), reduceInstruction, rescheduleTodo.getValue(), pers);
-
-				activeWorkerTasks.add(new KeyValuePair<String, WorkerTask>(rescheduleTodo.getKey(), reduceTask));
-				pool.enqueueTask(reduceTask);
-			}
-
-			break;
-		default:
-			throw new IllegalStateException("Not in a Map or Reduce phase");
+	private void joinAndRescheduleReduce(List<ReduceWorkerTask> tasks) throws InterruptedException {
+		if (tasks.isEmpty()) {
+			LOG.fine("Nothing to join or reschedule");
+			return;
 		}
+		Thread.sleep(200);
+		List<ReduceWorkerTask> done = new LinkedList<ReduceWorkerTask>();
+		List<ReduceWorkerTask> failed = new LinkedList<ReduceWorkerTask>();
+		for (ReduceWorkerTask task : tasks) {
+			switch (task.getCurrentState()) {
+			case COMPLETED:
+				done.add(task);
+				break;
+			case FAILED:
+				failed.add(task);
+				break;
+			case ENQUEUED: // fall through
+			case INITIATED: // fall through
+			case INPROGRESS:
+				// ok, wird demnaechst ausgefuehrt
+				break;
+			case ABORTED:
+				throw new IllegalStateException("Task must not be in this list when in State ABORTED");
+			default:
+				throw new IllegalStateException("Unhandled state: " + task.getCurrentState());
+			}
+		}
+		LOG.log(Level.FINE, "{0} Tasks done, {1} Tasks failed", new Object[] { done.size(), failed.size() });
+		tasks.removeAll(done);
+		tasks.addAll(restartFailedReduce(failed));
+		joinAndRescheduleReduce(tasks);
 	}
 
-	private void stopAndCleanTasks(Set<KeyValuePair<String, WorkerTask>> activeWorkerTasks) {
-		for (KeyValuePair<String, WorkerTask> curKV : activeWorkerTasks) {
-			curKV.getValue().abort();
+	private List<ReduceWorkerTask> triggerReduceTasks(ReduceInstruction reduceInstruction,
+			Map<String, List<KeyValuePair>> shuffledResults, Persistence pers) throws InterruptedException {
+		List<ReduceWorkerTask> reduceTasks = new LinkedList<ReduceWorkerTask>();
+		for (Entry<String, List<KeyValuePair>> entry : shuffledResults.entrySet()) {
+			String key = entry.getKey();
+			List<KeyValuePair> values = entry.getValue();
+			ReduceWorkerTask task = this.workerTaskFactory.createReduceWorkerTask(reduceInstruction, key, values, pers);
+			this.pool.enqueueTask(task);
+			reduceTasks.add(task);
 		}
-		activeWorkerTasks.clear();
+		return reduceTasks;
+	}
+
+	private List<MapWorkerTask> triggerMapTasks(MapInstruction mapInstruction, CombinerInstruction combinerInstruction,
+			Iterator<String> inputs, Persistence pers) throws InterruptedException {
+
+		List<MapWorkerTask> mapTasks = new LinkedList<MapWorkerTask>();
+		while (inputs.hasNext()) {
+			String input = inputs.next();
+			MapWorkerTask task = this.workerTaskFactory.createMapWorkerTask(mapInstruction, combinerInstruction, input,
+					pers);
+			this.pool.enqueueTask(task);
+			mapTasks.add(task);
+		}
+		return mapTasks;
+	}
+
+	private void joinAndRescheduleMap(List<MapWorkerTask> tasks) throws InterruptedException {
+		if (tasks.isEmpty()) {
+			LOG.fine("Nothing to join or reschedule");
+			return;
+		}
+		Thread.sleep(200);
+		List<MapWorkerTask> done = new LinkedList<MapWorkerTask>();
+		List<MapWorkerTask> failed = new LinkedList<MapWorkerTask>();
+		for (MapWorkerTask task : tasks) {
+			switch (task.getCurrentState()) {
+			case COMPLETED:
+				done.add(task);
+				break;
+			case FAILED:
+				failed.add(task);
+				break;
+			case ENQUEUED: // fall through
+			case INITIATED: // fall through
+			case INPROGRESS:
+				// ok, wird demnaechst ausgefuehrt
+				break;
+			case ABORTED:
+				throw new IllegalStateException("Task must not be in this list when in State ABORTED");
+			default:
+				throw new IllegalStateException("Unhandled state: " + task.getCurrentState());
+			}
+		}
+		LOG.log(Level.FINE, "{0} Tasks done, {1} Tasks failed", new Object[] { done.size(), failed.size() });
+		tasks.removeAll(done);
+		tasks.addAll(restartFailedMap(failed));
+		joinAndRescheduleMap(tasks);
+	}
+
+	private List<ReduceWorkerTask> restartFailedReduce(List<ReduceWorkerTask> faileds) throws InterruptedException {
+		List<ReduceWorkerTask> newtasks = new ArrayList<ReduceWorkerTask>(faileds.size());
+		for (ReduceWorkerTask failed : faileds) {
+			ReduceWorkerTask newtask = this.workerTaskFactory.createReduceWorkerTask(failed.getReduceInstruction(),
+					failed.getInput(), failed.getValues(), failed.getPersistence());
+			this.pool.enqueueTask(newtask);
+			newtasks.add(newtask);
+		}
+		return newtasks;
+	}
+
+	private List<MapWorkerTask> restartFailedMap(List<MapWorkerTask> faileds) throws InterruptedException {
+		List<MapWorkerTask> newtasks = new ArrayList<MapWorkerTask>(faileds.size());
+		for (MapWorkerTask failed : faileds) {
+			MapWorkerTask newtask = this.workerTaskFactory.createMapWorkerTask(failed.getMapInstruction(),
+					failed.getCombinerInstruction(), failed.getInput(), failed.getPersistence());
+			this.pool.enqueueTask(newtask);
+			newtasks.add(newtask);
+		}
+		return newtasks;
 	}
 }

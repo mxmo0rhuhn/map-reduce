@@ -104,15 +104,15 @@ public class MapReduceConfigTest {
 	@Test
 	public void shouldSetReduceTaskToReduceRunner() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		ReduceWorkerTask reduceRunner = factory.createReduceWorkerTask("key", reduceInstr, this.toDo, persistence);
+		ReduceWorkerTask reduceRunner = factory.createReduceWorkerTask(reduceInstr, "key", this.toDo, persistence);
 		assertSame(reduceInstr, reduceRunner.getReduceInstruction());
 	}
 
 	@Test
 	public void shouldCreatePrototypesForReduceRunners() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		assertNotSame(factory.createReduceWorkerTask("key1", reduceInstr, toDo, persistence),
-				factory.createReduceWorkerTask("key2", reduceInstr, toDo, persistence));
+		assertNotSame(factory.createReduceWorkerTask(reduceInstr, "key1", toDo, persistence),
+				factory.createReduceWorkerTask(reduceInstr, "key2", toDo, persistence));
 	}
 
 	@Test

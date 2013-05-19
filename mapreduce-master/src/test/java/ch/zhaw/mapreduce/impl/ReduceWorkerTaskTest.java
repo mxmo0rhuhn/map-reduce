@@ -2,21 +2,17 @@ package ch.zhaw.mapreduce.impl;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Provider;
 
@@ -25,7 +21,6 @@ import org.jmock.Sequence;
 import org.jmock.auto.Auto;
 import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnitRuleMockery;
-import org.jmock.lib.concurrent.ExactCommandExecutor;
 import org.jmock.lib.concurrent.Synchroniser;
 import org.junit.Rule;
 import org.junit.Test;
@@ -100,32 +95,6 @@ public class ReduceWorkerTaskTest {
 	}
 
 	@Test
-	public void shouldSetStateToFailedOnException() {
-		ReduceWorkerTask task = new ReduceWorkerTask(taskUUID, pers, reduceInstr, key, keyVals);
-		this.mockery.checking(new Expectations() {
-			{
-				oneOf(reduceInstr).reduce(with(ctx), with(key), with(aNonNull(Iterator.class)));
-				will(throwException(new NullPointerException()));
-				oneOf(pers).destroy(taskUUID);
-			}
-		});
-		task.runTask(ctx);
-		assertEquals(State.FAILED, task.getCurrentState());
-	}
-
-	@Test
-	public void shouldSetStateToCompletedOnSuccess() {
-		ReduceWorkerTask task = new ReduceWorkerTask(taskUUID, pers, reduceInstr, key, keyVals);
-		this.mockery.checking(new Expectations() {
-			{
-				oneOf(reduceInstr).reduce(with(ctx), with(key), with(aNonNull(Iterator.class)));
-			}
-		});
-		task.runTask(ctx);
-		assertEquals(State.COMPLETED, task.getCurrentState());
-	}
-
-	@Test
 	public void shouldSetStateToInitiatedInitially() {
 		ReduceWorkerTask task = new ReduceWorkerTask(taskUUID, pers, reduceInstr, key, keyVals);
 		assertEquals(State.INITIATED, task.getCurrentState());
@@ -137,7 +106,7 @@ public class ReduceWorkerTaskTest {
 		ExecutorService taskExec = Executors.newSingleThreadExecutor();
 		Pool pool = new Pool(Executors.newSingleThreadExecutor(), 1, 2, Executors.newSingleThreadScheduledExecutor(), 1);
 		pool.init();
-		ThreadWorker worker = new ThreadWorker(pool, taskExec, ctxProvider, pers);
+		ThreadWorker worker = new ThreadWorker(pool, taskExec, ctxProvider);
 		pool.donateWorker(worker);
 		final ReduceWorkerTask task = new ReduceWorkerTask(taskUUID,  pers, new ReduceInstruction() {
 			@Override

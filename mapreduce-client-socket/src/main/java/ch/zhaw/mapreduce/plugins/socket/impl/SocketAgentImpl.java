@@ -18,7 +18,6 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 
-import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.plugins.socket.AgentTask;
 import ch.zhaw.mapreduce.plugins.socket.AgentTaskState;
 import ch.zhaw.mapreduce.plugins.socket.SocketAgent;
@@ -88,7 +87,7 @@ public class SocketAgentImpl implements SocketAgent {
 	 * Der Task, der gerade ausgeführt werden soll wird in diese Queue gesteckt um dann vom Result-Pusher wieder
 	 * herausgenommen zu werden. Double-Ended-Queue: wir füllen vorne rein und nehmen hinten raus.
 	 */
-	private final BlockingDeque<KeyValuePair<String, Future<TaskResult>>> tasks = new LinkedBlockingDeque<KeyValuePair<String, Future<TaskResult>>>(
+	private final BlockingDeque<Pair<String, Future<TaskResult>>> tasks = new LinkedBlockingDeque<Pair<String, Future<TaskResult>>>(
 			MAX_CONCURRENT_TASKS);
 
 	@Inject
@@ -115,14 +114,14 @@ public class SocketAgentImpl implements SocketAgent {
 				try {
 					while (true) {
 						LOG.fine("Waiting For Next Task in Queue");
-						KeyValuePair<String, Future<TaskResult>> pair = tasks.pollLast(RESULT_PUSHER_CYCLE_TIMEOUT, TimeUnit.MILLISECONDS);
+						Pair<String, Future<TaskResult>> pair = tasks.pollLast(RESULT_PUSHER_CYCLE_TIMEOUT, TimeUnit.MILLISECONDS);
 						if (pair == null) {
 							LOG.log(Level.INFO, "Waited for {0} ms. Run {1} Tasks so far.", new Object[] {
 									RESULT_PUSHER_CYCLE_TIMEOUT, runTasks.get() });
 							continue;
 						}
-						Future<TaskResult> task = pair.getValue();
-						String taskUuid = pair.getKey();
+						Future<TaskResult> task = pair.snd;
+						String taskUuid = pair.fst;
 						LOG.log(Level.FINE, "Took Task from Queue. Now waiting for its Completion {0}",
 								new Object[] { taskUuid });
 
@@ -183,7 +182,7 @@ public class SocketAgentImpl implements SocketAgent {
 					return runner.runTask();
 				};
 			});
-			if (this.tasks.offerFirst(new KeyValuePair<String, Future<TaskResult>>(taskUuid, task))) {
+			if (this.tasks.offerFirst(new Pair<String, Future<TaskResult>>(taskUuid, task))) {
 				state = new AgentTaskState(ACCEPTED);
 				LOG.info("Accepted Task for Execution");
 			} else {
@@ -217,5 +216,14 @@ public class SocketAgentImpl implements SocketAgent {
 	public String ping() {
 		LOG.fine("Received Ping from Master");
 		return "pong";
+	}
+	
+	private static class Pair<A, B> {
+		final A fst;
+		final B snd;
+		Pair(A fst, B snd) {
+			this.fst = fst;
+			this.snd = snd;
+		}
 	}
 }

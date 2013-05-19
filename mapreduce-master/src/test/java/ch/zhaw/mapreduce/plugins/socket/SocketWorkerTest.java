@@ -91,7 +91,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 			oneOf(workerTask).getTaskUuid(); will(returnValue(taskUuid));
 			oneOf(resCollector).registerObserver(taskUuid, sw); will(returnValue(saRes));
 			oneOf(saRes).wasSuccessful(); will(returnValue(false));
-			oneOf(workerTask).failed();
+			oneOf(workerTask).fail();
 			oneOf(saRes).getException(); will(returnValue(new Exception()));
 			then(taskRunnerState.is("runningTask"));
 		}});
@@ -114,7 +114,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 			oneOf(workerTask).getTaskUuid(); will(returnValue(taskUuid));
 			oneOf(atFactory).createAgentTask(workerTask); will(returnValue(agentTask));
 			oneOf(sAgent).runTask(agentTask); will(returnValue(new AgentTaskState(State.REJECTED)));
-			oneOf(workerTask).failed();
+			oneOf(workerTask).fail();
 			then(taskRunnerState.is("runningTask"));
 		}});
 		sw.executeTask(workerTask);
@@ -176,7 +176,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 			then(taskRunnerState.is("taskRunning"));
 			oneOf(saRes).wasSuccessful(); will(returnValue(false));
 			oneOf(saRes).getException(); will(returnValue(new Exception()));
-			oneOf(workerTask).failed();
+			oneOf(workerTask).fail();
 			then(taskRunnerState.is("taskDone"));
 		}});
 		p.enqueueTask(workerTask);

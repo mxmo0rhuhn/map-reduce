@@ -24,8 +24,6 @@ import com.google.inject.assistedinject.Assisted;
 public class MapWorkerTask extends AbstractWorkerTask {
 
 	private static final Logger LOG = Logger.getLogger(MapWorkerTask.class.getName());
-	
-	private final Persistence persistence;
 
 	/** Aufgabe, die der Task derzeit ausführt */
 	private final MapInstruction mapInstruction;
@@ -37,13 +35,10 @@ public class MapWorkerTask extends AbstractWorkerTask {
 	private final String input;
 
 	@Inject
-	public MapWorkerTask(@Named("taskUuid") String taskUuid, 
-			@Assisted Persistence persistence,
-			@Assisted MapInstruction mapInstruction,
-			@Assisted @Nullable CombinerInstruction combinerInstruction,
+	public MapWorkerTask(@Named("taskUuid") String taskUuid, @Assisted Persistence persistence,
+			@Assisted MapInstruction mapInstruction, @Assisted @Nullable CombinerInstruction combinerInstruction,
 			@Assisted("input") String input) {
-		super(taskUuid);
-		this.persistence = persistence;
+		super(taskUuid, persistence);
 		this.mapInstruction = mapInstruction;
 		this.combinerInstruction = combinerInstruction;
 		this.input = input;
@@ -52,24 +47,15 @@ public class MapWorkerTask extends AbstractWorkerTask {
 	/** {@inheritDoc} */
 	@Override
 	public void runTask(Context ctx) {
-		started();
-		try {
-			// Mappen
-			this.mapInstruction.map(ctx, input);
+		// Mappen
+		this.mapInstruction.map(ctx, input);
 
-			// Alle Ergebnisse verdichten. Die Ergebnisse aus der derzeitigen Worker sollen
-			// einbezogen werden.
-			if (this.combinerInstruction != null) {
-				List<KeyValuePair> beforeCombining = ctx.getMapResult();
-				List<KeyValuePair> afterCombining = this.combinerInstruction
-						.combine(beforeCombining.iterator());
-				ctx.replaceMapResult(afterCombining);
-			}
-			completed();
-		} catch (Exception e) {
-			LOG.log(Level.WARNING, "Instruction threw Exception", e);
-			failed();
-			this.persistence.destroy(getTaskUuid());
+		// Alle Ergebnisse verdichten. Die Ergebnisse aus der derzeitigen Worker sollen
+		// einbezogen werden.
+		if (this.combinerInstruction != null) {
+			List<KeyValuePair> beforeCombining = ctx.getMapResult();
+			List<KeyValuePair> afterCombining = this.combinerInstruction.combine(beforeCombining.iterator());
+			ctx.replaceMapResult(afterCombining);
 		}
 	}
 
@@ -91,10 +77,6 @@ public class MapWorkerTask extends AbstractWorkerTask {
 		return this.combinerInstruction;
 	}
 
-	public List<KeyValuePair> getResults() {
-		return this.persistence.getMapResults(getTaskUuid());
-	}
-
 	@Override
 	public String getInput() {
 		return this.input;
@@ -103,15 +85,16 @@ public class MapWorkerTask extends AbstractWorkerTask {
 	@Override
 	public void abort() {
 		aborted();
-		this.persistence.destroy(getTaskUuid());
+		this.persistence.destroyMap(getTaskUuid());
 	}
 
 	@Override
 	public void successful(List<?> result) {
 		if (result != null && !result.isEmpty()) {
-			List<KeyValuePair> typedResult;
 			try {
-				typedResult = (List<KeyValuePair>) result;
+				@SuppressWarnings("unchecked")
+				// try catch
+				List<KeyValuePair> typedResult = (List<KeyValuePair>) result;
 				this.persistence.storeMapResults(getTaskUuid(), typedResult);
 				completed();
 			} catch (ClassCastException e) {
@@ -120,6 +103,12 @@ public class MapWorkerTask extends AbstractWorkerTask {
 				return;
 			}
 		}
+	}
+
+	@Override
+	public void fail() {
+		failed();
+		this.persistence.destroyMap(getTaskUuid());
 	}
 
 }

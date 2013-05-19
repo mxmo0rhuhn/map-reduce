@@ -2,6 +2,7 @@ package ch.zhaw.mapreduce.impl;
 
 import java.util.logging.Logger;
 
+import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.WorkerTask;
 
 /**
@@ -15,12 +16,15 @@ abstract class AbstractWorkerTask implements WorkerTask {
 	private static final Logger LOG = Logger.getLogger(AbstractWorkerTask.class.getName());
 
 	private final String taskUuid;
+	
+	protected final Persistence persistence;
 
 	/** Der Zustand in dem sich der Worker befindet */
 	private volatile State currentState = State.INITIATED;
 
-	AbstractWorkerTask(String taskUuid) {
+	AbstractWorkerTask(String taskUuid, Persistence pers) {
 		this.taskUuid = taskUuid;
+		this.persistence = pers;
 	}
 
 	/**
@@ -30,6 +34,12 @@ abstract class AbstractWorkerTask implements WorkerTask {
 	public final String getTaskUuid() {
 		return this.taskUuid;
 	}
+	
+	@Override
+	public final Persistence getPersistence() {
+		return this.persistence;
+	}
+
 
 	/**
 	 * {@inheritDoc} Diese Angabe ist optimistisch. Sie kann veraltet sein.
@@ -49,8 +59,7 @@ abstract class AbstractWorkerTask implements WorkerTask {
 		setState(State.INPROGRESS);
 	}
 
-	@Override
-	public final void failed() {
+	protected final void failed() {
 		setState(State.FAILED);
 	}
 
@@ -58,11 +67,10 @@ abstract class AbstractWorkerTask implements WorkerTask {
 		setState(State.COMPLETED);
 	}
 
-	@Override
-	public final void aborted() {
+	protected final void aborted() {
 		setState(State.ABORTED);
 	}
-
+	
 	/**
 	 * Setzt den neuen State als State. Der neue State darf nicht der gleich sein.
 	 */

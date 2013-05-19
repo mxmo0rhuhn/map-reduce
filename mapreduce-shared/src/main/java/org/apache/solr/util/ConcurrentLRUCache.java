@@ -155,7 +155,8 @@ public class ConcurrentLRUCache<K,V> {
    * The second stage is more intensive and tries to bring down the cache size
    * to the 'lowerWaterMark' config parameter.
    */
-  private void markAndSweep() {
+  @SuppressWarnings("rawtypes")
+private void markAndSweep() {
     // if we want to keep at least 1000 entries, then timestamps of
     // current through current-1000 are guaranteed not to be the oldest (but that does
     // not mean there are 1000 entries in that group... it's acutally anywhere between
@@ -359,12 +360,13 @@ public class ConcurrentLRUCache<K,V> {
       myMaxSize = maxSz;
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     Iterable<CacheEntry<K,V>> getValues() { 
       return (Iterable) Collections.unmodifiableCollection(Arrays.asList(heap));
     }
 
-    @Override
+    @SuppressWarnings("rawtypes")
+	@Override
     protected boolean lessThan(CacheEntry a, CacheEntry b) {
       // reverse the parameter order so that the queue keeps the oldest items
       return b.lastAccessedCopy < a.lastAccessedCopy;
@@ -486,10 +488,6 @@ public class ConcurrentLRUCache<K,V> {
       this.lastAccessed = lastAccessed;
     }
 
-    public void setLastAccessed(long lastAccessed) {
-      this.lastAccessed = lastAccessed;
-    }
-
     @Override
     public int compareTo(CacheEntry<K,V> that) {
       if (this.lastAccessedCopy == that.lastAccessedCopy) return 0;
@@ -579,15 +577,18 @@ public class ConcurrentLRUCache<K,V> {
   }
 
   private static class CleanupThread extends Thread {
-    private WeakReference<ConcurrentLRUCache> cache;
+    @SuppressWarnings("rawtypes")
+	private WeakReference<ConcurrentLRUCache> cache;
 
     private boolean stop = false;
 
-    public CleanupThread(ConcurrentLRUCache c) {
+    @SuppressWarnings("rawtypes")
+	public CleanupThread(ConcurrentLRUCache c) {
       cache = new WeakReference<ConcurrentLRUCache>(c);
     }
 
-    @Override
+    @SuppressWarnings("rawtypes")
+	@Override
     public void run() {
       while (true) {
         synchronized (this) {

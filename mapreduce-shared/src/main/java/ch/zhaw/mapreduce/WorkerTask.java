@@ -55,16 +55,17 @@ public interface WorkerTask {
 	 */
 	void abort();
 	
+	Persistence getPersistence();
+	
 	/**
 	 * Task wurde dem Pool uebergeben
 	 */
 	void enqueued();
 
-	void failed();
+	void fail();
 
 	void started();
 
 	void successful(List<?> result);
 
-	void aborted();
 }
