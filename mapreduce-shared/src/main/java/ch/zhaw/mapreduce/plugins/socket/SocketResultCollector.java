@@ -24,7 +24,7 @@ public interface SocketResultCollector {
 	 * benachrichtigt, sobald das Resultat für einen bestimmten Task angekommen ist.
 	 * 
 	 */
-	Boolean registerObserver(String taskUuid, SocketResultObserver observer);
+	SocketAgentResult registerObserver(String taskUuid, SocketResultObserver observer);
 
 	/** 
 	 * Liefert eine Referenz auf alle Resultat-Stati. Diese Methde ist für den Cleaner-Task gedacht.

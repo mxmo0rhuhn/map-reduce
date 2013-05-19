@@ -41,9 +41,9 @@ public final class ResultState {
 	private final SocketResultObserver requestedBy;
 
 	/**
-	 * Ob die Berechnung erfolgreich war. Ist nur gesetzt, wenn der Status AVAILABLE ist
+	 * Das Resultat der Berechnung. Nur gesetzt im Status AVAILABLE.
 	 */
-	private final boolean successful;
+	private final SocketAgentResult result;
 	
 	/**
 	 * Der timestamp, wann der status erstellt wurde
@@ -53,10 +53,10 @@ public final class ResultState {
 	/**
 	 * Konstruktor ist private um ungültige Konstellationen zu vermeiden.
 	 */
-	private ResultState(State state, SocketResultObserver requestedBy, boolean successful) {
+	private ResultState(State state, SocketResultObserver requestedBy, SocketAgentResult result) {
 		this.state = state;
 		this.requestedBy = requestedBy;
-		this.successful = successful;
+		this.result = result;
 		this.created = System.currentTimeMillis();
 	}
 
@@ -70,14 +70,14 @@ public final class ResultState {
 		if (requestedBy == null) {
 			throw new IllegalArgumentException("Requestor must not be null");
 		}
-		return new ResultState(State.REQUESTED, requestedBy, false);
+		return new ResultState(State.REQUESTED, requestedBy, null);
 	}
 
 	/**
 	 * Erstellt neues ResultState mit dem Status AVAILABLE und ohne Observer
 	 */
-	public static ResultState resultAvailable(boolean successful) {
-		return new ResultState(State.AVAILABLE, null, successful);
+	public static ResultState resultAvailable(SocketAgentResult res) {
+		return new ResultState(State.AVAILABLE, null, res);
 	}
 
 	/**
@@ -88,10 +88,10 @@ public final class ResultState {
 	}
 
 	/**
-	 * Ob die Berechnung erfolgreich war. Ist nur sinnvoll gesetzt, wenn der Status AVAILABLE ist.
+	 * Gibt das Resultat der Berechnung zurück. Wenn der Status REQUESTED ist, gibt diese Methode null zurück.
 	 */
-	public boolean successful() {
-		return this.successful;
+	public SocketAgentResult result(){
+		return this.result;
 	}
 
 	/**
@@ -120,7 +120,7 @@ public final class ResultState {
 		if (this.state == State.REQUESTED) {
 			return getClass().getSimpleName() + " [State=" + this.state + ",RequestedBy=" + this.requestedBy + "]";
 		} else if (this.state == State.AVAILABLE) {
-			return getClass().getSimpleName() + " [State=" + this.state + ",Success=" + this.successful + "]";
+			return getClass().getSimpleName() + " [State=" + this.state + ",Result=" + this.result + "]";
 		} else {
 			throw new IllegalStateException("Unhandled State: " + this.state);
 		}

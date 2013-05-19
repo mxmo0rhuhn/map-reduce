@@ -106,4 +106,20 @@ public class MapWorkerTask extends AbstractWorkerTask {
 		this.persistence.destroy(getTaskUuid());
 	}
 
+	@Override
+	public void successful(List<?> result) {
+		if (result != null && !result.isEmpty()) {
+			List<KeyValuePair> typedResult;
+			try {
+				typedResult = (List<KeyValuePair>) result;
+				this.persistence.storeMapResults(getTaskUuid(), typedResult);
+				completed();
+			} catch (ClassCastException e) {
+				LOG.log(Level.SEVERE, "Wrong type for MapTask", e);
+				failed();
+				return;
+			}
+		}
+	}
+
 }

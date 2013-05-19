@@ -97,4 +97,20 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 		aborted();
 	}
 
+	@Override
+	public void successful(List<?> result) {
+		if (result != null && !result.isEmpty()) {
+			List<String> typedResult;
+			try {
+				typedResult = (List<String>) result;
+				this.persistence.storeReduceResults(getTaskUuid(), typedResult);
+				completed();
+			} catch (ClassCastException e) {
+				LOG.log(Level.SEVERE, "Wrong type for MapTask", e);
+				failed();
+				return;
+			}
+		}
+	}
+
 }

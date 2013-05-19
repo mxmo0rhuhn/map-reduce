@@ -99,8 +99,8 @@ public class SocketWorker implements Worker, SocketResultObserver {
 	 * geben den SocketWorker zurück zum Pool.
 	 */
 	@Override
-	public void resultAvailable(String taskUuid, boolean success) {
-		LOG.entering(getClass().getName(), "resultAvailable", new Object[] { taskUuid, success });
+	public void resultAvailable(String taskUuid, SocketAgentResult result) {
+		LOG.entering(getClass().getName(), "resultAvailable", new Object[] { taskUuid, result });
 		Future<WorkerTask> future = this.currentTask;
 		if (future == null) {
 			LOG.log(Level.WARNING, "Got notified for missing Task {0}",
@@ -110,11 +110,12 @@ public class SocketWorker implements Worker, SocketResultObserver {
 		try {
 			WorkerTask task = future.get(agentTaskTriggeringTimeout, TimeUnit.MILLISECONDS);
 			if (taskUuid.equals(task.getTaskUuid())) {
-				LOG.log(Level.FINE, "Go notified for TaskUuid={0} Success={1}", new Object[] {
-						taskUuid, success });
-				if (success) {
-					task.completed();
+				LOG.log(Level.FINE, "Go notified for TaskUuid={0} Result={1}", new Object[] {
+						taskUuid, result });
+				if (result.wasSuccessful()) {
+					task.successful(result.getResult());
 				} else {
+					LOG.log(Level.WARNING, "Task has failed on Agent", result.getException());
 					task.failed();
 				}
 				this.currentTask = null;
@@ -161,12 +162,13 @@ public class SocketWorker implements Worker, SocketResultObserver {
 				case ACCEPTED:
 					LOG.log(Level.FINE, "Task Accepted by SocketAgent for TaskUuid={0}", new Object[] { taskUuid });
 					workerTask.started();
-					Boolean success = resCollector.registerObserver(taskUuid, SocketWorker.this);
-					if (success != null) {
-						LOG.log(Level.FINE, "Result already available for TaskUuid={0}, Success={1}", new Object[] { taskUuid, success });
-						if (success) {
-							workerTask.completed();
+					SocketAgentResult result = resCollector.registerObserver(taskUuid, SocketWorker.this);
+					if (result != null) {
+						LOG.log(Level.FINE, "Result already available for TaskUuid={0}, Result={1}", new Object[] { taskUuid, result });
+						if (result.wasSuccessful()) {
+							workerTask.successful(result.getResult());
 						} else {
+							LOG.log(Level.WARNING, "Task Failed on Agent", result.getException());
 							workerTask.failed();
 						}
 						pool.workerIsFinished(SocketWorker.this);

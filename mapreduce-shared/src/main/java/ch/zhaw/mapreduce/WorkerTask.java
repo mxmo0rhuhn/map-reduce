@@ -1,5 +1,7 @@
 package ch.zhaw.mapreduce;
 
+import java.util.List;
+
 
 
 
@@ -62,7 +64,7 @@ public interface WorkerTask {
 
 	void started();
 
-	void completed();
+	void successful(List<?> result);
 
 	void aborted();
 }

@@ -54,8 +54,7 @@ abstract class AbstractWorkerTask implements WorkerTask {
 		setState(State.FAILED);
 	}
 
-	@Override
-	public final void completed() {
+	protected final void completed() {
 		setState(State.COMPLETED);
 	}
 

@@ -33,8 +33,11 @@ public class MapReduceConfigTest {
 	@Mock
 	private ReduceInstruction reduceInstr;
 
-	private String input = "input";
+	@Mock
+	private Persistence persistence;
 
+	private String input = "input";
+	
 	private List<KeyValuePair> toDo = Collections.emptyList();
 
 	@Test
@@ -79,7 +82,7 @@ public class MapReduceConfigTest {
 	@Test
 	public void shouldSetMapAndCombinerTaskToMapRunner() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapWorkerTask mapWorkerTask = factory.createMapWorkerTask(mapInstr, combInstr, input);
+		MapWorkerTask mapWorkerTask = factory.createMapWorkerTask(mapInstr, combInstr, input, persistence);
 		assertSame(mapInstr, mapWorkerTask.getMapInstruction());
 		assertSame(combInstr, mapWorkerTask.getCombinerInstruction());
 	}
@@ -87,43 +90,43 @@ public class MapReduceConfigTest {
 	@Test
 	public void shouldCopeWithNullCombinerTask() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapWorkerTask mapperTask = factory.createMapWorkerTask(mapInstr, null, input);
+		MapWorkerTask mapperTask = factory.createMapWorkerTask(mapInstr, null, input, persistence);
 		assertNotNull(mapperTask);
 	}
 
 	@Test
 	public void shouldCreatePrototypesForMapRunners() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		assertNotSame(factory.createMapWorkerTask(mapInstr, combInstr, input),
-				factory.createMapWorkerTask(mapInstr, combInstr, input));
+		assertNotSame(factory.createMapWorkerTask(mapInstr, combInstr, input, persistence),
+				factory.createMapWorkerTask(mapInstr, combInstr, input, persistence));
 	}
 
 	@Test
 	public void shouldSetReduceTaskToReduceRunner() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		ReduceWorkerTask reduceRunner = factory.createReduceWorkerTask("key", reduceInstr, this.toDo);
+		ReduceWorkerTask reduceRunner = factory.createReduceWorkerTask("key", reduceInstr, this.toDo, persistence);
 		assertSame(reduceInstr, reduceRunner.getReduceInstruction());
 	}
 
 	@Test
 	public void shouldCreatePrototypesForReduceRunners() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		assertNotSame(factory.createReduceWorkerTask("key1", reduceInstr, toDo),
-				factory.createReduceWorkerTask("key2", reduceInstr, toDo));
+		assertNotSame(factory.createReduceWorkerTask("key1", reduceInstr, toDo, persistence),
+				factory.createReduceWorkerTask("key2", reduceInstr, toDo, persistence));
 	}
 
 	@Test
 	public void shouldSetWorkerTaskUUIDToMapTask() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapWorkerTask mwt = factory.createMapWorkerTask(mapInstr, null, input);
+		MapWorkerTask mwt = factory.createMapWorkerTask(mapInstr, null, input, persistence);
 		assertNotNull(mwt.getTaskUuid());
 	}
 
 	@Test
 	public void shouldGenerateDistinctWorkerTaskUUIDs() {
 		WorkerTaskFactory factory = Guice.createInjector(new MapReduceConfig()).getInstance(WorkerTaskFactory.class);
-		MapWorkerTask mwt1 = factory.createMapWorkerTask(mapInstr, null, input);
-		MapWorkerTask mwt2 = factory.createMapWorkerTask(mapInstr, null, input);
+		MapWorkerTask mwt1 = factory.createMapWorkerTask(mapInstr, null, input, persistence);
+		MapWorkerTask mwt2 = factory.createMapWorkerTask(mapInstr, null, input, persistence);
 		String uuid1 = mwt1.getTaskUuid();
 		String uuid2 = mwt2.getTaskUuid();
 		assertNotNull(uuid1);

@@ -23,7 +23,7 @@ public class ResultCleanerTaskTest extends AbstractMapReduceMasterSocketTest {
 	
 	@Test
 	public void shouldRemoveEntry() {
-		final ResultState state = ResultState.resultAvailable(true);
+		final ResultState state = ResultState.resultAvailable(saRes);
 		mockery.checking(new Expectations() {{ 
 			oneOf(resCollector).getResultStates();
 			oneOf(iter).next(); will(returnValue(entry));
@@ -39,7 +39,7 @@ public class ResultCleanerTaskTest extends AbstractMapReduceMasterSocketTest {
 	
 	@Test
 	public void shouldNotRemoveEntry() {
-		final ResultState state = ResultState.resultAvailable(true);
+		final ResultState state = ResultState.resultAvailable(saRes);
 		mockery.checking(new Expectations() {{ 
 			oneOf(resCollector).getResultStates();
 			oneOf(iter).next(); will(returnValue(entry));
@@ -60,7 +60,7 @@ public class ResultCleanerTaskTest extends AbstractMapReduceMasterSocketTest {
 		int availableTtl = 1000;
 		int requestedTtl = 1;
 		ResultCleanerTask cleaner = new ResultCleanerTask(resCollector, schedService, 1, availableTtl, requestedTtl);
-		ResultState state = ResultState.resultAvailable(true);
+		ResultState state = ResultState.resultAvailable(saRes);
 		assertTrue(cleaner.survives(state));
 	}
 	
@@ -72,7 +72,7 @@ public class ResultCleanerTaskTest extends AbstractMapReduceMasterSocketTest {
 		int availableTtl = 1;
 		int requestedTtl = 1000;
 		ResultCleanerTask cleaner = new ResultCleanerTask(resCollector, schedService, 1, availableTtl, requestedTtl);
-		ResultState state = ResultState.resultAvailable(true);
+		ResultState state = ResultState.resultAvailable(saRes);
 		Thread.sleep(10);
 		assertFalse(cleaner.survives(state));
 	}
