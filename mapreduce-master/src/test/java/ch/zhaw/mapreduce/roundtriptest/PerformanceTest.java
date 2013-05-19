@@ -26,7 +26,6 @@ import com.google.inject.Injector;
 public class PerformanceTest {
 
 	@Test
-	@Ignore
 	public void countRandomCharacters() throws Exception {
 		Injector injector = Guice.createInjector(new MapReduceConfig());
 		Master master = injector.getInstance(Master.class);

@@ -66,18 +66,14 @@ public final class Master {
 		// für sämtliche tasks einer berechnung muss die gleiche persistence verwendet werden!
 		Persistence pers = this.persistenceProvider.get();
 
-		LOG.info("Start Triggering Map Tasks");
-		List<MapWorkerTask> mapTasks = triggerMapTasks(mapInstruction, combinerInstruction, inputs, pers);
-		LOG.info("Done Triggering Map Tasks");
-
-		LOG.info("Start Joining and Rescheduling Map Tasks");
-		joinAndRescheduleMap(mapTasks);
-		LOG.info("Done Joining and Rescheduling Map Tasks");
+		LOG.info("Start Running Map Tasks");
+		runMapTasks(mapInstruction, combinerInstruction, inputs, pers);
+		LOG.info("Done Running Map Tasks");
 
 		LOG.info("Retrieve all Map Results from Persistence");
 		List<KeyValuePair> mapResults = pers.getMapResults();
 
-		LOG.info("Shuffle all Map Results");
+		LOG.log(Level.INFO, "Shuffle all {0} Map Results", mapResults.size());
 		Map<String, List<KeyValuePair>> shuffledResults = shuffler.shuffle(mapResults);
 		LOG.info("Done shuffling Map Results");
 
@@ -88,13 +84,9 @@ public final class Master {
 			LOG.info("No AfterShuffleHook");
 		}
 
-		LOG.info("Start Triggering Reduce Tasks");
-		List<ReduceWorkerTask> reduceTasks = triggerReduceTasks(reduceInstruction, shuffledResults, pers);
-		LOG.info("Done Triggering Reduce Tasks");
-
-		LOG.info("Start Joining and Rescheduling Reduce Tasks");
-		joinAndRescheduleReduce(reduceTasks);
-		LOG.info("Done Joining and Rescheduling Reduce Tasks");
+		LOG.info("Start Running Reduce Tasks");
+		runReduceTasks(reduceInstruction, shuffledResults, pers);
+		LOG.info("Done Running Reduce Tasks");
 
 		LOG.info("Retrieve all Reduce Results from Persistence");
 		Map<String, List<String>> results = pers.getReduceResults();
@@ -104,76 +96,39 @@ public final class Master {
 
 		return results;
 	}
+	
+	/* Methoden fuer Map-Phase */
 
-	private void joinAndRescheduleReduce(List<ReduceWorkerTask> tasks) throws InterruptedException {
-		if (tasks.isEmpty()) {
-			LOG.fine("Nothing to join or reschedule");
-			return;
-		}
-		Thread.sleep(200);
-		List<ReduceWorkerTask> done = new LinkedList<ReduceWorkerTask>();
-		List<ReduceWorkerTask> failed = new LinkedList<ReduceWorkerTask>();
-		for (ReduceWorkerTask task : tasks) {
-			switch (task.getCurrentState()) {
-			case COMPLETED:
-				done.add(task);
-				break;
-			case FAILED:
-				failed.add(task);
-				break;
-			case ENQUEUED: // fall through
-			case INITIATED: // fall through
-			case INPROGRESS:
-				// ok, wird demnaechst ausgefuehrt
-				break;
-			case ABORTED:
-				throw new IllegalStateException("Task must not be in this list when in State ABORTED");
-			default:
-				throw new IllegalStateException("Unhandled state: " + task.getCurrentState());
-			}
-		}
-		LOG.log(Level.FINE, "{0} Tasks done, {1} Tasks failed", new Object[] { done.size(), failed.size() });
-		tasks.removeAll(done);
-		tasks.addAll(restartFailedReduce(failed));
-		joinAndRescheduleReduce(tasks);
-	}
-
-	private List<ReduceWorkerTask> triggerReduceTasks(ReduceInstruction reduceInstruction,
-			Map<String, List<KeyValuePair>> shuffledResults, Persistence pers) throws InterruptedException {
-		List<ReduceWorkerTask> reduceTasks = new LinkedList<ReduceWorkerTask>();
-		for (Entry<String, List<KeyValuePair>> entry : shuffledResults.entrySet()) {
-			String key = entry.getKey();
-			List<KeyValuePair> values = entry.getValue();
-			ReduceWorkerTask task = this.workerTaskFactory.createReduceWorkerTask(reduceInstruction, key, values, pers);
-			this.pool.enqueueTask(task);
-			reduceTasks.add(task);
-		}
-		return reduceTasks;
-	}
-
-	private List<MapWorkerTask> triggerMapTasks(MapInstruction mapInstruction, CombinerInstruction combinerInstruction,
+	private void runMapTasks(MapInstruction mapInstruction, CombinerInstruction combinerInstruction,
 			Iterator<String> inputs, Persistence pers) throws InterruptedException {
 
-		List<MapWorkerTask> mapTasks = new LinkedList<MapWorkerTask>();
+		int housekeepingFrequencey = 100; // nach dieser Anzahl Tasks wird geschaut, ob es failed tasks hat, die nochmal ausgefuehrt werden muessen oder completed, die von liste genommen werden koennen.
+
+		List<MapWorkerTask> runningTasks = new LinkedList<MapWorkerTask>();
+		int cnt = 0; // wie viele tasks wurden neu ausgefuehrt
 		while (inputs.hasNext()) {
+			if (cnt++ == housekeepingFrequencey) {
+				cnt = 0;
+				housekeepingMap(runningTasks);
+			}
 			String input = inputs.next();
-			MapWorkerTask task = this.workerTaskFactory.createMapWorkerTask(mapInstruction, combinerInstruction, input,
-					pers);
+			MapWorkerTask task = this.workerTaskFactory.createMapWorkerTask(mapInstruction, combinerInstruction, input, pers);
 			this.pool.enqueueTask(task);
-			mapTasks.add(task);
+			runningTasks.add(task);
 		}
-		return mapTasks;
+		
+		// warten, bis alle ausgeführt worden sind
+		while(!runningTasks.isEmpty()) {
+			if(!housekeepingMap(runningTasks)) {
+				Thread.sleep(200); // nur warten, wenn sich nichts getan hat
+			}
+		}
 	}
 
-	private void joinAndRescheduleMap(List<MapWorkerTask> tasks) throws InterruptedException {
-		if (tasks.isEmpty()) {
-			LOG.fine("Nothing to join or reschedule");
-			return;
-		}
-		Thread.sleep(200);
+	private boolean housekeepingMap(List<MapWorkerTask> runningTasks) throws InterruptedException {
 		List<MapWorkerTask> done = new LinkedList<MapWorkerTask>();
 		List<MapWorkerTask> failed = new LinkedList<MapWorkerTask>();
-		for (MapWorkerTask task : tasks) {
+		for (MapWorkerTask task : runningTasks) {
 			switch (task.getCurrentState()) {
 			case COMPLETED:
 				done.add(task);
@@ -193,27 +148,85 @@ public final class Master {
 			}
 		}
 		LOG.log(Level.FINE, "{0} Tasks done, {1} Tasks failed", new Object[] { done.size(), failed.size() });
-		tasks.removeAll(done);
-		tasks.addAll(restartFailedMap(failed));
-		joinAndRescheduleMap(tasks);
+		runningTasks.removeAll(done);
+		runningTasks.addAll(restartFailedMap(failed));
+		return done.isEmpty() && failed.isEmpty();
 	}
+	
+	private List<MapWorkerTask> restartFailedMap(List<MapWorkerTask> faileds) throws InterruptedException {
+		LOG.entering(getClass().getName(), "restartFailedMap", faileds.size());
+		List<MapWorkerTask> newtasks = new ArrayList<MapWorkerTask>(faileds.size());
+		for (MapWorkerTask failed : faileds) {
+			MapWorkerTask newtask = this.workerTaskFactory.createMapWorkerTask(failed.getMapInstruction(),
+					failed.getCombinerInstruction(), failed.getInput(), failed.getPersistence());
+			this.pool.enqueueTask(newtask);
+			newtasks.add(newtask);
+		}
+		return newtasks;
+	}
+	
+	/* Methoden fuer Reduce-Phase */
+
+	private void runReduceTasks(ReduceInstruction redInstruction, Map<String, List<KeyValuePair>> shuffled, Persistence pers) throws InterruptedException {
+		int housekeepingFrequencey = 100; // nach dieser Anzahl Tasks wird geschaut, ob es failed tasks hat, die nochmal ausgefuehrt werden muessen oder completed, die von liste genommen werden koennen.
+
+		List<ReduceWorkerTask> runningTasks = new LinkedList<ReduceWorkerTask>();
+		int cnt = 0; // wie viele tasks wurden neu ausgefuehrt
+		for (Entry<String, List<KeyValuePair>> entry : shuffled.entrySet()) {
+			if (cnt++ == housekeepingFrequencey) {
+				cnt = 0;
+				housekeepingReduce(runningTasks);
+			}
+			String key = entry.getKey();
+			List<KeyValuePair> values = entry.getValue();
+			ReduceWorkerTask task = this.workerTaskFactory.createReduceWorkerTask(redInstruction, key, values, pers);
+			this.pool.enqueueTask(task);
+			runningTasks.add(task);
+		}
+		
+		// warten, bis alle ausgeführt worden sind
+		while(!runningTasks.isEmpty()) {
+			if(!housekeepingReduce(runningTasks)) {
+				// nur warten, wenn sich nichts getan hat
+				Thread.sleep(200);
+			}
+		}
+	}
+	
+	private boolean housekeepingReduce(List<ReduceWorkerTask> runningTasks) throws InterruptedException {
+		List<ReduceWorkerTask> done = new LinkedList<ReduceWorkerTask>();
+		List<ReduceWorkerTask> failed = new LinkedList<ReduceWorkerTask>();
+		for (ReduceWorkerTask task : runningTasks) {
+			switch (task.getCurrentState()) {
+			case COMPLETED:
+				done.add(task);
+				break;
+			case FAILED:
+				failed.add(task);
+				break;
+			case ENQUEUED: // fall through
+			case INITIATED: // fall through
+			case INPROGRESS:
+				// ok, wird demnaechst ausgefuehrt
+				break;
+			case ABORTED:
+				throw new IllegalStateException("Task must not be in this list when in State ABORTED");
+			default:
+				throw new IllegalStateException("Unhandled state: " + task.getCurrentState());
+			}
+		}
+		LOG.log(Level.FINE, "{0} Tasks done, {1} Tasks failed", new Object[] { done.size(), failed.size() });
+		runningTasks.removeAll(done);
+		runningTasks.addAll(restartFailedReduce(failed));
+		return done.isEmpty() && !failed.isEmpty();
+	}
+	
 
 	private List<ReduceWorkerTask> restartFailedReduce(List<ReduceWorkerTask> faileds) throws InterruptedException {
 		List<ReduceWorkerTask> newtasks = new ArrayList<ReduceWorkerTask>(faileds.size());
 		for (ReduceWorkerTask failed : faileds) {
 			ReduceWorkerTask newtask = this.workerTaskFactory.createReduceWorkerTask(failed.getReduceInstruction(),
 					failed.getInput(), failed.getValues(), failed.getPersistence());
-			this.pool.enqueueTask(newtask);
-			newtasks.add(newtask);
-		}
-		return newtasks;
-	}
-
-	private List<MapWorkerTask> restartFailedMap(List<MapWorkerTask> faileds) throws InterruptedException {
-		List<MapWorkerTask> newtasks = new ArrayList<MapWorkerTask>(faileds.size());
-		for (MapWorkerTask failed : faileds) {
-			MapWorkerTask newtask = this.workerTaskFactory.createMapWorkerTask(failed.getMapInstruction(),
-					failed.getCombinerInstruction(), failed.getInput(), failed.getPersistence());
 			this.pool.enqueueTask(newtask);
 			newtasks.add(newtask);
 		}
