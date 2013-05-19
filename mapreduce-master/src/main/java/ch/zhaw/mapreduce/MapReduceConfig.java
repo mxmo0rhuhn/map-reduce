@@ -75,6 +75,7 @@ public class MapReduceConfig extends AbstractModule {
 			is.close();
 			LOG.info("Loaded Custom Settings");
 		} catch (FileNotFoundException e) {
+			LOG.fine("No custom config found");
 			// ok, config ist optional
 		} catch (IOException e) {
 			addError(e);
