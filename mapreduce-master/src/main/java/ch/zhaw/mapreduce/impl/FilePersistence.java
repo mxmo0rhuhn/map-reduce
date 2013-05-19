@@ -55,12 +55,13 @@ public class FilePersistence implements Persistence {
 	}
 
 	private void createAndWritable(File dir) {
-		if (!dir.exists()) {
-			if (!dir.mkdirs()) {
-				throw new IllegalArgumentException(dir.getAbsolutePath() + " does not exist and cannot be created");
-			} else {
-				LOG.log(Level.FINE, "Directory {0} created", dir.getAbsolutePath());
-			}
+		if (dir.exists()) {
+			throw new IllegalStateException("Directory must not have existed before: " + dir.getAbsolutePath());
+		}
+		if (!dir.mkdirs()) {
+			throw new IllegalArgumentException(dir.getAbsolutePath() + " does not exist and cannot be created");
+		} else {
+			LOG.log(Level.FINE, "Directory {0} created", dir.getAbsolutePath());
 		}
 		if (!dir.canWrite()) {
 			throw new IllegalArgumentException(dir.getAbsolutePath() + " is not writable");
