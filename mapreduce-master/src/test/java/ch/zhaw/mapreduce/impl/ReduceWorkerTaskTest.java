@@ -5,6 +5,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
@@ -148,6 +149,20 @@ public class ReduceWorkerTaskTest {
 		});
 		pool.enqueueTask(task);
 		assertEquals(State.ENQUEUED, task.getCurrentState());
+	}
+	
+	@Test
+	public void shouldAlsoTransitionToCompleteIfResultIsEmpty() throws Exception {
+		ReduceWorkerTask task = new ReduceWorkerTask(taskUUID, pers, reduceInstr, key, keyVals);
+		task.successful(Collections.emptyList());
+		assertEquals(State.COMPLETED, task.getCurrentState());
+	}
+
+	@Test
+	public void shouldAlsoTransitionToCompleteIfResultIsNull() throws Exception {
+		ReduceWorkerTask task = new ReduceWorkerTask(taskUUID, pers, reduceInstr, key, keyVals);
+		task.successful(null);
+		assertEquals(State.COMPLETED, task.getCurrentState());
 	}
 
 }

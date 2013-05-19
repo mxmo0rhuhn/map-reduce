@@ -87,13 +87,13 @@ public class ReduceWorkerTask extends AbstractWorkerTask {
 				// try-catch
 				List<String> typedResult = (List<String>) result;
 				this.persistence.storeReduceResults(getTaskUuid(), getInput(), typedResult);
-				completed();
 			} catch (ClassCastException e) {
 				LOG.log(Level.SEVERE, "Wrong type for MapTask", e);
 				failed();
 				return;
 			}
 		}
+		completed();
 	}
 
 	@Override

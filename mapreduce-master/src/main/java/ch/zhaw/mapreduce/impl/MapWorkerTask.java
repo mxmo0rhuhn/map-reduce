@@ -96,13 +96,13 @@ public class MapWorkerTask extends AbstractWorkerTask {
 				// try catch
 				List<KeyValuePair> typedResult = (List<KeyValuePair>) result;
 				this.persistence.storeMapResults(getTaskUuid(), typedResult);
-				completed();
 			} catch (ClassCastException e) {
 				LOG.log(Level.SEVERE, "Wrong type for MapTask", e);
 				failed();
 				return;
 			}
 		}
+		completed();
 	}
 
 	@Override

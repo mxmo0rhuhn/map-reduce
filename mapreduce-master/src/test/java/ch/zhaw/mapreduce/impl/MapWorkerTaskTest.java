@@ -6,6 +6,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
@@ -184,5 +185,19 @@ public class MapWorkerTaskTest {
 			}
 		});
 		task.runTask(ctx);
+	}
+	
+	@Test
+	public void shouldAlsoTransitionToCompleteIfResultIsEmpty() throws Exception {
+		final MapWorkerTask task = new MapWorkerTask("inputUUID", pers, mapInstr, combInstr, "hello");
+		task.successful(Collections.emptyList());
+		assertEquals(State.COMPLETED, task.getCurrentState());
+	}
+
+	@Test
+	public void shouldAlsoTransitionToCompleteIfResultIsNull() throws Exception {
+		final MapWorkerTask task = new MapWorkerTask("inputUUID", pers, mapInstr, combInstr, "hello");
+		task.successful(null);
+		assertEquals(State.COMPLETED, task.getCurrentState());
 	}
 }
