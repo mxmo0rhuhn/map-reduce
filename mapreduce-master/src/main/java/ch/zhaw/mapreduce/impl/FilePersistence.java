@@ -138,7 +138,10 @@ public class FilePersistence implements Persistence {
 	@Override
 	public boolean destroyMap(String taskUuid) {
 		File file = new File(this.mapBaseDir, taskUuid);
-		if (file.delete()) {
+		if (!file.exists()) {
+			LOG.log(Level.FINE, "File did not exist {0}", file.getAbsolutePath());
+			return true;
+		} else if (file.delete()) {
 			LOG.log(Level.FINEST, "Successfully deleted {0}", file.getAbsolutePath());
 			return true;
 		} else {
@@ -150,7 +153,10 @@ public class FilePersistence implements Persistence {
 	@Override
 	public boolean destroyReduce(String taskUuid) {
 		File file = new File(this.reduceBaseDir, taskUuid);
-		if (file.delete()) {
+		if (!file.exists()) {
+			LOG.log(Level.FINE, "File did not exist {0}", file.getAbsolutePath());
+			return true;
+		} else if (file.delete()) {
 			LOG.log(Level.FINEST, "Successfully deleted {0}", file.getAbsolutePath());
 			return true;
 		} else {

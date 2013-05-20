@@ -52,4 +52,10 @@ public interface Pool {
 	 * Anzahl Worker die dem Pool bekannt sind. Also die Summe aus arbeitenden und auf-arbeit-wartenden.
 	 */
 	int getCurrentPoolSize();
+	
+	/**
+	 * Anzahl Tasks, die dieser Pool schon ausgefuehrt hat.
+	 * @return
+	 */
+	long totalRunTasks();
 }

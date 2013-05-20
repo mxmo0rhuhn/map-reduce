@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,6 +38,8 @@ public final class PoolImpl implements Pool {
 	private final BlockingQueue<WorkerTask> taskQueue = new LinkedBlockingQueue<WorkerTask>();
 
 	private final AtomicBoolean isRunning = new AtomicBoolean();
+	
+	private final AtomicLong runTasks = new AtomicLong();
 
 	private final Executor workTaskAdministrator;
 
@@ -83,6 +86,11 @@ public final class PoolImpl implements Pool {
 	@Override
 	public int enqueuedTasks() {
 		return this.taskQueue.size();
+	}
+
+	@Override
+	public long totalRunTasks() {
+		return this.runTasks.longValue();
 	}
 
 	/**
@@ -161,6 +169,8 @@ public final class PoolImpl implements Pool {
 
 					LOG.finest("Execute Task on Worker");
 					worker.executeTask(task);
+					
+					runTasks.incrementAndGet();
 				}
 			} catch (InterruptedException e) {
 				LOG.info("Interrupted, stopping WorkerTaskAdministrator");

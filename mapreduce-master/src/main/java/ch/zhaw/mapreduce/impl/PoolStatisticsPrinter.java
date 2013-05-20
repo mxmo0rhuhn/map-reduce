@@ -39,8 +39,9 @@ public class PoolStatisticsPrinter implements Runnable {
 		int poolSize = pool.getCurrentPoolSize();
 		int freeWorkers = pool.getFreeWorkers();
 		int enqueuedTasks = pool.enqueuedTasks();
-		LOG.log(Level.INFO, "Pool: Worker: {0} known Worker, {1} free Worker, {2} Tasks enqueued", new Object[] {
-				poolSize, freeWorkers, enqueuedTasks });
+		long runTasks = pool.totalRunTasks();
+		LOG.log(Level.INFO, "Pool: Worker: {0} known Worker, {1} free Worker, {2} Tasks enqueued, {3} Tasks run", new Object[] {
+				poolSize, freeWorkers, enqueuedTasks, runTasks });
 	}
 
 }

@@ -51,7 +51,7 @@ public class SocketAgentImpl implements SocketAgent {
 	 * der result pusher wartet immer eine bestimmte zeit auf ein resultat, wenn nichts verfügbar ist, loggt er und
 	 * wartet wieder
 	 */
-	private static final int RESULT_PUSHER_CYCLE_TIMEOUT = 2000;
+	private static final int RESULT_PUSHER_CYCLE_TIMEOUT = 10000;
 
 	/**
 	 * Ein SocketAgent hat eine 1:1 Verbindung zum SocketWorker und führt nur einen Task aufs Mal aus

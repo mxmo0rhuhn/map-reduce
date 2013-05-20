@@ -28,8 +28,8 @@ public class SocketClientStarter {
 	
 	public static void main(String[] args) throws Exception {
 		String clientIp = MapReduceUtil.getLocalIp();
-		String masterip = args[0];
-		int masterport = Integer.parseInt(args[1]);
+		String masterip = args.length == 3 ? args[0] : "localhost";
+		int masterport = args.length == 3 ? Integer.parseInt(args[1]) : 4753;
 		int nworker = args.length == 3 ? Integer.parseInt(args[2]) : Runtime.getRuntime().availableProcessors() + 1;
 		
 		Lookup lookup = Simon.createNameLookup(masterip, masterport);
