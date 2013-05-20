@@ -4,6 +4,7 @@ import java.util.logging.Logger;
 
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
+import ch.zhaw.mapreduce.impl.PoolImpl;
 import ch.zhaw.mapreduce.plugins.AgentPlugin;
 import ch.zhaw.mapreduce.plugins.PluginException;
 
@@ -17,7 +18,7 @@ public class ThreadAgentPlugin implements AgentPlugin {
 	public void start(Injector parent) throws PluginException {
 		Injector child = parent.createChildInjector(new ThreadConfig());
 		Integer nworkers = child.getInstance(Key.get(Integer.class, Names.named("nWorkers")));
-		Pool p = child.getInstance(Pool.class);
+		Pool p = child.getInstance(PoolImpl.class);
 		Logger log = child.getInstance(Logger.class);
 
 		log.info("Add " + nworkers + " Workers to Pool");

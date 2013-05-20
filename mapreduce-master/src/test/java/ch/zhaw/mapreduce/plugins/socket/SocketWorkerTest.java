@@ -24,8 +24,8 @@ import org.junit.Test;
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.Persistence;
-import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.WorkerTask;
+import ch.zhaw.mapreduce.impl.PoolImpl;
 import ch.zhaw.mapreduce.plugins.socket.AgentTaskState.State;
 import ch.zhaw.mapreduce.plugins.socket.impl.SocketResultCollectorImpl;
 
@@ -45,7 +45,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 	public void shoudlRunTask() throws Exception {
 		allowGetIp();
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
-		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, schedService, 1);
+		PoolImpl p = new PoolImpl(Executors.newSingleThreadExecutor());
 		p.init();
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200, schedService,
 				2000);
@@ -72,7 +72,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 	public void shouldSetToCompleteImmediately() throws Exception {
 		allowGetIp();
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
-		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, schedService, 1);
+		PoolImpl p = new PoolImpl(Executors.newSingleThreadExecutor());
 		p.init();
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200, schedService,
 				2000);
@@ -104,7 +104,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 	public void shouldSetToFailedImmediately() throws Exception {
 		allowGetIp();
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
-		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, schedService, 1);
+		PoolImpl p = new PoolImpl(Executors.newSingleThreadExecutor());
 		p.init();
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200, schedService,
 				2000);
@@ -130,7 +130,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 	public void shouldGoBackToPoolIfTaskIsRejected() throws Exception {
 		allowGetIp();
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
-		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, schedService, 1);
+		PoolImpl p = new PoolImpl(Executors.newSingleThreadExecutor());
 		p.init();
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200, schedService,
 				2000);
@@ -155,7 +155,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 	public void shouldGoBackToPoolWhenTaskIsFinished() throws Exception {
 		allowGetIp();
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
-		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, schedService, 1);
+		PoolImpl p = new PoolImpl(Executors.newSingleThreadExecutor());
 		p.init();
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200, schedService,
 				2000);
@@ -196,7 +196,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 	public void shouldGoBackToPoolWhenTaskHasFailed() throws Exception {
 		allowGetIp();
 		ExecutorService taskRunnerSrv = Executors.newSingleThreadExecutor();
-		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, schedService, 1);
+		PoolImpl p = new PoolImpl(Executors.newSingleThreadExecutor());
 		p.init();
 		final SocketWorker sw = new SocketWorker(sAgent, taskRunnerSrv, p, atFactory, resCollector, 200, schedService,
 				2000);
@@ -246,8 +246,8 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 		ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 		SocketResultCollector resColl = new SocketResultCollectorImpl();
 		AgentTaskFactory atFactory = new TestAgentTaskFactory();
-		Pool pool = new Pool(Executors.newSingleThreadExecutor(), 1000, 0, Executors.newScheduledThreadPool(1), 10000);
-		pool.init();
+		PoolImpl p = new PoolImpl(Executors.newSingleThreadExecutor());
+		p.init();
 		long pingertimeout = 300;
 		long triggertimeout = 200;
 		int nworker = 2;
@@ -259,16 +259,16 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 		for (int i = 0; i < nworker; i++) {
 			TestSocketAgent agent = new TestSocketAgent(20, agentExec, resColl);
 			agents.add(agent);
-			SocketWorker sw = new SocketWorker(agent, workerExec, pool, atFactory, resColl, triggertimeout, scheduler, pingertimeout);
+			SocketWorker sw = new SocketWorker(agent, workerExec, p, atFactory, resColl, triggertimeout, scheduler, pingertimeout);
 			sw.startAgentPinger();
-			pool.donateWorker(sw);
+			p.donateWorker(sw);
 		}
 		for (int i = 0; i < ntasks; i++) {
-			pool.enqueueTask(new TestTask());
+			p.enqueueTask(new TestTask());
 		}
 
 		int enqueued;
-		while ((enqueued = pool.enqueuedTasks()) != 0 || pool.getFreeWorkers() != pool.getCurrentPoolSize()) {
+		while ((enqueued = p.enqueuedTasks()) != 0 || p.getFreeWorkers() != p.getCurrentPoolSize()) {
 			Thread.sleep(1000);
 			System.out.println("waiting: " + enqueued);
 		}
@@ -280,7 +280,7 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 		assertTrue(workerExec.shutdownNow().isEmpty());
 		assertTrue(agentExec.shutdownNow().isEmpty());
 
-		assertEquals(nworker, pool.getFreeWorkers());
+		assertEquals(nworker, p.getFreeWorkers());
 		assertEquals(0, resColl.getResultStates().size() - countRejections(agents));
 	}
 

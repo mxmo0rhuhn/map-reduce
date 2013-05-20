@@ -15,6 +15,8 @@ import javax.inject.Named;
 
 import ch.zhaw.mapreduce.impl.FilePersistence;
 import ch.zhaw.mapreduce.impl.InMemoryShuffler;
+import ch.zhaw.mapreduce.impl.PoolImpl;
+import ch.zhaw.mapreduce.impl.PoolStatisticsPrinter;
 import ch.zhaw.mapreduce.plugins.Loader;
 import ch.zhaw.mapreduce.plugins.socket.impl.NamedThreadFactory;
 
@@ -43,10 +45,12 @@ public class MapReduceConfig extends AbstractModule {
 		initNamedProperties();
 
 		bind(Master.class);
-		bind(Pool.class);
+		bind(Pool.class).to(PoolImpl.class);
 		bind(Loader.class);
 		bind(Shuffler.class).to(InMemoryShuffler.class);
 		bind(Persistence.class).to(FilePersistence.class);
+		
+		bind(PoolStatisticsPrinter.class).asEagerSingleton();
 
 		install(new FactoryModuleBuilder().build(WorkerTaskFactory.class));
 

@@ -7,6 +7,7 @@ import ch.zhaw.mapreduce.MapReduceUtil;
 import ch.zhaw.mapreduce.Persistence;
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
+import ch.zhaw.mapreduce.impl.PoolImpl;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -23,7 +24,7 @@ public class TestSocketServer {
 		AgentRegistrator agentRegistrator = injector.getInstance(AgentRegistrator.class);
 		SocketResultCollector resultCollector = injector.getInstance(SocketResultCollector.class);
 		Persistence pers = injector.getInstance(Persistence.class);
-		Pool p = injector.getInstance(Pool.class);
+		Pool p = injector.getInstance(PoolImpl.class);
 
 		LOG.info("I, " + MapReduceUtil.getLocalIp() + ", am thee Master and thou shalt be my Slaves!");
 		

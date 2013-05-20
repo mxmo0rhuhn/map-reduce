@@ -8,55 +8,42 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
 import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
+import ch.zhaw.mapreduce.plugins.socket.impl.NamedThreadFactory;
 
 public final class Master {
 
 	private static final Logger LOG = Logger.getLogger(Master.class.getName());
 
+	private final ExecutorService executorPool = Executors.newSingleThreadExecutor(new NamedThreadFactory(
+			"AfterShuffleHookService"));
+
 	private final Shuffler shuffler;
 
 	private final Provider<Persistence> persistenceProvider;
 
-	private final ScheduledExecutorService supervisorService;
 	private final Pool pool;
+
 	private final WorkerTaskFactory workerTaskFactory;
-	private final ExecutorService executorPool = Executors.newCachedThreadPool();
-	private final long statisticsPrintTimeout;
-	private volatile int currentTaskPercentage;
+
+	private final int maxrunningtasks;
 
 	@Inject
 	Master(Pool pool, WorkerTaskFactory workerTaskFactory, Shuffler shuffler,
-			Provider<Persistence> persistenceProvider,
-			@Named("supervisorScheduler") ScheduledExecutorService supervisorService,
-			@Named("statisticsPrinterTimeout") long statisticsTimeout) {
+			Provider<Persistence> persistenceProvider, @Named("MaxRunningTasks") int maxrunningtasks) {
 		this.pool = pool;
 		this.workerTaskFactory = workerTaskFactory;
 		this.shuffler = shuffler;
 		this.persistenceProvider = persistenceProvider;
-		this.supervisorService = supervisorService;
-		this.statisticsPrintTimeout = statisticsTimeout;
-	}
-
-	@PostConstruct
-	public void startSupervisor() {
-		this.supervisorService.scheduleAtFixedRate((new Runnable() {
-			@Override
-			public void run() {
-				LOG.info("Master: " + currentTaskPercentage + " % Tasks processed");
-			}
-		}), statisticsPrintTimeout, statisticsPrintTimeout, TimeUnit.MILLISECONDS);
+		this.maxrunningtasks = maxrunningtasks;
 	}
 
 	public Map<String, List<String>> runComputation(final MapInstruction mapInstruction,
@@ -96,30 +83,28 @@ public final class Master {
 
 		return results;
 	}
-	
+
 	/* Methoden fuer Map-Phase */
 
 	private void runMapTasks(MapInstruction mapInstruction, CombinerInstruction combinerInstruction,
 			Iterator<String> inputs, Persistence pers) throws InterruptedException {
-
-		int housekeepingFrequencey = 100; // nach dieser Anzahl Tasks wird geschaut, ob es failed tasks hat, die nochmal ausgefuehrt werden muessen oder completed, die von liste genommen werden koennen.
-
 		List<MapWorkerTask> runningTasks = new LinkedList<MapWorkerTask>();
-		int cnt = 0; // wie viele tasks wurden neu ausgefuehrt
 		while (inputs.hasNext()) {
-			if (cnt++ == housekeepingFrequencey) {
-				cnt = 0;
-				housekeepingMap(runningTasks);
+			while (runningTasks.size() > maxrunningtasks) {
+				if (!housekeepingMap(runningTasks)) {
+					Thread.sleep(200);
+				}
 			}
 			String input = inputs.next();
-			MapWorkerTask task = this.workerTaskFactory.createMapWorkerTask(mapInstruction, combinerInstruction, input, pers);
+			MapWorkerTask task = this.workerTaskFactory.createMapWorkerTask(mapInstruction, combinerInstruction, input,
+					pers);
 			this.pool.enqueueTask(task);
 			runningTasks.add(task);
 		}
-		
+
 		// warten, bis alle ausgeführt worden sind
-		while(!runningTasks.isEmpty()) {
-			if(!housekeepingMap(runningTasks)) {
+		while (!runningTasks.isEmpty()) {
+			if (!housekeepingMap(runningTasks)) {
 				Thread.sleep(200); // nur warten, wenn sich nichts getan hat
 			}
 		}
@@ -152,7 +137,7 @@ public final class Master {
 		runningTasks.addAll(restartFailedMap(failed));
 		return done.isEmpty() && failed.isEmpty();
 	}
-	
+
 	private List<MapWorkerTask> restartFailedMap(List<MapWorkerTask> faileds) throws InterruptedException {
 		LOG.entering(getClass().getName(), "restartFailedMap", faileds.size());
 		List<MapWorkerTask> newtasks = new ArrayList<MapWorkerTask>(faileds.size());
@@ -164,18 +149,18 @@ public final class Master {
 		}
 		return newtasks;
 	}
-	
+
 	/* Methoden fuer Reduce-Phase */
 
-	private void runReduceTasks(ReduceInstruction redInstruction, Map<String, List<KeyValuePair>> shuffled, Persistence pers) throws InterruptedException {
-		int housekeepingFrequencey = 100; // nach dieser Anzahl Tasks wird geschaut, ob es failed tasks hat, die nochmal ausgefuehrt werden muessen oder completed, die von liste genommen werden koennen.
+	private void runReduceTasks(ReduceInstruction redInstruction, Map<String, List<KeyValuePair>> shuffled,
+			Persistence pers) throws InterruptedException {
 
 		List<ReduceWorkerTask> runningTasks = new LinkedList<ReduceWorkerTask>();
-		int cnt = 0; // wie viele tasks wurden neu ausgefuehrt
 		for (Entry<String, List<KeyValuePair>> entry : shuffled.entrySet()) {
-			if (cnt++ == housekeepingFrequencey) {
-				cnt = 0;
-				housekeepingReduce(runningTasks);
+			while (runningTasks.size() > maxrunningtasks) {
+				if (!housekeepingReduce(runningTasks)) {
+					Thread.sleep(200);
+				}
 			}
 			String key = entry.getKey();
 			List<KeyValuePair> values = entry.getValue();
@@ -183,16 +168,16 @@ public final class Master {
 			this.pool.enqueueTask(task);
 			runningTasks.add(task);
 		}
-		
+
 		// warten, bis alle ausgeführt worden sind
-		while(!runningTasks.isEmpty()) {
-			if(!housekeepingReduce(runningTasks)) {
+		while (!runningTasks.isEmpty()) {
+			if (!housekeepingReduce(runningTasks)) {
 				// nur warten, wenn sich nichts getan hat
 				Thread.sleep(200);
 			}
 		}
 	}
-	
+
 	private boolean housekeepingReduce(List<ReduceWorkerTask> runningTasks) throws InterruptedException {
 		List<ReduceWorkerTask> done = new LinkedList<ReduceWorkerTask>();
 		List<ReduceWorkerTask> failed = new LinkedList<ReduceWorkerTask>();
@@ -220,7 +205,6 @@ public final class Master {
 		runningTasks.addAll(restartFailedReduce(failed));
 		return done.isEmpty() && !failed.isEmpty();
 	}
-	
 
 	private List<ReduceWorkerTask> restartFailedReduce(List<ReduceWorkerTask> faileds) throws InterruptedException {
 		List<ReduceWorkerTask> newtasks = new ArrayList<ReduceWorkerTask>(faileds.size());

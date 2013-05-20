@@ -33,7 +33,6 @@ import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapEmitter;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.Persistence;
-import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.WorkerTask.State;
 import ch.zhaw.mapreduce.plugins.thread.ThreadWorker;
 
@@ -125,7 +124,7 @@ public class MapWorkerTaskTest {
 	public void shouldBeInProgressWhileRunning() throws InterruptedException, BrokenBarrierException {
 		final CyclicBarrier barrier = new CyclicBarrier(2);
 		ExecutorService taskExec = Executors.newSingleThreadExecutor();
-		final Pool pool = new Pool(Executors.newSingleThreadExecutor(), 1, 2, Executors.newSingleThreadScheduledExecutor(), 1);
+		final PoolImpl pool = new PoolImpl(Executors.newSingleThreadExecutor());
 		pool.init();
 		ThreadWorker worker = new ThreadWorker(pool, taskExec, ctxProvider);
 		pool.donateWorker(worker);
@@ -156,7 +155,7 @@ public class MapWorkerTaskTest {
 
 	@Test
 	public void shouldBeEnqueuedAfterSubmissionToPool() throws Exception {
-		final Pool pool = new Pool(Executors.newSingleThreadExecutor(), 1, 2, Executors.newSingleThreadScheduledExecutor(), 1);
+		final PoolImpl pool = new PoolImpl(Executors.newSingleThreadExecutor());
 		pool.init();
 		final MapWorkerTask task = new MapWorkerTask(inputUUID, pers, mapInstr, null, input);
 		this.mockery.checking(new Expectations() {

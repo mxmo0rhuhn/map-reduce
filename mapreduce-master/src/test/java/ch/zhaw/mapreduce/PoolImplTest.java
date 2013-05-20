@@ -8,7 +8,6 @@ import static org.junit.Assert.fail;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -24,9 +23,10 @@ import org.jmock.lib.concurrent.Synchroniser;
 import org.junit.Rule;
 import org.junit.Test;
 
+import ch.zhaw.mapreduce.impl.PoolImpl;
 import ch.zhaw.mapreduce.plugins.thread.ThreadWorker;
 
-public class PoolTest {
+public class PoolImplTest {
 
 	@Rule
 	public JUnitRuleMockery mockery = new JUnitRuleMockery(){{setThreadingPolicy(new Synchroniser());}};
@@ -54,11 +54,9 @@ public class PoolTest {
 	
 	private Executor executor = Executors.newSingleThreadExecutor();
 	
-	private ScheduledExecutorService sExec = Executors.newSingleThreadScheduledExecutor();
-
 	@Test
 	public void shouldHaveZeroInitialWorker() {
-		Pool p = new Pool(executor, 1, 2, sExec, 1);
+		PoolImpl p = new PoolImpl(executor);
 		p.init();
 		assertEquals(0, p.getCurrentPoolSize());
 		assertEquals(0, p.getFreeWorkers());
@@ -66,7 +64,7 @@ public class PoolTest {
 
 	@Test
 	public void shouldHaveOneWorker() {
-		Pool p = new Pool(executor, 1, 2, sExec, 1);
+		PoolImpl p = new PoolImpl(executor);
 		p.init();
 		p.donateWorker(worker);
 		assertEquals(1, p.getCurrentPoolSize());
@@ -77,7 +75,7 @@ public class PoolTest {
 	public void shouldHaveTwoWorker() {
 		Worker w1 = this.mockery.mock(Worker.class, "w1");
 		Worker w2 = this.mockery.mock(Worker.class, "w2");
-		Pool p = new Pool(executor, 1, 2, sExec, 1);
+		PoolImpl p = new PoolImpl(executor);
 		p.init();
 		p.donateWorker(w1);
 		p.donateWorker(w2);
@@ -87,7 +85,7 @@ public class PoolTest {
 
 	@Test(expected = IllegalStateException.class)
 	public void shouldNotBeAbleToInitTwice() {
-		Pool p = new Pool(executor, 1, 2, sExec, 1);
+		PoolImpl p = new PoolImpl(executor);
 		try {
 			p.init(); // first time must work
 		} catch (IllegalStateException ise) {
@@ -99,7 +97,7 @@ public class PoolTest {
 	@Test
 	public void shouldExecuteWork() throws InterruptedException {
 		final ExactCommandExecutor threadExec = new ExactCommandExecutor(1);
-		Pool p = new Pool(executor, 1, 2, sExec, 1);
+		PoolImpl p = new PoolImpl(executor);
 		p.init();
 		final ThreadWorker worker = new ThreadWorker(p, threadExec, ctxProvider);
 		p.donateWorker(worker);
@@ -130,7 +128,7 @@ public class PoolTest {
 				return ts[0];
 			}
 		});
-		Pool p = new Pool(exec, 1, 2, sExec, 1);
+		PoolImpl p = new PoolImpl(exec);
 		p.init();
 		assertTrue(p.isRunning());
 		Thread.sleep(200);

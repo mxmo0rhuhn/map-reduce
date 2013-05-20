@@ -5,7 +5,6 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Provider;
@@ -24,10 +23,10 @@ import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.KeyValuePair;
 import ch.zhaw.mapreduce.MapInstruction;
 import ch.zhaw.mapreduce.Persistence;
-import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.ReduceInstruction;
 import ch.zhaw.mapreduce.WorkerTask;
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
+import ch.zhaw.mapreduce.impl.PoolImpl;
 import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 
 public class ThreadWorkerTest {
@@ -54,9 +53,6 @@ public class ThreadWorkerTest {
 	private ExecutorService execMock;
 	
 	@Mock
-	private ScheduledExecutorService sExec;
-	
-	@Mock
 	private MapInstruction mapInstr;
 	
 	@Mock
@@ -68,7 +64,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldGoBackToPool() throws InterruptedException {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, sExec, 1);
+		PoolImpl p = new PoolImpl(Executors.newSingleThreadExecutor());
 		p.init();
 		final ThreadWorker worker = new ThreadWorker(p, exec, ctxProvider);
 		p.donateWorker(worker);
@@ -88,7 +84,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldPersistReduceResultOnly() {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, sExec, 1);
+		PoolImpl p = new PoolImpl(Executors.newSingleThreadExecutor());
 		p.init();
 		final ThreadWorker worker = new ThreadWorker(p, exec, ctxProvider);
 		final ReduceWorkerTask task = new ReduceWorkerTask("taskUuid", pers, redInstr, "key", new ArrayList<KeyValuePair>());
@@ -106,7 +102,7 @@ public class ThreadWorkerTest {
 	@Test
 	public void shouldSetTaskToFailedOnException() throws Exception  {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
-		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, sExec, 1);
+		PoolImpl p = new PoolImpl(Executors.newSingleThreadExecutor());
 		p.init();
 		final ThreadWorker worker = new ThreadWorker(p, exec, ctxProvider);
 		this.mockery.checking(new Expectations() {

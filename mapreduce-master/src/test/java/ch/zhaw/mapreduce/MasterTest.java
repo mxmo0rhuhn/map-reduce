@@ -1,7 +1,5 @@
 package ch.zhaw.mapreduce;
 
-import java.util.concurrent.Executors;
-
 import javax.inject.Provider;
 
 import org.jmock.auto.Mock;
@@ -25,8 +23,6 @@ public class MasterTest {
 	
 	@Test
 	public void shouldCreateMaster() throws Exception {
-		Pool pool = new Pool(Executors.newScheduledThreadPool(1), 1, 2, Executors.newSingleThreadScheduledExecutor(), 1000);
-		pool.init();
 		//Master m = new Master(pool, wtFactory, sProvider, pProvider, Executors.newSingleThreadScheduledExecutor(), 1L, 1, 2, 3);
 	}
 
