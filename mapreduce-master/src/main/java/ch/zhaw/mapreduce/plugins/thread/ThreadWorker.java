@@ -84,7 +84,11 @@ public class ThreadWorker implements Worker {
 					LOG.log(Level.SEVERE, "Failed to run Task", e);
 					task.fail();
 				}
-				pool.workerIsFinished(ThreadWorker.this);
+				if (!pool.workerIsFinished(ThreadWorker.this)) {
+					LOG.info("Not Accepted by Pool. Probably died in the meantime");
+				} else {
+					LOG.fine("Went back to Pool");
+				}
 				LOG.exiting(getClass().getName(), "executeTask.call");
 				return null;
 			}
@@ -107,7 +111,7 @@ public class ThreadWorker implements Worker {
 			LOG.warning("No current Task available for this MapReduceID");
 		}
 	}
-	
+
 	void completeTask(WorkerTask task, Context ctx) {
 		if (task instanceof MapWorkerTask) {
 			List<KeyValuePair> mapRes = ctx.getMapResult();
