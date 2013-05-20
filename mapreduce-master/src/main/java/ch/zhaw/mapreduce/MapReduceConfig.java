@@ -12,6 +12,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
 
 import javax.inject.Named;
+import javax.inject.Singleton;
 
 import ch.zhaw.mapreduce.impl.FilePersistence;
 import ch.zhaw.mapreduce.impl.InMemoryShuffler;
@@ -45,7 +46,7 @@ public class MapReduceConfig extends AbstractModule {
 		initNamedProperties();
 
 		bind(Master.class);
-		bind(Pool.class).to(PoolImpl.class);
+		bind(Pool.class).to(PoolImpl.class).in(Singleton.class);
 		bind(Loader.class);
 		bind(Shuffler.class).to(InMemoryShuffler.class);
 		bind(Persistence.class).to(FilePersistence.class);

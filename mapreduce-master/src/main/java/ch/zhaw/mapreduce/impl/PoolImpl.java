@@ -12,7 +12,6 @@ import java.util.logging.Logger;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.inject.Singleton;
 
 import ch.zhaw.mapreduce.Pool;
 import ch.zhaw.mapreduce.Worker;
@@ -24,7 +23,6 @@ import ch.zhaw.mapreduce.WorkerTask;
  * @author Max, Sacher
  * 
  */
-@Singleton
 public final class PoolImpl implements Pool {
 
 	private static final Logger LOG = Logger.getLogger(PoolImpl.class.getName());
