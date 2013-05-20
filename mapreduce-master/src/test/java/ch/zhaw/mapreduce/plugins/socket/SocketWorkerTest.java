@@ -98,9 +98,6 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 		});
 		sw.executeTask(workerTask);
 		sync.waitUntil(taskRunnerState.is("runningTask"), 200);
-		Thread.yield();
-		Thread.sleep(200);
-		assertEquals(1, p.getFreeWorkers());
 	}
 
 	@Test
@@ -114,28 +111,19 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 		taskRunnerState.startsAs("beforeRunning");
 		mockery.checking(new Expectations() {
 			{
-				oneOf(atFactory).createAgentTask(workerTask);
-				will(returnValue(agentTask));
-				oneOf(sAgent).runTask(agentTask);
-				will(returnValue(new AgentTaskState(State.ACCEPTED)));
+				oneOf(atFactory).createAgentTask(workerTask); will(returnValue(agentTask));
+				oneOf(sAgent).runTask(agentTask); will(returnValue(new AgentTaskState(State.ACCEPTED)));
 				oneOf(workerTask).started();
-				oneOf(workerTask).getTaskUuid();
-				will(returnValue(taskUuid));
-				oneOf(resCollector).registerObserver(taskUuid, sw);
-				will(returnValue(saRes));
-				oneOf(saRes).wasSuccessful();
-				will(returnValue(false));
+				oneOf(workerTask).getTaskUuid(); will(returnValue(taskUuid));
+				oneOf(resCollector).registerObserver(taskUuid, sw); will(returnValue(saRes));
+				oneOf(saRes).wasSuccessful(); will(returnValue(false));
+				oneOf(saRes).getException(); will(returnValue(new Exception()));
 				oneOf(workerTask).fail();
-				oneOf(saRes).getException();
-				will(returnValue(new Exception()));
 				then(taskRunnerState.is("runningTask"));
 			}
 		});
 		sw.executeTask(workerTask);
 		sync.waitUntil(taskRunnerState.is("runningTask"), 200);
-		Thread.yield();
-		Thread.sleep(200);
-		assertEquals(1, p.getFreeWorkers());
 	}
 
 	@Test
@@ -161,9 +149,6 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 		});
 		sw.executeTask(workerTask);
 		sync.waitUntil(taskRunnerState.is("runningTask"), 200);
-		Thread.yield();
-		Thread.sleep(200); // geht erst nach dem task.failed aufruf in den pool, also noch kurz warten
-		assertEquals(1, p.getFreeWorkers());
 	}
 
 	@Test
@@ -265,8 +250,8 @@ public class SocketWorkerTest extends AbstractMapReduceMasterSocketTest {
 		pool.init();
 		long pingertimeout = 300;
 		long triggertimeout = 200;
-		int nworker = 20;
-		int ntasks = 100000;
+		int nworker = 2;
+		int ntasks = 10;
 
 		ExecutorService workerExec = Executors.newFixedThreadPool(nworker);
 		ExecutorService agentExec = Executors.newFixedThreadPool(nworker);

@@ -3,7 +3,6 @@ package ch.zhaw.mapreduce.plugins.thread;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -67,11 +66,12 @@ public class ThreadWorkerTest {
 	private ReduceInstruction redInstr;
 
 	@Test
-	public void shouldGoBackToPool() {
+	public void shouldGoBackToPool() throws InterruptedException {
 		ExactCommandExecutor exec = new ExactCommandExecutor(1);
 		Pool p = new Pool(Executors.newSingleThreadExecutor(), 1, 2, sExec, 1);
 		p.init();
 		final ThreadWorker worker = new ThreadWorker(p, exec, ctxProvider);
+		p.donateWorker(worker);
 		final MapWorkerTask task = new MapWorkerTask("taskUuid", pers, mapInstr, null, "input");
 		this.mockery.checking(new Expectations() {
 			{
@@ -80,7 +80,7 @@ public class ThreadWorkerTest {
 				oneOf(ctx).getMapResult(); will(returnValue(new ArrayList<KeyValuePair>()));
 			}
 		});
-		worker.executeTask(task);
+		p.enqueueTask(task);
 		exec.waitForExpectedTasks(200, TimeUnit.MILLISECONDS);
 		assertEquals(1, p.getFreeWorkers());
 	}
@@ -101,7 +101,6 @@ public class ThreadWorkerTest {
 		});
 		worker.executeTask(task);
 		exec.waitForExpectedTasks(200, TimeUnit.MILLISECONDS);
-		assertEquals(1, p.getFreeWorkers());
 	}
 
 	@Test

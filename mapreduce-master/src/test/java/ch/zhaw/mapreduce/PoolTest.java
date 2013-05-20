@@ -121,16 +121,6 @@ public class PoolTest {
 	}
 	
 	@Test
-	public void shouldBeFreeAgain() {
-		Pool p = new Pool(executor, 1, 2, sExec, 1); p.init();
-		assertEquals(0, p.getFreeWorkers());
-		assertEquals(0, p.getCurrentPoolSize());
-		p.workerIsFinished(worker);
-		assertEquals(1, p.getFreeWorkers());
-		assertEquals(1, p.getCurrentPoolSize());
-	}
-
-	@Test
 	public void shouldStopUponInterruption() throws InterruptedException {
 		final Thread[] ts = new Thread[1];
 		Executor exec = Executors.newSingleThreadExecutor(new ThreadFactory() {
