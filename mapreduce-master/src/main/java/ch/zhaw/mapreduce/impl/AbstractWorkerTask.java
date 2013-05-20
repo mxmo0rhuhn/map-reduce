@@ -74,7 +74,7 @@ abstract class AbstractWorkerTask implements WorkerTask {
 	/**
 	 * Setzt den neuen State als State. Der neue State darf nicht der gleich sein.
 	 */
-	private void setState(State newState) {
+	public final void setState(State newState) {
 		if (this.currentState == newState) {
 			throw new IllegalStateException("Task was already in State: " + newState);
 		}

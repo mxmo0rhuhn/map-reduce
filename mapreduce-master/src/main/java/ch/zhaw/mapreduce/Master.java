@@ -86,11 +86,11 @@ public final class Master {
 
 	/* Methoden fuer Map-Phase */
 
-	private void runMapTasks(MapInstruction mapInstruction, CombinerInstruction combinerInstruction,
+	void runMapTasks(MapInstruction mapInstruction, CombinerInstruction combinerInstruction,
 			Iterator<String> inputs, Persistence pers) throws InterruptedException {
 		List<MapWorkerTask> runningTasks = new LinkedList<MapWorkerTask>();
 		while (inputs.hasNext()) {
-			while (runningTasks.size() > maxrunningtasks) {
+			while (runningTasks.size() >= maxrunningtasks) {
 				if (!housekeepingMap(runningTasks)) {
 					Thread.sleep(200);
 				}
@@ -110,7 +110,7 @@ public final class Master {
 		}
 	}
 
-	private boolean housekeepingMap(List<MapWorkerTask> runningTasks) throws InterruptedException {
+	boolean housekeepingMap(List<MapWorkerTask> runningTasks) {
 		List<MapWorkerTask> done = new LinkedList<MapWorkerTask>();
 		List<MapWorkerTask> failed = new LinkedList<MapWorkerTask>();
 		for (MapWorkerTask task : runningTasks) {
@@ -134,11 +134,12 @@ public final class Master {
 		}
 		LOG.log(Level.FINE, "{0} Tasks done, {1} Tasks failed", new Object[] { done.size(), failed.size() });
 		runningTasks.removeAll(done);
+		runningTasks.removeAll(failed);
 		runningTasks.addAll(restartFailedMap(failed));
 		return done.isEmpty() && failed.isEmpty();
 	}
 
-	private List<MapWorkerTask> restartFailedMap(List<MapWorkerTask> faileds) throws InterruptedException {
+	List<MapWorkerTask> restartFailedMap(List<MapWorkerTask> faileds) {
 		LOG.entering(getClass().getName(), "restartFailedMap", faileds.size());
 		List<MapWorkerTask> newtasks = new ArrayList<MapWorkerTask>(faileds.size());
 		for (MapWorkerTask failed : faileds) {
@@ -152,12 +153,12 @@ public final class Master {
 
 	/* Methoden fuer Reduce-Phase */
 
-	private void runReduceTasks(ReduceInstruction redInstruction, Map<String, List<KeyValuePair>> shuffled,
+	void runReduceTasks(ReduceInstruction redInstruction, Map<String, List<KeyValuePair>> shuffled,
 			Persistence pers) throws InterruptedException {
 
 		List<ReduceWorkerTask> runningTasks = new LinkedList<ReduceWorkerTask>();
 		for (Entry<String, List<KeyValuePair>> entry : shuffled.entrySet()) {
-			while (runningTasks.size() > maxrunningtasks) {
+			while (runningTasks.size() >= maxrunningtasks) {
 				if (!housekeepingReduce(runningTasks)) {
 					Thread.sleep(200);
 				}
@@ -178,7 +179,7 @@ public final class Master {
 		}
 	}
 
-	private boolean housekeepingReduce(List<ReduceWorkerTask> runningTasks) throws InterruptedException {
+	boolean housekeepingReduce(List<ReduceWorkerTask> runningTasks) {
 		List<ReduceWorkerTask> done = new LinkedList<ReduceWorkerTask>();
 		List<ReduceWorkerTask> failed = new LinkedList<ReduceWorkerTask>();
 		for (ReduceWorkerTask task : runningTasks) {
@@ -202,11 +203,12 @@ public final class Master {
 		}
 		LOG.log(Level.FINE, "{0} Tasks done, {1} Tasks failed", new Object[] { done.size(), failed.size() });
 		runningTasks.removeAll(done);
+		runningTasks.removeAll(failed);
 		runningTasks.addAll(restartFailedReduce(failed));
 		return done.isEmpty() && !failed.isEmpty();
 	}
 
-	private List<ReduceWorkerTask> restartFailedReduce(List<ReduceWorkerTask> faileds) throws InterruptedException {
+	List<ReduceWorkerTask> restartFailedReduce(List<ReduceWorkerTask> faileds) {
 		List<ReduceWorkerTask> newtasks = new ArrayList<ReduceWorkerTask>(faileds.size());
 		for (ReduceWorkerTask failed : faileds) {
 			ReduceWorkerTask newtask = this.workerTaskFactory.createReduceWorkerTask(failed.getReduceInstruction(),

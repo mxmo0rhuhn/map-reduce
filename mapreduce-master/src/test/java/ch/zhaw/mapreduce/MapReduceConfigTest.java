@@ -14,7 +14,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import ch.zhaw.mapreduce.impl.MapWorkerTask;
-import ch.zhaw.mapreduce.impl.PoolImpl;
 import ch.zhaw.mapreduce.impl.ReduceWorkerTask;
 
 import com.google.inject.Guice;
@@ -49,8 +48,8 @@ public class MapReduceConfigTest {
 	@Test
 	public void poolShouldBeSingleton() {
 		Injector injector = Guice.createInjector(new MapReduceConfig());
-		Pool p1 = injector.getInstance(PoolImpl.class);
-		Pool p2 = injector.getInstance(PoolImpl.class);
+		Pool p1 = injector.getInstance(Pool.class);
+		Pool p2 = injector.getInstance(Pool.class);
 		assertSame(p1, p2);
 	}
 
@@ -61,14 +60,14 @@ public class MapReduceConfigTest {
 		Thread t1 = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				pools[0] = injector.getInstance(PoolImpl.class);
+				pools[0] = injector.getInstance(Pool.class);
 			}
 		});
 
 		Thread t2 = new Thread(new Runnable() {
 			@Override
 			public void run() {
-				pools[1] = injector.getInstance(PoolImpl.class);
+				pools[1] = injector.getInstance(Pool.class);
 			}
 		});
 
@@ -77,7 +76,7 @@ public class MapReduceConfigTest {
 		t1.join();
 		t2.join();
 		assertSame(pools[0], pools[1]);
-		assertSame(pools[1], injector.getInstance(PoolImpl.class));
+		assertSame(pools[1], injector.getInstance(Pool.class));
 	}
 
 	@Test
