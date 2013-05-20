@@ -111,6 +111,8 @@ public final class Pool {
 	public int getFreeWorkers() {
 		return availableWorkers.size();
 	}
+	
+	public int enqueuedTasks() { return this.taskQueue.size(); }
 
 	/**
 	 * Diese Methode wird augerufen, wenn ein Worker nicht mehr zum Ausführen von Tasks zur
@@ -131,13 +133,18 @@ public final class Pool {
 	/**
 	 * {@inheritDoc}
 	 */
-	public void workerIsFinished(Worker finishedWorker) {
+	public boolean workerIsFinished(Worker finishedWorker) {
 		LOG.entering(getClass().getName(), "workerIsFinished", finishedWorker);
+		boolean accepted;
 		if (!workingWorkers.remove(finishedWorker)) {
 			LOG.warning("Worker was not working before");
+			accepted = false;
+		} else {
+			availableWorkers.add(finishedWorker);
+			accepted = true;
 		}
-		availableWorkers.add(finishedWorker);
-		LOG.exiting(getClass().getName(), "workerIsFinished");
+		LOG.exiting(getClass().getName(), "workerIsFinished", accepted);
+		return accepted;
 	}
 
 	/**
