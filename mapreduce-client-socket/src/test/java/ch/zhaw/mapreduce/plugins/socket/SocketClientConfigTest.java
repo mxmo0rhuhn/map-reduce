@@ -98,16 +98,16 @@ public class SocketClientConfigTest extends AbstractClientSocketMapReduceTest {
 	@Test
 	public void pusherServiceShouldBeSingleton() {
 		Injector injector = Guice.createInjector(new SocketClientConfig(resCollector, 1));
-		ExecutorService exec1 = injector.getInstance(Key.get(ExecutorService.class, Names.named("resultPusherService")));
-		ExecutorService exec2 = injector.getInstance(Key.get(ExecutorService.class, Names.named("resultPusherService")));
+		ExecutorService exec1 = injector.getInstance(Key.get(ExecutorService.class, Names.named("ResultPusherService")));
+		ExecutorService exec2 = injector.getInstance(Key.get(ExecutorService.class, Names.named("ResultPusherService")));
 		assertSame(exec1, exec2);
 	}
 	
 	@Test
 	public void runnerServiceShouldBeSingleton() {
 		Injector injector = Guice.createInjector(new SocketClientConfig(resCollector, 1));
-		ExecutorService exec1 = injector.getInstance(Key.get(ExecutorService.class, Names.named("taskRunnerService")));
-		ExecutorService exec2 = injector.getInstance(Key.get(ExecutorService.class, Names.named("taskRunnerService")));
+		ExecutorService exec1 = injector.getInstance(Key.get(ExecutorService.class, Names.named("TaskRunnerService")));
+		ExecutorService exec2 = injector.getInstance(Key.get(ExecutorService.class, Names.named("TaskRunnerService")));
 		assertSame(exec1, exec2);
 	}
 }

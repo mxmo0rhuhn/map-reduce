@@ -47,5 +47,21 @@ public final class SocketAgentResultImpl implements SocketAgentResult {
 	public List<?> getResult() {
 		return this.result;
 	}
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(getClass().getSimpleName());
+		sb.append("[TaskUuid="+this.taskUuid);
+		sb.append(",wasSuccessful="+this.wasSuccessful());
+		if (this.result != null) {
+			sb.append(",result="+this.result);
+		}
+		if (this.exception != null) {
+			sb.append(",exception="+this.exception);
+		}
+		sb.append(']');
+		return sb.toString();
+	}
 
 }

@@ -1,6 +1,5 @@
 package ch.zhaw.mapreduce.plugins.thread;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
@@ -115,15 +114,9 @@ public class ThreadWorker implements Worker {
 	void completeTask(WorkerTask task, Context ctx) {
 		if (task instanceof MapWorkerTask) {
 			List<KeyValuePair> mapRes = ctx.getMapResult();
-			if (mapRes == null) {
-				mapRes = Collections.emptyList();
-			}
 			task.successful(mapRes);
 		} else if (task instanceof ReduceWorkerTask) {
 			List<String> redRes = ctx.getReduceResult();
-			if (redRes == null) {
-				redRes = Collections.emptyList();
-			}
 			task.successful(redRes);
 		} else {
 			throw new IllegalArgumentException("Unrecognized WorkerTask: " + task.getClass().getName());

@@ -25,7 +25,7 @@ import com.google.inject.assistedinject.Assisted;
  * @author Reto Hablützel (rethab)
  * 
  */
-public class SocketWorker implements Worker, SocketResultObserver {
+public final class SocketWorker implements Worker, SocketResultObserver {
 
 	private static final Logger LOG = Logger.getLogger(SocketWorker.class.getName());
 

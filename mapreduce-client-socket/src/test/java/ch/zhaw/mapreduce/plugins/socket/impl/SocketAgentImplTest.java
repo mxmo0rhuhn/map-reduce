@@ -25,6 +25,8 @@ public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 	@Auto
 	private States pusherState;
 
+	private final AgentStatistics stats = new AgentStatistics(null, 0);
+
 	@Override
 	protected ThreadingPolicy useThreadingPolicy() {
 		this.sync = new Synchroniser();
@@ -34,14 +36,14 @@ public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 	@Test
 	public void shouldSetClientIp() {
 		SocketAgentImpl sa = new SocketAgentImpl(clientIp, trFactory, execMock, execMock, resCollector, sarFactory,
-				taskRunTimeout);
+				taskRunTimeout, stats);
 		assertEquals(clientIp, sa.getIp());
 	}
 
 	@Test
 	public void shouldRunSmoothly() {
 		SocketAgentImpl sa = new SocketAgentImpl(clientIp, trFactory, execMock, execMock, resCollector, sarFactory,
-				taskRunTimeout);
+				taskRunTimeout, stats);
 		sa.helloslave();
 	}
 
@@ -49,7 +51,7 @@ public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 	@Test
 	public void shouldOnlyAcceptOneTaskAtATime() throws Exception {
 		SocketAgentImpl sa = new SocketAgentImpl(clientIp, trFactory, execMock, execMock, resCollector, sarFactory,
-				taskRunTimeout);
+				taskRunTimeout, stats);
 		mockery.checking(new Expectations() {
 			{
 				exactly(2).of(aTask).getTaskUuid();
@@ -69,7 +71,7 @@ public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 		ExecutorService pusherExec = Executors.newSingleThreadExecutor();
 		ExecutorService taskRunnerExec = Executors.newSingleThreadExecutor();
 		SocketAgentImpl sa = new SocketAgentImpl(clientIp, trFactory, taskRunnerExec, pusherExec, resCollector,
-				sarFactory, taskRunTimeout);
+				sarFactory, taskRunTimeout, stats);
 		sa.startResultPusher();
 		pusherState.startsAs("blockForResult");
 		mockery.checking(new Expectations() {
@@ -104,15 +106,19 @@ public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 		ExecutorService pusherExec = Executors.newSingleThreadExecutor();
 		ExecutorService taskRunnerExec = Executors.newSingleThreadExecutor();
 		SocketAgentImpl sa = new SocketAgentImpl(clientIp, trFactory, taskRunnerExec, pusherExec, resCollector,
-				sarFactory, taskRunTimeout);
+				sarFactory, taskRunTimeout, stats);
 		sa.startResultPusher();
 		pusherState.startsAs("blockForResult");
 		mockery.checking(new Expectations() {
 			{
-				oneOf(aTask).getTaskUuid(); will(returnValue(taskUuid));
-				oneOf(trFactory).createTaskRunner(aTask); will(returnValue(taskRunner));
-				oneOf(taskRunner).runTask(); will(returnValue(taskResult));
-				oneOf(sarFactory).createFromTaskResult(taskUuid, taskResult); will(returnValue(saResult));
+				oneOf(aTask).getTaskUuid();
+				will(returnValue(taskUuid));
+				oneOf(trFactory).createTaskRunner(aTask);
+				will(returnValue(taskRunner));
+				oneOf(taskRunner).runTask();
+				will(returnValue(taskResult));
+				oneOf(sarFactory).createFromTaskResult(taskUuid, taskResult);
+				will(returnValue(saResult));
 				then(pusherState.is("createdResult"));
 				oneOf(resCollector).pushResult(saResult);
 				then(pusherState.is("pushedResult"));
@@ -128,15 +134,19 @@ public class SocketAgentImplTest extends AbstractClientSocketMapReduceTest {
 		ExecutorService pusherExec = Executors.newSingleThreadExecutor();
 		ExecutorService taskRunnerExec = Executors.newSingleThreadExecutor();
 		SocketAgentImpl sa = new SocketAgentImpl(clientIp, trFactory, taskRunnerExec, pusherExec, resCollector,
-				sarFactory, taskRunTimeout);
+				sarFactory, taskRunTimeout, stats);
 		sa.startResultPusher();
 		pusherState.startsAs("blockForResult");
 		mockery.checking(new Expectations() {
 			{
-				oneOf(aTask).getTaskUuid(); will(returnValue(taskUuid));
-				oneOf(trFactory).createTaskRunner(aTask); will(returnValue(taskRunner));
-				oneOf(taskRunner).runTask(); will(throwException(new RuntimeException()));
-				oneOf(sarFactory).createFromException(with(taskUuid), with(aNonNull(Exception.class))); will(returnValue(saResult));
+				oneOf(aTask).getTaskUuid();
+				will(returnValue(taskUuid));
+				oneOf(trFactory).createTaskRunner(aTask);
+				will(returnValue(taskRunner));
+				oneOf(taskRunner).runTask();
+				will(throwException(new RuntimeException()));
+				oneOf(sarFactory).createFromException(with(taskUuid), with(aNonNull(Exception.class)));
+				will(returnValue(saResult));
 				then(pusherState.is("createdResult"));
 				oneOf(resCollector).pushResult(saResult);
 				then(pusherState.is("pushedResult"));

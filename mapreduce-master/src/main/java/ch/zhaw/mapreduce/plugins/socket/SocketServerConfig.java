@@ -1,12 +1,9 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Named;
@@ -22,7 +19,6 @@ import ch.zhaw.mapreduce.plugins.socket.impl.SocketResultCollectorImpl;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
-import com.google.inject.name.Names;
 
 import de.root1.simon.Registry;
 import de.root1.simon.Simon;
@@ -31,10 +27,6 @@ public class SocketServerConfig extends AbstractModule {
 	
 	private static final Logger LOG = Logger.getLogger(SocketServerConfig.class.getName());
 	
-	private static final long SECOND = 1000;
-	
-	private static final long MINUTE = 60 * SECOND;
-	
 	@Override
 	protected void configure() {
 		install(new SharedSocketConfig());
@@ -42,22 +34,13 @@ public class SocketServerConfig extends AbstractModule {
 		// Simon Registry Bindings
 		bind(AgentRegistrator.class).to(AgentRegistratorImpl.class);
 		bind(SocketResultCollector.class).to(SocketResultCollectorImpl.class).in(Singleton.class);
-		
-		// ResultCleaner
 		bind(ResultCleanerTask.class).asEagerSingleton();
-		bind(Long.class).annotatedWith(Names.named("AvailableResultTimeToLive")).toInstance(longProp("availableResultTimeToLive", 1*MINUTE));
-		bind(Long.class).annotatedWith(Names.named("RequestedResultTimeToLive")).toInstance(longProp("requestedResultTimeToLive", 10*MINUTE));
-		bind(Long.class).annotatedWith(Names.named("SocketResultCleanupSchedulingDelay")).toInstance(longProp("socketResultCleanupSchedulingDelay", MINUTE));
-		
-		// SocketWorker
 		bind(AgentTaskFactory.class).to(AgentTaskFactoryImpl.class);
-		bind(Integer.class).annotatedWith(Names.named("ObjectByteCacheSize")).toInstance(intProp("objectByteCacheSize", 30));
-		bind(Long.class).annotatedWith(Names.named("AgentTaskTriggeringTimeout")).toInstance(longProp("agentTaskTriggeringTimeout", 2*SECOND));
-		bind(Long.class).annotatedWith(Names.named("AgentPingerDelay")).toInstance(longProp("agentPingerDelay",5*SECOND));
+		
 		install(new FactoryModuleBuilder().implement(Worker.class, SocketWorker.class).build(SocketWorkerFactory.class));
 
 		try {
-			bind(Registry.class).toInstance(Simon.createRegistry(intProp("simonport", 4753)));
+			bind(Registry.class).toInstance(Simon.createRegistry(4753));
 		} catch (IOException e) {
 			addError(e);
 		}
@@ -66,9 +49,9 @@ public class SocketServerConfig extends AbstractModule {
 	@Provides
 	@Singleton
 	@Named("SocketScheduler")
-	private ScheduledExecutorService socketScheduler() {
+	private ScheduledExecutorService socketScheduler(@Named("SocketSchedulerPoolSize") int poolSize) {
 		// fuer allerlei scheduling tasks
-		return Executors.newScheduledThreadPool(intProp("SocketSchedulerPoolSize", 5), new NamedThreadFactory("SocketScheduler"));
+		return Executors.newScheduledThreadPool(poolSize, new NamedThreadFactory("SocketScheduler"));
 	}
 	
 	@Provides
@@ -80,34 +63,4 @@ public class SocketServerConfig extends AbstractModule {
 		return Executors.newCachedThreadPool(new NamedThreadFactory("SocketWorkerTaskTriggerService"));
 	}
 	
-	
-	int intProp(String name) {return (int) longProp(name); };
-	
-	int intProp(String name, int def) { return (int) longProp(name, (long) def); }
-	
-	long longProp(String name) { return longProp(name, null); }
-	
-	long longProp(String name, Long def) {
-		long retVal;
-		
-		Properties prop = new Properties();
-		try {
-    		prop.load(new FileInputStream("mapReduce.properties"));
-			
-    		retVal = Integer.parseInt(prop.getProperty(name));
-			
-		} catch (Exception e) {
-			// konnten nicht geladen werden - weiter mit oben definierten defaults
-			if (def == null)	{
-				addError("System Property " + name + " is required");
-				return -1;
-			} else {
-				retVal = def; // autoboxing
-			}
-		}
-
-		LOG.log(Level.CONFIG, "{0}={1}", new Object[] { name, retVal });
-		return retVal;
-	}
-
 }

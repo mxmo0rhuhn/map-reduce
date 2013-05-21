@@ -14,23 +14,17 @@ import ch.zhaw.mapreduce.KeyValuePair;
  */
 public class ContextImpl implements Context {
 	
-	private List<KeyValuePair> mapResults;
+	private List<KeyValuePair> mapResults = new LinkedList<KeyValuePair>();
 	
-	private List<String> reduceResults;
+	private List<String> reduceResults = new LinkedList<String>();
 
 	@Override
 	public void emitIntermediateMapResult(String key, String value) {
-		if (this.mapResults == null) {
-			this.mapResults = new LinkedList<KeyValuePair>();
-		}
 		this.mapResults.add(new KeyValuePair(key, value));
 	}
 
 	@Override
 	public void emit(String result) {
-		if (this.reduceResults == null) {
-			this.reduceResults = new LinkedList<String>();
-		}
 		this.reduceResults.add(result);
 	}
 

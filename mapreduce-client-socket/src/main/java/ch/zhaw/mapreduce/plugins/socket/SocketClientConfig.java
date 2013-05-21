@@ -1,8 +1,11 @@
 package ch.zhaw.mapreduce.plugins.socket;
 
+import static ch.zhaw.mapreduce.MapReduceUtil.loadWithOptionalDefaults;
+
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
 
 import javax.inject.Named;
@@ -11,6 +14,7 @@ import javax.inject.Singleton;
 import ch.zhaw.mapreduce.Context;
 import ch.zhaw.mapreduce.PostConstructFeature;
 import ch.zhaw.mapreduce.impl.ContextImpl;
+import ch.zhaw.mapreduce.plugins.socket.impl.AgentStatistics;
 import ch.zhaw.mapreduce.plugins.socket.impl.MapTaskRunner;
 import ch.zhaw.mapreduce.plugins.socket.impl.NamedThreadFactory;
 import ch.zhaw.mapreduce.plugins.socket.impl.ReduceTaskRunner;
@@ -28,8 +32,6 @@ public final class SocketClientConfig extends AbstractModule {
 
 	private static final Logger LOG = Logger.getLogger(SocketClientConfig.class.getName());
 
-	private static final long DEFAULT_TASK_RUN_TIMEOUT = 10000;
-
 	private final SocketResultCollector resCollector;
 
 	private final int nworker;
@@ -43,13 +45,18 @@ public final class SocketClientConfig extends AbstractModule {
 	protected void configure() {
 		install(new SharedSocketConfig());
 		bindListener(Matchers.any(), new PostConstructFeature());
+		try {
+			Names.bindProperties(binder(),
+					loadWithOptionalDefaults("client-socket-defaults.properties", "client-socket.properties"));
+		} catch (IOException e) {
+			addError(e);
+		}
 		
 		bind(TaskRunnerFactory.class).to(TaskRunnerFactoryImpl.class);
 		bind(SocketAgentResultFactory.class).to(SocketAgentResultFactoryImpl.class);
 		bind(SocketResultCollector.class).toInstance(this.resCollector);
 		bind(Context.class).to(ContextImpl.class);
-
-		bind(Long.class).annotatedWith(Names.named("taskRunTimeout")).toInstance(sysProp("taskRunTimeout", DEFAULT_TASK_RUN_TIMEOUT));
+		bind(AgentStatistics.class);
 
 		install(new FactoryModuleBuilder().implement(SocketAgent.class, SocketAgentImpl.class).build(SocketAgentFactory.class));
 		install(new FactoryModuleBuilder().implement(TaskRunner.class, MapTaskRunner.class).build(MapTaskRunnerFactory.class));
@@ -58,7 +65,7 @@ public final class SocketClientConfig extends AbstractModule {
 
 	@Provides
 	@Singleton
-	@Named("taskRunnerService")
+	@Named("TaskRunnerService")
 	private ExecutorService taskRunnerService() {
 		LOG.info("Use Pool of Size " + this.nworker + " for TaskRunnerService");
 		return Executors.newFixedThreadPool(this.nworker, new NamedThreadFactory("TaskRunnerService"));
@@ -66,23 +73,17 @@ public final class SocketClientConfig extends AbstractModule {
 
 	@Provides
 	@Singleton
-	@Named("resultPusherService")
+	@Named("ResultPusherService")
 	private ExecutorService resultPusherService() {
-		int poolSize = (int) sysProp("resultPusherService", this.nworker);
-		LOG.info("Use Pool of Size " + poolSize + " for ResultPusherService");
-		return Executors.newFixedThreadPool(poolSize, new NamedThreadFactory("ResultPusherService"));
+		LOG.info("Use Pool of Size " + this.nworker + " for ResultPusherService");
+		return Executors.newFixedThreadPool(this.nworker, new NamedThreadFactory("ResultPusherService"));
 	}
-
-	long sysProp(String name, long def) {
-		String propVal = System.getProperty(name);
-		long retVal;
-		if (propVal != null) {
-			retVal = Long.parseLong(propVal);
-		} else {
-			retVal = def;
-		}
-		LOG.log(Level.CONFIG, "{0}={1}", new Object[] { name, retVal });
-		return retVal;
+	
+	@Provides
+	@Singleton
+	@Named("SocketScheduler")
+	private ScheduledExecutorService socketscheduler(@Named("SocketSchedulerPoolSize") int poolSize) {
+		return Executors.newScheduledThreadPool(poolSize, new NamedThreadFactory("SocketScheduler"));
 	}
 
 }

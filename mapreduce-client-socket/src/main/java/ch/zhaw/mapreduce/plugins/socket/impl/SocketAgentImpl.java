@@ -10,7 +10,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -80,8 +79,8 @@ public class SocketAgentImpl implements SocketAgent {
 	 */
 	private final long taskRunTimeout;
 
-	/** wie viele tasks der socket agent bisher ausgeführt hat */
-	private final AtomicLong runTasks = new AtomicLong();
+	private final AgentStatistics stats;
+	
 
 	/**
 	 * Der Task, der gerade ausgeführt werden soll wird in diese Queue gesteckt um dann vom Result-Pusher wieder
@@ -92,9 +91,10 @@ public class SocketAgentImpl implements SocketAgent {
 
 	@Inject
 	SocketAgentImpl(@Assisted String clientIp, TaskRunnerFactory trFactory,
-			@Named("taskRunnerService") ExecutorService taskRunnerService,
-			@Named("resultPusherService") ExecutorService resultPusherService, SocketResultCollector resCollector,
-			SocketAgentResultFactory sarFactory, @Named("taskRunTimeout") long taskRunTimeout) {
+			@Named("TaskRunnerService") ExecutorService taskRunnerService,
+			@Named("ResultPusherService") ExecutorService resultPusherService, SocketResultCollector resCollector,
+			SocketAgentResultFactory sarFactory, @Named("TaskRunTimeout") long taskRunTimeout,
+			AgentStatistics stats) {
 		this.clientIp = clientIp;
 		this.trFactory = trFactory;
 		this.taskRunnerService = taskRunnerService;
@@ -102,6 +102,7 @@ public class SocketAgentImpl implements SocketAgent {
 		this.resultCollector = resCollector;
 		this.sarFactory = sarFactory;
 		this.taskRunTimeout = taskRunTimeout;
+		this.stats = stats;
 	}
 
 	/** Startet den Service, der immer wieder die Resultate dem Master gibt. */
@@ -116,8 +117,7 @@ public class SocketAgentImpl implements SocketAgent {
 						LOG.fine("Waiting For Next Task in Queue");
 						Pair<String, Future<TaskResult>> pair = tasks.pollLast(RESULT_PUSHER_CYCLE_TIMEOUT, TimeUnit.MILLISECONDS);
 						if (pair == null) {
-							LOG.log(Level.INFO, "Waited for {0} ms. Run {1} Tasks so far.", new Object[] {
-									RESULT_PUSHER_CYCLE_TIMEOUT, runTasks.get() });
+							LOG.finest("Waited for Task, but none arrived");
 							continue;
 						}
 						Future<TaskResult> task = pair.snd;
@@ -130,19 +130,20 @@ public class SocketAgentImpl implements SocketAgent {
 							TaskResult result = task.get(taskRunTimeout, TimeUnit.MILLISECONDS);
 							LOG.log(Level.INFO, "Task ran Fine {0}", taskUuid);
 							saResult = sarFactory.createFromTaskResult(taskUuid, result);
+							stats.successfulTask();
 						} catch (TimeoutException e) {
 							LOG.info("Task not completed within Timeout: " + taskRunTimeout);
 							// timeout abgelaufen, tasks soll nicht weiter ausgeführt werden
 							saResult = sarFactory.createFromException(taskUuid, e);
 							task.cancel(true);
+							stats.failedTask();
 						} catch (Exception e) {
 							LOG.log(Level.WARNING, "Task threw Exception", e);
 							saResult = sarFactory.createFromException(taskUuid, e);
-						} finally {
-							runTasks.incrementAndGet();
+							stats.failedTask();
 						}
 
-						LOG.finer("Before Pushing");
+						LOG.log(Level.FINER, "Before Pushing {0}", saResult);
 						resultCollector.pushResult(saResult);
 						LOG.finer("After Pushing");
 					}
@@ -185,11 +186,13 @@ public class SocketAgentImpl implements SocketAgent {
 			if (this.tasks.offerFirst(new Pair<String, Future<TaskResult>>(taskUuid, task))) {
 				state = new AgentTaskState(ACCEPTED);
 				LOG.info("Accepted Task for Execution");
+				stats.acceptedTask();
 			} else {
 				String msg = "SocketAgent can only run " + MAX_CONCURRENT_TASKS + " Tasks at a time!";
 				LOG.warning(msg);
 				task.cancel(true); // task wurde schon zur ausführung übergeben, also nehmen wir ihn zurück.
 				state = new AgentTaskState(REJECTED, msg);
+				stats.rejectTask();
 			}
 		} catch (Exception e) {
 			LOG.log(Level.SEVERE, "Failed to Schedule Task", e);

@@ -69,5 +69,5 @@ public class MapTaskRunnerTest extends AbstractClientSocketMapReduceTest {
 		assertTrue(res.wasSuccessful());
 		assertSame(mapResult, ((MapTaskResult) res).getResult());
 	}
-
+	
 }
