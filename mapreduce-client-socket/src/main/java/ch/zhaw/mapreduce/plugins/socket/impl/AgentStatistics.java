@@ -78,9 +78,15 @@ public final class AgentStatistics implements Runnable {
 	@Override
 	public void run() {
 		long totalRun = successfullyCompletedTasks.longValue() + failedTasks.longValue();
-		long successrate = 100 / totalRun * successfullyCompletedTasks.longValue();
-		LOG.log(Level.INFO, "Statistics: {0} Accepted Tasks, {1} Rejected Tasks, {2} Run Tasks ({3} successful)",
-				new Object[] { acceptedTasks.longValue(), rejectedTasks.longValue(), totalRun, successrate });
+		String successrate;
+		// division by zero aufpassen ;)
+		if (totalRun > 0) {
+			successrate = String.format("(%.2f%% successful)", 100F / ((float) totalRun) * successfullyCompletedTasks.longValue());
+		} else {
+			successrate = "";
+		}
+		LOG.log(Level.INFO, "Statistics: {0} Accepted Tasks, {1} Rejected Tasks, {2} Run Tasks {3}", new Object[] {
+				acceptedTasks.longValue(), rejectedTasks.longValue(), totalRun, successrate });
 	}
 
 }
