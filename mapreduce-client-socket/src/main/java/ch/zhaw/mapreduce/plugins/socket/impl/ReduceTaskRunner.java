@@ -20,7 +20,7 @@ import com.google.inject.assistedinject.Assisted;
  * @author Reto Hablützel (rethab)
  * 
  */
-public final class ReduceTaskRunner implements TaskRunner {
+public class ReduceTaskRunner implements TaskRunner {
 
 	private static final Logger LOG = Logger.getLogger(ReduceTaskRunner.class.getName());
 

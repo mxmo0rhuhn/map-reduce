@@ -21,6 +21,7 @@ import ch.zhaw.mapreduce.plugins.socket.impl.ReduceTaskRunner;
 import ch.zhaw.mapreduce.plugins.socket.impl.SocketAgentImpl;
 import ch.zhaw.mapreduce.plugins.socket.impl.SocketAgentResultFactoryImpl;
 import ch.zhaw.mapreduce.plugins.socket.impl.TaskRunnerFactoryImpl;
+import ch.zhaw.mapreduce.plugins.socket.interceptors.ExecutionTimeInterceptor;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -45,22 +46,29 @@ public final class SocketClientConfig extends AbstractModule {
 	protected void configure() {
 		install(new SharedSocketConfig());
 		bindListener(Matchers.any(), new PostConstructFeature());
+		
+		// TaskRunner sollen intercepted werden fuer Performance-Logging
+		bindInterceptor(Matchers.subclassesOf(TaskRunner.class),
+				Matchers.returns(Matchers.subclassesOf(TaskResult.class)), new ExecutionTimeInterceptor());
 		try {
 			Names.bindProperties(binder(),
 					loadWithOptionalDefaults("client-socket-defaults.properties", "client-socket.properties"));
 		} catch (IOException e) {
 			addError(e);
 		}
-		
+
 		bind(TaskRunnerFactory.class).to(TaskRunnerFactoryImpl.class);
 		bind(SocketAgentResultFactory.class).to(SocketAgentResultFactoryImpl.class);
 		bind(SocketResultCollector.class).toInstance(this.resCollector);
 		bind(Context.class).to(ContextImpl.class);
 		bind(AgentStatistics.class);
 
-		install(new FactoryModuleBuilder().implement(SocketAgent.class, SocketAgentImpl.class).build(SocketAgentFactory.class));
-		install(new FactoryModuleBuilder().implement(TaskRunner.class, MapTaskRunner.class).build(MapTaskRunnerFactory.class));
-		install(new FactoryModuleBuilder().implement(TaskRunner.class, ReduceTaskRunner.class).build(ReduceTaskRunnerFactory.class));
+		install(new FactoryModuleBuilder().implement(SocketAgent.class, SocketAgentImpl.class).build(
+				SocketAgentFactory.class));
+		install(new FactoryModuleBuilder().implement(TaskRunner.class, MapTaskRunner.class).build(
+				MapTaskRunnerFactory.class));
+		install(new FactoryModuleBuilder().implement(TaskRunner.class, ReduceTaskRunner.class).build(
+				ReduceTaskRunnerFactory.class));
 	}
 
 	@Provides
@@ -78,7 +86,7 @@ public final class SocketClientConfig extends AbstractModule {
 		LOG.info("Use Pool of Size " + this.nworker + " for ResultPusherService");
 		return Executors.newFixedThreadPool(this.nworker, new NamedThreadFactory("ResultPusherService"));
 	}
-	
+
 	@Provides
 	@Singleton
 	@Named("SocketScheduler")

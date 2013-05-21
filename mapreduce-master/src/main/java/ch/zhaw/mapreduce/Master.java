@@ -105,12 +105,13 @@ public final class Master {
 		// warten, bis alle ausgeführt worden sind
 		while (!runningTasks.isEmpty()) {
 			if (!housekeepingMap(runningTasks)) {
-				Thread.sleep(200); // nur warten, wenn sich nichts getan hat
+				Thread.sleep(400); // nur warten, wenn sich nichts getan hat
 			}
 		}
 	}
 
 	boolean housekeepingMap(List<MapWorkerTask> runningTasks) {
+		LOG.entering(getClass().getName(), "housekeepingMap", runningTasks.size());
 		List<MapWorkerTask> done = new LinkedList<MapWorkerTask>();
 		List<MapWorkerTask> failed = new LinkedList<MapWorkerTask>();
 		for (MapWorkerTask task : runningTasks) {
@@ -174,12 +175,13 @@ public final class Master {
 		while (!runningTasks.isEmpty()) {
 			if (!housekeepingReduce(runningTasks)) {
 				// nur warten, wenn sich nichts getan hat
-				Thread.sleep(200);
+				Thread.sleep(400);
 			}
 		}
 	}
 
 	boolean housekeepingReduce(List<ReduceWorkerTask> runningTasks) {
+		LOG.entering(getClass().getName(), "housekeepingReduce", runningTasks.size());
 		List<ReduceWorkerTask> done = new LinkedList<ReduceWorkerTask>();
 		List<ReduceWorkerTask> failed = new LinkedList<ReduceWorkerTask>();
 		for (ReduceWorkerTask task : runningTasks) {
@@ -205,7 +207,7 @@ public final class Master {
 		runningTasks.removeAll(done);
 		runningTasks.removeAll(failed);
 		runningTasks.addAll(restartFailedReduce(failed));
-		return done.isEmpty() && !failed.isEmpty();
+		return done.isEmpty() && failed.isEmpty();
 	}
 
 	List<ReduceWorkerTask> restartFailedReduce(List<ReduceWorkerTask> faileds) {

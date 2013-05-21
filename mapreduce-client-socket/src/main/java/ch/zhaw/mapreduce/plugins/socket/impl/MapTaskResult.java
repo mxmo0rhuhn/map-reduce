@@ -7,7 +7,7 @@ import ch.zhaw.mapreduce.plugins.socket.TaskResult;
 
 import com.google.inject.assistedinject.Assisted;
 
-public final class MapTaskResult implements TaskResult {
+public class MapTaskResult implements TaskResult {
 
 	private final String taskUuid;
 

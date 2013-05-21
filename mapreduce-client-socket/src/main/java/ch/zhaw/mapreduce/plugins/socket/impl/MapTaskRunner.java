@@ -22,7 +22,7 @@ import com.google.inject.assistedinject.Assisted;
  * @author Reto Hablützel (rethab)
  * 
  */
-public final class MapTaskRunner implements TaskRunner {
+public class MapTaskRunner implements TaskRunner {
 
 	private static final Logger LOG = Logger.getLogger(MapTaskRunner.class.getName());
 
