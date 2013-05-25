@@ -7,4 +7,4 @@
 #     starten soll, übergeben.
 
 #java -Djava.util.logging.config.file=logging.properties -jar target/mapreduce-client-socket-0.10-SNAPSHOT-jar-with-dependencies.jar 160.85.133.224 4753 20
-java -Djava.util.logging.config.file=logging.properties -jar target/mapreduce-client-socket-0.10-SNAPSHOT-jar-with-dependencies.jar localhost 4753 40
+java -Djava.util.logging.config.file=logging.properties -jar target/mapreduce-client-socket-0.10-SNAPSHOT-jar-with-dependencies.jar localhost 4753 7
