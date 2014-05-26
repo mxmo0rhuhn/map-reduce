@@ -24,7 +24,7 @@ public class ThreadConfig extends AbstractModule {
 		int nWorkers;
 		Properties prop = new Properties();
 		try {
-			prop.load(new FileInputStream("mapReduce.properties"));
+			prop.load(new FileInputStream("mapreduce.properties"));
 
 			nWorkers = Integer.parseInt(prop.getProperty("nThreadWorkers"));
 

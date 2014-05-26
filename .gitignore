@@ -1,10 +1,8 @@
-# Alles was so generiert ist wollen wir nicht!
+# Java bytecode
 *.class
-target/**
 
-.settings/**
-.classpath
-.project
+# Maven
+target/**
 
 # Package Files #
 *.jar
@@ -12,5 +10,15 @@ target/**
 *.war
 *.ear
 
+# Eclipse
+.settings/**
+.classpath
+.project
+
+# idea
+*.iml
+*.idea
+
+# VIM
 *.swp
 *~
