@@ -17,8 +17,6 @@ public class ThreadConfig extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(Worker.class).to(ThreadWorker.class);
-		bind(ExecutorService.class).annotatedWith(Names.named("ThreadWorker")).toInstance(
-				Executors.newSingleThreadExecutor());
 		bind(Context.class).to(ContextImpl.class);
 
 		int nWorkers;
@@ -34,5 +32,7 @@ public class ThreadConfig extends AbstractModule {
 		}
 
 		bind(Integer.class).annotatedWith(Names.named("nWorkers")).toInstance(nWorkers);
+        bind(ExecutorService.class).annotatedWith(Names.named("ThreadWorker")).toInstance(
+                Executors.newFixedThreadPool(nWorkers));
 	}
 }
