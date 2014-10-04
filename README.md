@@ -1,7 +1,9 @@
+# Map Reduce for Java
+
 Das Projekt map-reduce besteht momentan aus drei Projekten (Maven-Jargon: Module).
-        mapreduce-master: Funktionalität für den Server, der als Master agiert
-        mapreduce-shared: Interfaces, die auf einem Client/Worker sowie auf dem Master zur Laufzeitexistieren müssen
-        mapreduce-client-socket: Dieser Teil muss auf einem Client/Worker, der über einen Socket mit dem Master kommuniziert
+- mapreduce-master: Funktionalität für den Server, der als Master agiert
+- mapreduce-shared: Interfaces, die auf einem Client/Worker sowie auf dem Master zur Laufzeitexistieren müssen
+- mapreduce-client-socket: Dieser Teil muss auf einem Client/Worker, der über einen Socket mit dem Master kommuniziert
 
 Vom Parent-Projekt könnte man theoretisch alle zusammen builden, aber typischerweise geht man in eines der Submodule und
 arbeitet dort ganz normal mit Maven. Das Master-Projekt, sowie das Client-Socket-Projekt haben eine Abhängigkeit auf
